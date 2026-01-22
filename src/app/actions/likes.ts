@@ -2,7 +2,6 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-import type { TablesInsert } from "@/types/supabase";
 
 export async function toggleLikeAction(storyId: string) {
   const supabase = await createClient();
@@ -16,9 +15,9 @@ export async function toggleLikeAction(storyId: string) {
     return { error: "Not authenticated" };
   }
 
-  // Check if already liked
-  const { data: existing } = await supabase
-    .from("likes")
+  // Check if already liked - using type assertion for Supabase client
+  const { data: existing } = await (supabase
+    .from("likes") as any)
     .select("id")
     .eq("story_id", storyId)
     .eq("user_id", user.id)
@@ -26,8 +25,8 @@ export async function toggleLikeAction(storyId: string) {
 
   if (existing) {
     // Unlike
-    const { error } = await supabase
-      .from("likes")
+    const { error } = await (supabase
+      .from("likes") as any)
       .delete()
       .eq("id", existing.id);
 
@@ -40,14 +39,12 @@ export async function toggleLikeAction(storyId: string) {
     return { liked: false, error: null };
   } else {
     // Like
-    const likeData: TablesInsert<"likes"> = {
-      story_id: storyId,
-      user_id: user.id,
-    };
-
-    const { error } = await supabase
-      .from("likes")
-      .insert(likeData);
+    const { error } = await (supabase
+      .from("likes") as any)
+      .insert({
+        story_id: storyId,
+        user_id: user.id,
+      });
 
     if (error) {
       console.error("Error adding like:", error);
