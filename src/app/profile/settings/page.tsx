@@ -43,16 +43,16 @@ export default function SettingsPage() {
       const supabase = createClient();
 
       // Check if profile exists
-      const { data: existingProfile } = await supabase
-        .from("users")
+      const { data: existingProfile } = await (supabase
+        .from("users") as any)
         .select("id")
         .eq("id", user.id)
         .single();
 
       if (existingProfile) {
         // Update existing profile
-        await supabase
-          .from("users")
+        await (supabase
+          .from("users") as any)
           .update({
             display_name: displayName,
             avatar_url: avatarUrl || null,
@@ -60,7 +60,7 @@ export default function SettingsPage() {
           .eq("id", user.id);
       } else {
         // Create new profile
-        await supabase.from("users").insert({
+        await (supabase.from("users") as any).insert({
           id: user.id,
           email: user.email || "",
           display_name: displayName,
