@@ -1,7 +1,7 @@
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { StoryMap } from "@/components/map/story-map";
-import { getPublishedStories } from "@/lib/supabase/queries";
+import { getStoriesForMap } from "@/lib/supabase/queries";
 
 export const metadata = {
   title: "Map | People of Cornwall",
@@ -9,13 +9,8 @@ export const metadata = {
 };
 
 export default async function MapPage() {
-  // Get all stories with locations
-  const { stories } = await getPublishedStories({ perPage: 100 });
-  
-  // Filter to only stories with coordinates
-  const storiesWithLocation = stories.filter(
-    (s) => s.location_lat && s.location_lng
-  );
+  // Get all stories with locations (includes first image)
+  const stories = await getStoriesForMap();
 
   return (
     <div className="flex min-h-screen flex-col bg-parchment">
@@ -29,8 +24,8 @@ export default async function MapPage() {
               Stories by Place
             </h1>
             <p className="text-stone">
-              {storiesWithLocation.length > 0 
-                ? `Explore ${storiesWithLocation.length} stories from across Cornwall. Click a marker to read the story.`
+              {stories.length > 0 
+                ? `Explore ${stories.length} stories from across Cornwall. Click a marker to read the story.`
                 : "No stories with locations yet. Be the first to share a story from a place in Cornwall!"
               }
             </p>
@@ -39,7 +34,7 @@ export default async function MapPage() {
 
         {/* Map */}
         <section className="flex-1">
-          <StoryMap stories={storiesWithLocation} />
+          <StoryMap stories={stories} />
         </section>
       </main>
 

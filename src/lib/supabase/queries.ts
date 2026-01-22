@@ -201,6 +201,60 @@ export async function updateStory(id: string, updates: TablesUpdate<"stories">) 
 }
 
 /**
+ * Get stories with locations for the map (includes first image)
+ */
+export async function getStoriesForMap() {
+  const supabase = await createClient();
+
+  const { data, error } = await (supabase
+    .from("stories") as any)
+    .select(`
+      id, title, body, author_display_name, anonymous, 
+      location_name, location_lat, location_lng, 
+      timeline_decade, ai_summary,
+      likes(count), comments(count),
+      media(url, type)
+    `)
+    .eq("status", "published")
+    .eq("soft_deleted", false)
+    .not("location_lat", "is", null)
+    .not("location_lng", "is", null)
+    .order("published_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching stories for map:", error);
+    return [];
+  }
+
+  // Transform and get first image
+  return (data || []).map((story: any) => {
+    // Try to get first image from media table
+    let firstImage = null;
+    if (story.media && Array.isArray(story.media)) {
+      const imageMedia = story.media.find((m: any) => m.type === "image");
+      if (imageMedia) {
+        firstImage = imageMedia.url;
+      }
+    }
+    
+    // If no media, try to extract first image from body HTML
+    if (!firstImage && story.body) {
+      const imgMatch = story.body.match(/<img[^>]+src="([^">]+)"/);
+      if (imgMatch) {
+        firstImage = imgMatch[1];
+      }
+    }
+
+    return {
+      ...story,
+      likes_count: Array.isArray(story.likes) ? story.likes[0]?.count || 0 : 0,
+      comments_count: Array.isArray(story.comments) ? story.comments[0]?.count || 0 : 0,
+      first_image_url: firstImage,
+    };
+  });
+}
+
+/**
  * Get unique locations for filter
  */
 export async function getStoryLocations() {
