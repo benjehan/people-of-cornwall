@@ -75,7 +75,7 @@ export default function ProfilePage() {
                   </div>
                   <div className="flex flex-wrap justify-center gap-2 sm:justify-start">
                     <Link href="/write">
-                      <Button className="gap-2 bg-copper-clay text-chalk-white hover:bg-copper-clay-light">
+                      <Button className="gap-2 bg-granite text-parchment hover:bg-slate">
                         <PenLine className="h-4 w-4" />
                         Share a story
                       </Button>

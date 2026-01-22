@@ -46,6 +46,25 @@ export function useUser() {
   useEffect(() => {
     let mounted = true;
 
+    // Safety timeout to prevent infinite loading (5 seconds max)
+    const timeout = setTimeout(() => {
+      if (mounted) {
+        setState(prev => {
+          if (prev.isLoading) {
+            console.warn("Auth loading timeout - falling back to unauthenticated state");
+            return {
+              user: null,
+              profile: null,
+              isLoading: false,
+              profileChecked: true,
+              isAdmin: false,
+            };
+          }
+          return prev;
+        });
+      }
+    }, 5000);
+
     const getInitialSession = async () => {
       try {
         // Use getSession for faster initial load
@@ -65,8 +84,12 @@ export function useUser() {
             isLoading: false,
           }));
 
-          // Fetch profile in background
-          const profile = await fetchProfile(session.user.id);
+          // Fetch profile in background (with timeout)
+          const profilePromise = fetchProfile(session.user.id);
+          const profile = await Promise.race([
+            profilePromise,
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000))
+          ]);
           
           if (mounted) {
             setState({
@@ -143,6 +166,7 @@ export function useUser() {
 
     return () => {
       mounted = false;
+      clearTimeout(timeout);
       subscription.unsubscribe();
     };
   }, [supabase, fetchProfile]);

@@ -273,7 +273,7 @@ export function StoryMap({ stories }: StoryMapProps) {
                           </div>
                           <Link
                             href={`/stories/${story.id}`}
-                            className="text-sm font-medium text-granite hover:text-copper transition-colors"
+                            className="text-sm font-medium text-granite hover:text-slate transition-colors"
                           >
                             Read story →
                           </Link>
@@ -309,7 +309,7 @@ export function StoryMap({ stories }: StoryMapProps) {
                     {story.location_name}
                     {story.timeline_decade && ` • ${story.timeline_decade}s`}
                   </p>
-                  <h3 className="font-serif font-bold leading-snug text-granite group-hover:text-copper transition-colors">
+                  <h3 className="font-serif font-bold leading-snug text-granite group-hover:text-slate transition-colors">
                     {story.title}
                   </h3>
                   <p className="mt-1 text-xs text-stone">

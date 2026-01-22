@@ -237,7 +237,7 @@ export default function ReviewQueuePage() {
                         onClick={() => openRejectDialog(story)}
                         disabled={isPending}
                         variant="outline"
-                        className="gap-2 border-copper-clay text-copper-clay hover:bg-copper-clay/10"
+                        className="gap-2 border-stone text-stone hover:bg-stone/10"
                       >
                         <XCircle className="h-4 w-4" />
                         Request Changes
@@ -289,7 +289,7 @@ export default function ReviewQueuePage() {
             <Button
               onClick={handleReject}
               disabled={isPending || !rejectReason.trim()}
-              className="bg-copper-clay text-chalk-white hover:bg-copper-clay-light"
+              className="bg-slate text-parchment hover:bg-granite"
             >
               Send Feedback
             </Button>

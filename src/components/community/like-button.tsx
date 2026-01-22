@@ -52,7 +52,7 @@ export function LikeButton({ storyId, initialLiked, initialCount }: LikeButtonPr
       disabled={isPending}
       className={cn(
         "gap-2 transition-colors",
-        liked && "text-copper-clay hover:text-copper-clay"
+        liked && "text-red-500 hover:text-red-600"
       )}
     >
       <Heart

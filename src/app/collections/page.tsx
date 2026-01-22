@@ -43,10 +43,10 @@ export default async function CollectionsPage() {
                   >
                     <article className="h-full rounded-lg border border-transparent bg-cream p-8 transition-all hover:border-bone hover:shadow-md">
                       <div className="mb-4 flex items-start justify-between">
-                        <h2 className="font-serif text-xl font-bold text-granite group-hover:text-copper transition-colors">
+                        <h2 className="font-serif text-xl font-bold text-granite group-hover:text-slate transition-colors">
                           {collection.title}
                         </h2>
-                        <ArrowRight className="h-5 w-5 text-silver transition-transform group-hover:translate-x-1 group-hover:text-copper" />
+                        <ArrowRight className="h-5 w-5 text-silver transition-transform group-hover:translate-x-1 group-hover:text-slate" />
                       </div>
                       <p className="mb-4 text-sm text-stone line-clamp-3">
                         {collection.description || "Explore stories in this collection."}

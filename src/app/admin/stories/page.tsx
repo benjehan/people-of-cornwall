@@ -239,7 +239,7 @@ export default function AdminStoriesPage() {
                             size="sm"
                             onClick={() => toggleFeatured(story.id, story.featured)}
                             disabled={isPending}
-                            className={story.featured ? "text-copper" : "text-stone hover:text-copper"}
+                            className={story.featured ? "text-slate" : "text-stone hover:text-slate"}
                             title={story.featured ? "Remove from featured" : "Feature this story"}
                           >
                             {story.featured ? (
@@ -312,7 +312,7 @@ export default function AdminStoriesPage() {
             ) : (
               <p className="text-sm text-stone">
                 No collections yet.{" "}
-                <Link href="/admin/collections" className="text-granite font-medium hover:text-copper">
+                <Link href="/admin/collections" className="text-granite font-medium hover:text-slate">
                   Create one first.
                 </Link>
               </p>

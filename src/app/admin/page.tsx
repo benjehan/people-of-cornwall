@@ -118,7 +118,7 @@ export default function AdminDashboard() {
             </Card>
 
             <Link href="/admin/review">
-              <Card className="border-bone bg-cream transition-all hover:border-copper/50 hover:shadow-md">
+              <Card className="border-bone bg-cream transition-all hover:border-slate/50 hover:shadow-md">
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-4">
                     <div className="rounded-full bg-copper/10 p-3">

@@ -372,7 +372,7 @@ function StoryCard({ story, onRefresh }: StoryCardProps) {
                       </Button>
                     </Link>
                     <Link href={`/write?id=${story.id}`}>
-                      <Button variant="outline" size="sm" className="w-full gap-1 border-copper text-copper hover:bg-copper hover:text-parchment">
+                      <Button variant="outline" size="sm" className="w-full gap-1 border-granite text-granite hover:bg-granite hover:text-parchment">
                         <Edit className="h-4 w-4" />
                         Edit
                       </Button>

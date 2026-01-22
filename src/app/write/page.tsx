@@ -217,12 +217,12 @@ function WritePageContent() {
 
           {/* Notice for community prompt */}
           {promptTitle && !storyId && (
-            <Card className="mb-6 border-copper/30 bg-copper/5">
+            <Card className="mb-6 border-slate/30 bg-slate/5">
               <CardContent className="flex items-start gap-3 py-4">
-                <Sparkles className="h-5 w-5 text-copper mt-0.5" />
+                <Sparkles className="h-5 w-5 text-slate mt-0.5" />
                 <div>
-                  <p className="font-medium text-copper">Community Prompt</p>
-                  <p className="text-sm text-copper/80">
+                  <p className="font-medium text-slate">Community Prompt</p>
+                  <p className="text-sm text-stone">
                     You're writing a story for: <strong>"{promptTitle}"</strong>
                   </p>
                 </div>
@@ -232,12 +232,12 @@ function WritePageContent() {
 
           {/* Notice for editing published story */}
           {isEditingPublished && (
-            <Card className="mb-6 border-copper/30 bg-copper/5">
+            <Card className="mb-6 border-slate/30 bg-slate/5">
               <CardContent className="flex items-start gap-3 py-4">
-                <RefreshCw className="h-5 w-5 text-copper mt-0.5" />
+                <RefreshCw className="h-5 w-5 text-slate mt-0.5" />
                 <div>
-                  <p className="font-medium text-copper">Editing Published Story</p>
-                  <p className="text-sm text-copper/80">
+                  <p className="font-medium text-slate">Editing Published Story</p>
+                  <p className="text-sm text-stone">
                     When you submit your changes, the story will be sent for review again.
                     It will remain visible until the updated version is approved.
                   </p>
@@ -248,12 +248,12 @@ function WritePageContent() {
 
           {/* Notice for rejected story */}
           {isEditingRejected && (
-            <Card className="mb-6 border-copper/30 bg-copper/5">
+            <Card className="mb-6 border-amber-500/30 bg-amber-500/5">
               <CardContent className="flex items-start gap-3 py-4">
-                <AlertCircle className="h-5 w-5 text-copper mt-0.5" />
+                <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
                 <div>
-                  <p className="font-medium text-copper">Story Needs Changes</p>
-                  <p className="text-sm text-copper/80">
+                  <p className="font-medium text-amber-700">Story Needs Changes</p>
+                  <p className="text-sm text-amber-600">
                     Please review the feedback and make the necessary changes before resubmitting.
                   </p>
                 </div>
@@ -340,7 +340,7 @@ function WritePageContent() {
                   {/* Year */}
                   <div>
                     <label className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-granite">
-                      <Calendar className="h-4 w-4 text-copper" />
+                      <Calendar className="h-4 w-4 text-slate" />
                       Year (approximate)
                     </label>
                     <Input
@@ -363,7 +363,7 @@ function WritePageContent() {
                         {anonymous ? (
                           <EyeOff className="h-4 w-4 text-stone" />
                         ) : (
-                          <Eye className="h-4 w-4 text-copper" />
+                          <Eye className="h-4 w-4 text-slate" />
                         )}
                         {anonymous ? "Anonymous" : "Show my name"}
                       </label>

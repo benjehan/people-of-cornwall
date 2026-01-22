@@ -123,7 +123,7 @@ export default async function HomePage() {
               </div>
               <Link
                 href="/stories"
-                className="hidden items-center gap-1 text-sm font-medium text-granite hover:text-copper sm:flex"
+                className="hidden items-center gap-1 text-sm font-medium text-granite hover:text-slate sm:flex"
               >
                 View all stories
                 <ArrowRight className="h-4 w-4" />
@@ -186,7 +186,7 @@ export default async function HomePage() {
                 <p className="mb-4 text-sm text-stone">
                   Explore stories on an interactive map of Cornwall. Find tales from your town or discover new places.
                 </p>
-                <span className="inline-flex items-center gap-1 text-sm font-medium text-granite group-hover:text-copper">
+                <span className="inline-flex items-center gap-1 text-sm font-medium text-granite group-hover:text-slate">
                   View Map
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </span>
@@ -218,7 +218,7 @@ export default async function HomePage() {
                     ))}
                   </div>
                 )}
-                <span className="inline-flex items-center gap-1 text-sm font-medium text-granite group-hover:text-copper">
+                <span className="inline-flex items-center gap-1 text-sm font-medium text-granite group-hover:text-slate">
                   Browse Timeline
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </span>
@@ -250,7 +250,7 @@ export default async function HomePage() {
                     ))}
                   </ul>
                 )}
-                <span className="inline-flex items-center gap-1 text-sm font-medium text-granite group-hover:text-copper">
+                <span className="inline-flex items-center gap-1 text-sm font-medium text-granite group-hover:text-slate">
                   View Collections
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </span>

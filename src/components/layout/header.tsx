@@ -34,7 +34,7 @@ export function Header() {
       <div className="mx-auto flex h-16 max-w-[1320px] items-center justify-between px-4 sm:px-6">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 hover:no-underline group">
-          <span className="font-serif text-xl font-bold text-granite tracking-tight group-hover:text-copper transition-colors">
+          <span className="font-serif text-xl font-bold text-granite tracking-tight group-hover:text-slate transition-colors">
             People of Cornwall
           </span>
         </Link>
@@ -162,7 +162,7 @@ export function Header() {
           ) : (
             <>
               <Link href="/login" className="hidden sm:block">
-                <Button variant="ghost" className="text-granite font-medium hover:text-copper">
+                <Button variant="ghost" className="text-granite font-medium hover:text-slate">
                   Sign in
                 </Button>
               </Link>
