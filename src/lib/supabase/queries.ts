@@ -14,7 +14,17 @@ import type { Tables, TablesInsert, TablesUpdate } from "@/types/supabase";
 export type StoryWithCounts = Tables<"stories"> & {
   likes_count: number;
   comments_count: number;
+  first_image_url?: string | null;
 };
+
+/**
+ * Extract first image URL from story body HTML
+ */
+function extractFirstImage(body: string | null): string | null {
+  if (!body) return null;
+  const imgMatch = body.match(/<img[^>]+src="([^">]+)"/);
+  return imgMatch ? imgMatch[1] : null;
+}
 
 /**
  * Get published stories with pagination
@@ -69,11 +79,12 @@ export async function getPublishedStories({
     return { stories: [], count: 0, error };
   }
 
-  // Transform the count aggregates
+  // Transform the count aggregates and extract first image
   const stories: StoryWithCounts[] = (data || []).map((story: any) => ({
     ...story,
     likes_count: Array.isArray(story.likes) ? story.likes[0]?.count || 0 : 0,
     comments_count: Array.isArray(story.comments) ? story.comments[0]?.count || 0 : 0,
+    first_image_url: extractFirstImage(story.body),
   }));
 
   return { stories, count: count || 0, error: null };
@@ -106,6 +117,7 @@ export async function getFeaturedStory() {
     ...data,
     likes_count: Array.isArray(data.likes) ? data.likes[0]?.count || 0 : 0,
     comments_count: Array.isArray(data.comments) ? data.comments[0]?.count || 0 : 0,
+    first_image_url: extractFirstImage(data.body),
   } as StoryWithCounts;
 }
 
@@ -131,6 +143,7 @@ export async function getStoryById(id: string) {
     ...data,
     likes_count: Array.isArray(data.likes) ? data.likes[0]?.count || 0 : 0,
     comments_count: Array.isArray(data.comments) ? data.comments[0]?.count || 0 : 0,
+    first_image_url: extractFirstImage(data.body),
   } as StoryWithCounts;
 }
 
@@ -156,6 +169,7 @@ export async function getUserStories(userId: string) {
     ...story,
     likes_count: Array.isArray(story.likes) ? story.likes[0]?.count || 0 : 0,
     comments_count: Array.isArray(story.comments) ? story.comments[0]?.count || 0 : 0,
+    first_image_url: extractFirstImage(story.body),
   })) as StoryWithCounts[];
 }
 
@@ -540,6 +554,7 @@ export async function getPromptStories(promptId: string) {
     ...story,
     likes_count: Array.isArray(story.likes) ? story.likes[0]?.count || 0 : 0,
     comments_count: Array.isArray(story.comments) ? story.comments[0]?.count || 0 : 0,
+    first_image_url: extractFirstImage(story.body),
   })) as StoryWithCounts[];
 }
 
@@ -581,6 +596,7 @@ export async function getCollectionStories(collectionSlug: string) {
     ...story,
     likes_count: Array.isArray(story.likes) ? story.likes[0]?.count || 0 : 0,
     comments_count: Array.isArray(story.comments) ? story.comments[0]?.count || 0 : 0,
+    first_image_url: extractFirstImage(story.body),
   })) as StoryWithCounts[];
 
   return { collection, stories: storiesWithCounts };

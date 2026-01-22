@@ -111,6 +111,7 @@ export interface StoryWithDetails extends Story {
   comments_count: number;
   likes_count: number;
   has_liked?: boolean;
+  first_image_url?: string | null;
 }
 
 export interface CommentWithAuthor extends Comment {
