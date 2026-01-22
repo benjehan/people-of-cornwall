@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import type { Tables } from "@/types/supabase";
@@ -15,13 +15,13 @@ interface UserState {
   isAdmin: boolean;
 }
 
-// Create a single client instance for the hook
-const supabase = createClient();
-
 /**
  * Hook to get the current authenticated user and their profile
  */
 export function useUser() {
+  // Create client instance inside the hook (memoized)
+  const supabase = useMemo(() => createClient(), []);
+  
   const [state, setState] = useState<UserState>({
     user: null,
     profile: null,
@@ -41,19 +41,31 @@ export function useUser() {
     } catch {
       return null;
     }
-  }, []);
+  }, [supabase]);
 
   useEffect(() => {
     let mounted = true;
 
     const getInitialSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        // Use getSession for faster initial load
+        const { data: { session }, error } = await supabase.auth.getSession();
+
+        if (error) {
+          console.error("Session error:", error);
+        }
 
         if (!mounted) return;
 
         if (session?.user) {
-          // Fetch profile immediately with user
+          // Set user immediately, then fetch profile
+          setState(prev => ({
+            ...prev,
+            user: session.user,
+            isLoading: false,
+          }));
+
+          // Fetch profile in background
           const profile = await fetchProfile(session.user.id);
           
           if (mounted) {
@@ -96,7 +108,25 @@ export function useUser() {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
 
+      if (event === 'SIGNED_OUT') {
+        setState({
+          user: null,
+          profile: null,
+          isLoading: false,
+          profileChecked: true,
+          isAdmin: false,
+        });
+        return;
+      }
+
       if (session?.user) {
+        // Update user immediately
+        setState(prev => ({
+          ...prev,
+          user: session.user,
+          isLoading: false,
+        }));
+
         // Fetch profile
         const profile = await fetchProfile(session.user.id);
         if (mounted) {
@@ -108,14 +138,6 @@ export function useUser() {
             isAdmin: profile?.role === "admin",
           });
         }
-      } else {
-        setState({
-          user: null,
-          profile: null,
-          isLoading: false,
-          profileChecked: true,
-          isAdmin: false,
-        });
       }
     });
 
@@ -123,7 +145,7 @@ export function useUser() {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [fetchProfile]);
+  }, [supabase, fetchProfile]);
 
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
@@ -134,7 +156,7 @@ export function useUser() {
       profileChecked: true,
       isAdmin: false,
     });
-  }, []);
+  }, [supabase]);
 
   return {
     ...state,

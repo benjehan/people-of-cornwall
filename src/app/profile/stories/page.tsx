@@ -41,11 +41,11 @@ import type { Tables } from "@/types/supabase";
 type Story = Tables<"stories">;
 
 const STATUS_CONFIG = {
-  draft: { label: "Draft", icon: FileText, color: "bg-slate-grey/10 text-slate-grey" },
-  review: { label: "In Review", icon: Clock, color: "bg-atlantic-blue/10 text-atlantic-blue" },
-  published: { label: "Published", icon: CheckCircle, color: "bg-moss-green/10 text-moss-green" },
-  rejected: { label: "Needs Changes", icon: XCircle, color: "bg-copper-clay/10 text-copper-clay" },
-  unpublished: { label: "Unpublished", icon: Eye, color: "bg-slate-grey/10 text-slate-grey" },
+  draft: { label: "Draft", icon: FileText, color: "bg-stone/10 text-stone" },
+  review: { label: "In Review", icon: Clock, color: "bg-granite/10 text-granite" },
+  published: { label: "Published", icon: CheckCircle, color: "bg-green-100 text-green-700" },
+  rejected: { label: "Needs Changes", icon: XCircle, color: "bg-copper/10 text-copper" },
+  unpublished: { label: "Unpublished", icon: Eye, color: "bg-stone/10 text-stone" },
 };
 
 function MyStoriesContent() {
@@ -103,25 +103,25 @@ function MyStoriesContent() {
 
   if (authLoading || !user) {
     return (
-      <div className="flex min-h-screen flex-col">
+      <div className="flex min-h-screen flex-col bg-parchment">
         <Header />
         <main className="flex flex-1 items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-atlantic-blue border-t-transparent" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-granite border-t-transparent" />
         </main>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-chalk-white">
+    <div className="flex min-h-screen flex-col bg-parchment">
       <Header />
 
-      <main className="flex-1 py-8">
-        <div className="mx-auto max-w-4xl px-4">
+      <main className="flex-1 py-10">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6">
           {/* Back link */}
           <Link
             href="/profile"
-            className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+            className="mb-6 inline-flex items-center gap-1 text-sm text-stone hover:text-granite transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to profile
@@ -130,13 +130,13 @@ function MyStoriesContent() {
           {/* Header */}
           <div className="mb-8 flex items-center justify-between">
             <div>
-              <h1 className="mb-1 font-serif text-3xl font-semibold">My Stories</h1>
-              <p className="text-muted-foreground">
+              <h1 className="mb-1 font-serif text-3xl font-bold tracking-tight text-granite">My Stories</h1>
+              <p className="text-stone">
                 Manage your drafts, submissions, and published stories.
               </p>
             </div>
             <Link href="/write">
-              <Button className="gap-2 bg-copper-clay text-chalk-white hover:bg-copper-clay-light">
+              <Button className="gap-2 bg-granite text-parchment hover:bg-slate font-medium">
                 <PenLine className="h-4 w-4" />
                 New story
               </Button>
@@ -145,10 +145,10 @@ function MyStoriesContent() {
 
           {/* Success message */}
           {submitted && (
-            <Card className="mb-6 border-moss-green/30 bg-moss-green/10">
+            <Card className="mb-6 border-green-200 bg-green-50">
               <CardContent className="flex items-center gap-3 py-4">
-                <CheckCircle className="h-5 w-5 text-moss-green" />
-                <p className="text-sm text-moss-green-dark">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+                <p className="text-sm text-green-700">
                   Your story has been sent for review. We'll notify you when it's published.
                 </p>
               </CardContent>
@@ -170,20 +170,20 @@ function MyStoriesContent() {
             <TabsContent value={activeTab}>
               {isLoading ? (
                 <div className="flex items-center justify-center py-12">
-                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-atlantic-blue border-t-transparent" />
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-granite border-t-transparent" />
                 </div>
               ) : filteredStories.length === 0 ? (
-                <Card className="border-chalk-white-dark">
-                  <CardContent className="flex flex-col items-center justify-center py-12">
-                    <FileText className="mb-4 h-12 w-12 text-muted-foreground/50" />
-                    <h3 className="mb-2 text-lg font-medium">No stories yet</h3>
-                    <p className="mb-4 text-sm text-muted-foreground">
+                <Card className="border-dashed border-bone">
+                  <CardContent className="flex flex-col items-center justify-center py-16">
+                    <FileText className="mb-4 h-12 w-12 text-stone/50" />
+                    <h3 className="mb-2 font-serif text-lg font-bold text-granite">No stories yet</h3>
+                    <p className="mb-4 text-sm text-stone">
                       {activeTab === "all"
                         ? "Start sharing your memories of Cornwall."
                         : `You don't have any ${activeTab} stories.`}
                     </p>
                     <Link href="/write">
-                      <Button className="gap-2 bg-atlantic-blue text-chalk-white hover:bg-atlantic-blue-light">
+                      <Button className="gap-2 bg-granite text-parchment hover:bg-slate">
                         <PenLine className="h-4 w-4" />
                         Share your first story
                       </Button>
@@ -210,10 +210,10 @@ function MyStoriesContent() {
 export default function MyStoriesPage() {
   return (
     <Suspense fallback={
-      <div className="flex min-h-screen flex-col">
+      <div className="flex min-h-screen flex-col bg-parchment">
         <Header />
         <main className="flex flex-1 items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-atlantic-blue border-t-transparent" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-granite border-t-transparent" />
         </main>
       </div>
     }>
@@ -292,7 +292,7 @@ function StoryCard({ story, onRefresh }: StoryCardProps) {
   return (
     <>
       <CardWrapper>
-        <Card className={`border-chalk-white-dark transition-colors hover:border-atlantic-blue/20 hover:shadow-md cursor-pointer ${story.deletion_requested ? "border-red-200 bg-red-50/30" : ""}`}>
+        <Card className={`border-bone bg-cream transition-all hover:border-granite/20 hover:shadow-md cursor-pointer ${story.deletion_requested ? "border-red-200 bg-red-50/50" : ""}`}>
           <CardContent className="p-6">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1">
@@ -302,7 +302,7 @@ function StoryCard({ story, onRefresh }: StoryCardProps) {
                     {statusConfig.label}
                   </Badge>
                   {story.anonymous && (
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="outline" className="text-xs border-stone text-stone">
                       Anonymous
                     </Badge>
                   )}
@@ -314,11 +314,11 @@ function StoryCard({ story, onRefresh }: StoryCardProps) {
                   )}
                 </div>
 
-                <h3 className="mb-2 font-serif text-xl font-semibold">
+                <h3 className="mb-2 font-serif text-xl font-bold text-granite">
                   {story.title || "Untitled Story"}
                 </h3>
 
-                <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+                <div className="flex flex-wrap gap-3 text-sm text-stone">
                   <span className="flex items-center gap-1">
                     <Calendar className="h-4 w-4" />
                     Updated {formattedDate}
@@ -338,14 +338,14 @@ function StoryCard({ story, onRefresh }: StoryCardProps) {
                 </div>
 
                 {story.status === "rejected" && story.rejection_reason && (
-                  <div className="mt-3 rounded-md bg-copper-clay/10 p-3">
-                    <p className="text-sm font-medium text-copper-clay">Feedback:</p>
-                    <p className="text-sm text-copper-clay-dark">{story.rejection_reason}</p>
+                  <div className="mt-3 rounded-md bg-copper/10 p-3 border border-copper/20">
+                    <p className="text-sm font-medium text-copper">Feedback:</p>
+                    <p className="text-sm text-copper-dark">{story.rejection_reason}</p>
                   </div>
                 )}
 
                 {story.deletion_requested && story.deletion_reason && (
-                  <div className="mt-3 rounded-md bg-red-100 p-3">
+                  <div className="mt-3 rounded-md bg-red-100 p-3 border border-red-200">
                     <p className="text-sm font-medium text-red-700">Your deletion reason:</p>
                     <p className="text-sm text-red-600">{story.deletion_reason}</p>
                   </div>
@@ -355,7 +355,7 @@ function StoryCard({ story, onRefresh }: StoryCardProps) {
               <div className="flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
                 {(story.status === "draft" || story.status === "rejected") && (
                   <Link href={`/write?id=${story.id}`}>
-                    <Button variant="outline" size="sm" className="w-full gap-1">
+                    <Button variant="outline" size="sm" className="w-full gap-1 border-granite text-granite hover:bg-granite hover:text-parchment">
                       <Edit className="h-4 w-4" />
                       Edit
                     </Button>
@@ -363,7 +363,7 @@ function StoryCard({ story, onRefresh }: StoryCardProps) {
                 )}
                 {story.status === "published" && (
                   <Link href={`/stories/${story.id}`}>
-                    <Button variant="outline" size="sm" className="w-full gap-1">
+                    <Button variant="outline" size="sm" className="w-full gap-1 border-granite text-granite hover:bg-granite hover:text-parchment">
                       <Eye className="h-4 w-4" />
                       View
                     </Button>
@@ -377,7 +377,7 @@ function StoryCard({ story, onRefresh }: StoryCardProps) {
                     size="sm"
                     onClick={handleCancelDeletion}
                     disabled={isPending}
-                    className="gap-1 border-moss-green text-moss-green hover:bg-moss-green/10"
+                    className="gap-1 border-green-600 text-green-600 hover:bg-green-50"
                   >
                     <Undo2 className="h-4 w-4" />
                     Cancel
@@ -388,7 +388,7 @@ function StoryCard({ story, onRefresh }: StoryCardProps) {
                     size="sm"
                     onClick={handleDelete}
                     disabled={isPending}
-                    className="gap-1 text-red-600 hover:bg-red-50 hover:text-red-700"
+                    className="gap-1 border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700"
                   >
                     <Trash2 className="h-4 w-4" />
                     Delete

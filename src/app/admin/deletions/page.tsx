@@ -79,25 +79,25 @@ export default function AdminDeletionsPage() {
 
   if (isLoading || !profileChecked || !user || !isAdmin) {
     return (
-      <div className="flex min-h-screen flex-col">
+      <div className="flex min-h-screen flex-col bg-parchment">
         <Header />
         <main className="flex flex-1 items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-atlantic-blue border-t-transparent" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-granite border-t-transparent" />
         </main>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-chalk-white">
+    <div className="flex min-h-screen flex-col bg-parchment">
       <Header />
 
-      <main className="flex-1 py-8">
-        <div className="mx-auto max-w-4xl px-4">
+      <main className="flex-1 py-10">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6">
           {/* Back link */}
           <Link
             href="/admin"
-            className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+            className="mb-6 inline-flex items-center gap-1 text-sm text-stone hover:text-granite transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to dashboard
@@ -106,9 +106,9 @@ export default function AdminDeletionsPage() {
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-2">
               <AlertTriangle className="h-6 w-6 text-red-500" />
-              <h1 className="font-serif text-3xl font-semibold">Deletion Requests</h1>
+              <h1 className="font-serif text-3xl font-bold tracking-tight text-granite">Deletion Requests</h1>
             </div>
-            <p className="text-muted-foreground">
+            <p className="text-stone">
               Review and approve story deletion requests from authors.
             </p>
           </div>
@@ -116,12 +116,12 @@ export default function AdminDeletionsPage() {
           {/* Requests List */}
           {loadingRequests ? (
             <div className="flex items-center justify-center py-12">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-atlantic-blue border-t-transparent" />
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-granite border-t-transparent" />
             </div>
           ) : requests.length > 0 ? (
             <div className="space-y-4">
               {requests.map((request) => (
-                <Card key={request.id} className="border-red-200 bg-red-50/30">
+                <Card key={request.id} className="border-red-200 bg-red-50/50">
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
@@ -129,21 +129,21 @@ export default function AdminDeletionsPage() {
                           <Badge className="bg-red-100 text-red-700">
                             Deletion Requested
                           </Badge>
-                          <Badge variant="outline">
+                          <Badge variant="outline" className="border-stone text-stone">
                             {request.status}
                           </Badge>
                         </div>
 
-                        <h3 className="mb-2 font-serif text-xl font-semibold">
+                        <h3 className="mb-2 font-serif text-xl font-bold text-granite">
                           {request.title || "Untitled"}
                         </h3>
 
-                        <p className="mb-2 text-sm text-muted-foreground">
+                        <p className="mb-2 text-sm text-stone">
                           by {request.author_display_name || request.author?.display_name || "Anonymous"} 
                           {request.author?.email && ` (${request.author.email})`}
                         </p>
 
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-silver">
                           Requested {new Date(request.deletion_requested_at).toLocaleDateString("en-GB", {
                             day: "numeric",
                             month: "long",
@@ -154,16 +154,16 @@ export default function AdminDeletionsPage() {
                         </p>
 
                         {request.deletion_reason && (
-                          <div className="mt-3 rounded-md bg-white/50 p-3 border border-red-100">
-                            <p className="text-sm font-medium text-slate-grey">Author's reason:</p>
-                            <p className="text-sm text-muted-foreground">{request.deletion_reason}</p>
+                          <div className="mt-3 rounded-md bg-white/70 p-3 border border-red-100">
+                            <p className="text-sm font-medium text-granite">Author's reason:</p>
+                            <p className="text-sm text-stone">{request.deletion_reason}</p>
                           </div>
                         )}
                       </div>
 
                       <div className="flex flex-col gap-2">
                         <Link href={`/stories/${request.id}`}>
-                          <Button variant="outline" size="sm" className="w-full gap-1">
+                          <Button variant="outline" size="sm" className="w-full gap-1 border-granite text-granite hover:bg-granite hover:text-parchment">
                             <Eye className="h-4 w-4" />
                             View
                           </Button>
@@ -175,14 +175,14 @@ export default function AdminDeletionsPage() {
                           className="gap-1 bg-red-600 text-white hover:bg-red-700"
                         >
                           <Trash2 className="h-4 w-4" />
-                          Approve
+                          Delete
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleReject(request.id)}
                           disabled={isPending}
-                          className="gap-1"
+                          className="gap-1 border-stone text-stone hover:bg-cream"
                         >
                           <XCircle className="h-4 w-4" />
                           Reject
@@ -194,10 +194,10 @@ export default function AdminDeletionsPage() {
               ))}
             </div>
           ) : (
-            <Card className="border-dashed border-chalk-white-dark">
-              <CardContent className="py-12 text-center">
-                <AlertTriangle className="mx-auto mb-4 h-12 w-12 text-muted-foreground/50" />
-                <p className="text-muted-foreground">No deletion requests pending.</p>
+            <Card className="border-dashed border-bone">
+              <CardContent className="py-16 text-center">
+                <AlertTriangle className="mx-auto mb-4 h-12 w-12 text-stone/50" />
+                <p className="text-stone">No deletion requests pending.</p>
               </CardContent>
             </Card>
           )}
