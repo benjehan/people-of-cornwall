@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -17,9 +18,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import { ArrowLeft, Plus, Pencil, Trash2, Folder } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Folder, Eye, BookOpen } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
 import { createClient } from "@/lib/supabase/client";
 
@@ -39,7 +39,7 @@ export default function AdminCollectionsPage() {
   const [loadingCollections, setLoadingCollections] = useState(true);
   const [isPending, startTransition] = useTransition();
 
-  // New collection form state
+  // New/Edit collection form state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
@@ -141,120 +141,107 @@ export default function AdminCollectionsPage() {
 
   if (isLoading || !profileChecked || !user || !isAdmin) {
     return (
-      <div className="flex min-h-screen flex-col">
+      <div className="flex min-h-screen flex-col bg-parchment">
         <Header />
         <main className="flex flex-1 items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-atlantic-blue border-t-transparent" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-granite border-t-transparent" />
         </main>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-chalk-white">
+    <div className="flex min-h-screen flex-col bg-parchment">
       <Header />
 
-      <main className="flex-1 py-8">
-        <div className="mx-auto max-w-4xl px-4">
+      <main className="flex-1 py-10">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6">
           {/* Back link */}
           <Link
             href="/admin"
-            className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+            className="mb-6 inline-flex items-center gap-1 text-sm text-stone hover:text-granite transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to dashboard
           </Link>
 
-          <div className="mb-8 flex items-center justify-between">
-            <div>
-              <h1 className="mb-2 font-serif text-3xl font-semibold">Collections</h1>
-              <p className="text-muted-foreground">
-                Manage themed collections of stories.
-              </p>
+          <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Folder className="h-6 w-6 text-granite" />
+              <div>
+                <h1 className="font-serif text-3xl font-bold tracking-tight text-granite">Collections</h1>
+                <p className="text-stone">
+                  Organize stories into themed collections for your digital museum.
+                </p>
+              </div>
             </div>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button
-                  onClick={openNewDialog}
-                  className="gap-2 bg-atlantic-blue text-chalk-white hover:bg-atlantic-blue-light"
-                >
-                  <Plus className="h-4 w-4" />
-                  New Collection
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>
-                    {editingId ? "Edit Collection" : "New Collection"}
-                  </DialogTitle>
-                  <DialogDescription>
-                    Collections help organize stories by theme.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="title">Title</Label>
-                    <Input
-                      id="title"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="e.g., Fishing Stories"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      placeholder="What stories belong in this collection?"
-                      rows={3}
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleSave}
-                    disabled={isPending || !title.trim()}
-                    className="bg-atlantic-blue text-chalk-white hover:bg-atlantic-blue-light"
-                  >
-                    {isPending ? "Saving..." : "Save"}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <Button
+              onClick={openNewDialog}
+              className="gap-2 bg-granite text-parchment hover:bg-slate"
+            >
+              <Plus className="h-4 w-4" />
+              New Collection
+            </Button>
           </div>
+
+          {/* Info box */}
+          <Card className="mb-8 border-granite/20 bg-granite/5">
+            <CardContent className="py-4">
+              <p className="text-sm text-granite">
+                <strong>How collections work:</strong> Create collections here, then go to{" "}
+                <Link href="/admin/stories" className="underline hover:text-slate">
+                  All Stories
+                </Link>{" "}
+                to add stories to your collections using the folder icon on each story.
+              </p>
+            </CardContent>
+          </Card>
 
           {/* Collections List */}
           {loadingCollections ? (
             <div className="flex items-center justify-center py-12">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-atlantic-blue border-t-transparent" />
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-granite border-t-transparent" />
             </div>
           ) : collections.length > 0 ? (
             <div className="space-y-4">
               {collections.map((collection) => (
-                <Card key={collection.id} className="border-chalk-white-dark">
-                  <CardContent className="flex items-center justify-between py-4">
-                    <div className="flex items-center gap-4">
-                      <div className="rounded-full bg-atlantic-blue/10 p-2">
-                        <Folder className="h-5 w-5 text-atlantic-blue" />
+                <Card key={collection.id} className="border-bone bg-cream">
+                  <CardContent className="flex items-center justify-between py-5">
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                      <div className="rounded-full bg-granite/10 p-3">
+                        <BookOpen className="h-5 w-5 text-granite" />
                       </div>
-                      <div>
-                        <h3 className="font-medium">{collection.title}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {collection.story_count || 0} stories • /{collection.slug}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-serif font-bold text-lg text-granite truncate">
+                            {collection.title}
+                          </h3>
+                          <Badge variant="outline" className="border-bone text-stone text-xs">
+                            {collection.story_count || 0} stories
+                          </Badge>
+                        </div>
+                        {collection.description && (
+                          <p className="text-sm text-stone line-clamp-1">
+                            {collection.description}
+                          </p>
+                        )}
+                        <p className="text-xs text-silver mt-1">
+                          /collections/{collection.slug}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 ml-4">
+                      <Link href={`/collections/${collection.slug}`}>
+                        <Button variant="ghost" size="sm" className="gap-1 text-stone hover:text-granite">
+                          <Eye className="h-4 w-4" />
+                          View
+                        </Button>
+                      </Link>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleEdit(collection)}
-                        className="gap-1"
+                        className="gap-1 text-granite"
                       >
                         <Pencil className="h-4 w-4" />
                         Edit
@@ -273,11 +260,14 @@ export default function AdminCollectionsPage() {
               ))}
             </div>
           ) : (
-            <Card className="border-dashed border-chalk-white-dark">
-              <CardContent className="py-12 text-center">
-                <Folder className="mx-auto mb-4 h-12 w-12 text-muted-foreground/50" />
-                <p className="mb-4 text-muted-foreground">No collections yet</p>
-                <Button onClick={openNewDialog} variant="outline">
+            <Card className="border-dashed border-bone">
+              <CardContent className="py-16 text-center">
+                <Folder className="mx-auto mb-4 h-12 w-12 text-stone/30" />
+                <h3 className="mb-2 font-serif text-xl font-bold text-granite">No collections yet</h3>
+                <p className="mb-6 text-stone">
+                  Collections are the treasure chests of your digital museum.
+                </p>
+                <Button onClick={openNewDialog} className="bg-granite text-parchment hover:bg-slate">
                   Create your first collection
                 </Button>
               </CardContent>
@@ -285,6 +275,55 @@ export default function AdminCollectionsPage() {
           )}
         </div>
       </main>
+
+      {/* Create/Edit Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-serif">
+              {editingId ? "Edit Collection" : "New Collection"}
+            </DialogTitle>
+            <DialogDescription>
+              Collections help organize stories by theme, place, or time period.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Title</Label>
+              <Input
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g., Fishing Stories, Mining Memories, 1950s Cornwall"
+                className="border-bone"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="What stories belong in this collection? What's the theme?"
+                rows={3}
+                className="border-bone"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="border-granite text-granite">
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={isPending || !title.trim()}
+              className="bg-granite text-parchment hover:bg-slate"
+            >
+              {isPending ? "Saving..." : editingId ? "Save Changes" : "Create Collection"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Footer />
     </div>

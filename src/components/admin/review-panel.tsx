@@ -159,7 +159,7 @@ export function AdminReviewPanel({
               disabled={isGenerating}
               variant="outline"
               size="sm"
-              className="gap-1.5 border-copper text-copper hover:bg-copper hover:text-parchment"
+              className="gap-1.5 border-granite text-granite hover:bg-granite hover:text-parchment"
             >
               {isGenerating ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -209,7 +209,7 @@ export function AdminReviewPanel({
               onClick={() => setShowRejectForm(true)}
               disabled={isPending}
               variant="outline"
-              className="flex-1 gap-2 border-copper text-copper hover:bg-copper/10"
+              className="flex-1 gap-2 border-stone text-stone hover:bg-stone/10"
             >
               <XCircle className="h-4 w-4" />
               Request Changes
@@ -228,7 +228,7 @@ export function AdminReviewPanel({
               <Button
                 onClick={handleReject}
                 disabled={isPending || !rejectionReason.trim()}
-                className="gap-2 bg-copper text-parchment hover:bg-copper-dark"
+                className="gap-2 bg-slate text-parchment hover:bg-granite"
               >
                 {isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

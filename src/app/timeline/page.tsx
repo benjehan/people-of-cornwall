@@ -3,7 +3,8 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { StoryCard } from "@/components/story/story-card";
 import { Button } from "@/components/ui/button";
-import { MapPin, X, ChevronRight } from "lucide-react";
+import { LocationFilter } from "@/components/timeline/location-filter";
+import { ChevronRight } from "lucide-react";
 import { getPublishedStories, getStoryDecades, getStoryLocations, StoryWithCounts } from "@/lib/supabase/queries";
 import { cn } from "@/lib/utils";
 import type { StoryWithDetails } from "@/types";
@@ -108,40 +109,12 @@ export default async function TimelinePage({ searchParams }: PageProps) {
                 ))}
               </div>
 
-              {/* Location filter */}
-              <div className="flex items-center gap-2 border-l border-bone pl-4">
-                <MapPin className="h-4 w-4 text-stone" />
-                <select
-                  defaultValue={selectedLocation || ""}
-                  onChange={(e) => {
-                    const loc = e.target.value;
-                    const url = new URL(window.location.href);
-                    if (loc) {
-                      url.searchParams.set("location", loc);
-                    } else {
-                      url.searchParams.delete("location");
-                    }
-                    window.location.href = url.toString();
-                  }}
-                  className="h-8 rounded-md border border-bone bg-parchment px-2 text-sm text-granite focus:border-granite focus:outline-none"
-                >
-                  <option value="">All locations</option>
-                  {locations.map((loc) => (
-                    <option key={loc} value={loc}>
-                      {loc}
-                    </option>
-                  ))}
-                </select>
-                {selectedLocation && (
-                  <Link 
-                    href={selectedDecade ? `/timeline?decade=${selectedDecade}` : "/timeline"}
-                    className="text-stone hover:text-granite"
-                    title="Clear location"
-                  >
-                    <X className="h-4 w-4" />
-                  </Link>
-                )}
-              </div>
+              {/* Location filter - Client Component */}
+              <LocationFilter 
+                locations={locations}
+                selectedLocation={selectedLocation}
+                selectedDecade={selectedDecade}
+              />
             </div>
 
             {/* Active filters */}
@@ -154,7 +127,7 @@ export default async function TimelinePage({ searchParams }: PageProps) {
                   </span>
                 )}
                 {selectedLocation && (
-                  <span className="rounded-full bg-copper/10 px-2.5 py-0.5 text-copper">
+                  <span className="rounded-full bg-granite/10 px-2.5 py-0.5 text-granite">
                     {selectedLocation}
                   </span>
                 )}
@@ -223,7 +196,7 @@ export default async function TimelinePage({ searchParams }: PageProps) {
                             </h2>
                             <Link
                               href={`/timeline?decade=${decade}`}
-                              className="flex items-center gap-1 text-sm font-medium text-granite hover:text-copper transition-colors"
+                              className="flex items-center gap-1 text-sm font-medium text-granite hover:text-slate transition-colors"
                             >
                               View all
                               <ChevronRight className="h-4 w-4" />
