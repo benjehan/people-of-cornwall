@@ -1,0 +1,382 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ==========================================================================
+   PEOPLE OF CORNWALL — Design System
+   A living archive of Cornish voices.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Brand Colour Palette — Cornwall-inspired
+   -------------------------------------------------------------------------- */
+:root {
+  /* Primary Cornwall Colours */
+  --chalk-white: #F7F6F2;
+  --slate-grey: #2F2F2F;
+  --atlantic-blue: #1F4E5F;
+  --copper-clay: #B45A3C;
+  --sea-foam: #A7C7C5;
+  --moss-green: #5F6F52;
+
+  /* Extended Palette */
+  --chalk-white-dark: #EDECEA;
+  --slate-grey-light: #5A5A5A;
+  --slate-grey-lighter: #8A8A8A;
+  --atlantic-blue-light: #2A6A7F;
+  --atlantic-blue-dark: #163A47;
+  --copper-clay-light: #C97A5E;
+  --copper-clay-dark: #8F4830;
+  --sea-foam-light: #C5DBDA;
+  --sea-foam-dark: #7FA5A3;
+  --moss-green-light: #7A8A6B;
+  --moss-green-dark: #4A5940;
+
+  /* Shadcn semantic variables — mapped to Cornwall palette */
+  --radius: 0.5rem;
+  --background: var(--chalk-white);
+  --foreground: var(--slate-grey);
+  --card: var(--chalk-white);
+  --card-foreground: var(--slate-grey);
+  --popover: var(--chalk-white);
+  --popover-foreground: var(--slate-grey);
+  --primary: var(--atlantic-blue);
+  --primary-foreground: var(--chalk-white);
+  --secondary: var(--chalk-white-dark);
+  --secondary-foreground: var(--slate-grey);
+  --muted: var(--chalk-white-dark);
+  --muted-foreground: var(--slate-grey-lighter);
+  --accent: var(--sea-foam-light);
+  --accent-foreground: var(--slate-grey);
+  --destructive: #DC2626;
+  --destructive-foreground: var(--chalk-white);
+  --border: var(--chalk-white-dark);
+  --input: var(--chalk-white-dark);
+  --ring: var(--atlantic-blue);
+
+  /* Chart colours using Cornwall palette */
+  --chart-1: var(--atlantic-blue);
+  --chart-2: var(--copper-clay);
+  --chart-3: var(--moss-green);
+  --chart-4: var(--sea-foam-dark);
+  --chart-5: var(--slate-grey-light);
+
+  /* Sidebar */
+  --sidebar: var(--chalk-white);
+  --sidebar-foreground: var(--slate-grey);
+  --sidebar-primary: var(--atlantic-blue);
+  --sidebar-primary-foreground: var(--chalk-white);
+  --sidebar-accent: var(--sea-foam-light);
+  --sidebar-accent-foreground: var(--slate-grey);
+  --sidebar-border: var(--chalk-white-dark);
+  --sidebar-ring: var(--atlantic-blue);
+
+  /* Type Scale (fluid) */
+  --text-xs: clamp(0.7rem, 0.65rem + 0.25vw, 0.75rem);
+  --text-sm: clamp(0.8rem, 0.75rem + 0.25vw, 0.875rem);
+  --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --text-lg: clamp(1.125rem, 1rem + 0.5vw, 1.25rem);
+  --text-xl: clamp(1.25rem, 1.1rem + 0.75vw, 1.5rem);
+  --text-2xl: clamp(1.5rem, 1.25rem + 1vw, 2rem);
+  --text-3xl: clamp(1.875rem, 1.5rem + 1.5vw, 2.5rem);
+  --text-4xl: clamp(2.25rem, 1.75rem + 2vw, 3rem);
+  --text-5xl: clamp(3rem, 2.25rem + 3vw, 4rem);
+
+  /* Line Heights */
+  --leading-tight: 1.2;
+  --leading-snug: 1.375;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+  --leading-loose: 2;
+
+  /* Shadows — subtle, editorial */
+  --shadow-sm: 0 1px 2px 0 rgb(47 47 47 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(47 47 47 / 0.07), 0 2px 4px -2px rgb(47 47 47 / 0.07);
+  --shadow-lg: 0 10px 15px -3px rgb(47 47 47 / 0.08), 0 4px 6px -4px rgb(47 47 47 / 0.08);
+  --shadow-xl: 0 20px 25px -5px rgb(47 47 47 / 0.08), 0 8px 10px -6px rgb(47 47 47 / 0.08);
+
+  /* Transitions — calm, not snappy */
+  --transition-fast: 150ms ease;
+  --transition-base: 250ms ease;
+  --transition-slow: 400ms ease;
+  --transition-slower: 600ms ease;
+
+  /* Max Content Width */
+  --max-width-prose: 65ch;
+  --max-width-content: 1200px;
+  --max-width-wide: 1400px;
+}
+
+/* --------------------------------------------------------------------------
+   Tailwind Theme Integration (v4)
+   -------------------------------------------------------------------------- */
+@theme inline {
+  /* Cornwall Colours */
+  --color-chalk-white: var(--chalk-white);
+  --color-chalk-white-dark: var(--chalk-white-dark);
+  --color-slate-grey: var(--slate-grey);
+  --color-slate-grey-light: var(--slate-grey-light);
+  --color-slate-grey-lighter: var(--slate-grey-lighter);
+  --color-atlantic-blue: var(--atlantic-blue);
+  --color-atlantic-blue-light: var(--atlantic-blue-light);
+  --color-atlantic-blue-dark: var(--atlantic-blue-dark);
+  --color-copper-clay: var(--copper-clay);
+  --color-copper-clay-light: var(--copper-clay-light);
+  --color-copper-clay-dark: var(--copper-clay-dark);
+  --color-sea-foam: var(--sea-foam);
+  --color-sea-foam-light: var(--sea-foam-light);
+  --color-sea-foam-dark: var(--sea-foam-dark);
+  --color-moss-green: var(--moss-green);
+  --color-moss-green-light: var(--moss-green-light);
+  --color-moss-green-dark: var(--moss-green-dark);
+
+  /* Semantic (Shadcn compatible) */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Charts */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* Sidebar */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Radius */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+
+  /* Font families (using CSS variables from Next.js fonts) */
+  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-serif: var(--font-source-serif), Georgia, serif;
+}
+
+/* --------------------------------------------------------------------------
+   Base Styles
+   -------------------------------------------------------------------------- */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* --------------------------------------------------------------------------
+   Typography — Editorial Style
+   -------------------------------------------------------------------------- */
+
+/* Headings use serif font */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  line-height: var(--leading-tight);
+  color: var(--foreground);
+}
+
+h1 { font-size: var(--text-4xl); letter-spacing: -0.02em; }
+h2 { font-size: var(--text-3xl); letter-spacing: -0.01em; }
+h3 { font-size: var(--text-2xl); }
+h4 { font-size: var(--text-xl); }
+h5 { font-size: var(--text-lg); }
+h6 { font-size: var(--text-base); font-weight: 700; }
+
+/* Story content uses serif */
+.prose,
+.story-content {
+  font-family: var(--font-serif);
+  font-size: var(--text-lg);
+  line-height: var(--leading-relaxed);
+  max-width: var(--max-width-prose);
+}
+
+.prose p,
+.story-content p {
+  margin-bottom: 1.5em;
+}
+
+/* Selection */
+::selection {
+  background-color: var(--sea-foam);
+  color: var(--slate-grey);
+}
+
+/* --------------------------------------------------------------------------
+   Museum-Inspired Patterns
+   -------------------------------------------------------------------------- */
+
+/* Artefact Card — Story preview with plaque-like typography */
+.artefact-card {
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  transition: box-shadow var(--transition-base), transform var(--transition-base);
+}
+
+.artefact-card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+/* Plaque — Title styling for artefacts */
+.plaque {
+  font-family: var(--font-serif);
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  color: var(--foreground);
+  line-height: var(--leading-snug);
+}
+
+/* Signature — Author attribution */
+.signature {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--muted-foreground);
+  font-style: italic;
+}
+
+/* Historical Marker — Date styling */
+.historical-marker {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Provenance — Location styling */
+.provenance {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--atlantic-blue);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Archive Labels — Tags */
+.archive-label {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  color: var(--moss-green-dark);
+  background-color: var(--sea-foam-light);
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  display: inline-block;
+}
+
+/* Curator's Note — AI Summary styling */
+.curator-note {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: var(--text-base);
+  color: var(--muted-foreground);
+  border-left: 3px solid var(--sea-foam);
+  padding-left: 1rem;
+  margin: 1.5rem 0;
+}
+
+.curator-note::before {
+  content: "Curator's Note — ";
+  font-weight: 600;
+  font-style: normal;
+  color: var(--slate-grey-lighter);
+}
+
+/* --------------------------------------------------------------------------
+   Editorial Loading States — Not spinners
+   -------------------------------------------------------------------------- */
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--chalk-white-dark) 0%,
+    var(--chalk-white) 50%,
+    var(--chalk-white-dark) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  border-radius: var(--radius-md);
+}
+
+@keyframes skeleton-pulse {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* --------------------------------------------------------------------------
+   Focus Visible — Accessibility
+   -------------------------------------------------------------------------- */
+
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   Print Styles
+   -------------------------------------------------------------------------- */
+
+@media print {
+  body {
+    background: white;
+    color: black;
+    font-size: 12pt;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .story-content {
+    max-width: 100%;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Shadcn Base Layer
+   -------------------------------------------------------------------------- */
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
