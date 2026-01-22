@@ -50,10 +50,15 @@ function WritePageContent() {
   const [promptId, setPromptId] = useState<string | null>(null);
   const [promptTitle, setPromptTitle] = useState<string | null>(null);
 
-  // Redirect if not logged in
+  // Redirect if not logged in (only after auth is fully checked)
   useEffect(() => {
+    // Wait for auth to be fully checked before redirecting
+    // Give a small delay to allow auth state to stabilize
     if (!authLoading && !user) {
-      router.push("/login?redirect=/write");
+      const redirectTimer = setTimeout(() => {
+        router.push("/login?redirect=/write");
+      }, 500);
+      return () => clearTimeout(redirectTimer);
     }
   }, [authLoading, user, router]);
 

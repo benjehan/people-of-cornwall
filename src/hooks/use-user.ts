@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import type { Tables } from "@/types/supabase";
@@ -15,13 +15,13 @@ interface UserState {
   isAdmin: boolean;
 }
 
+// Get the singleton client
+const supabase = typeof window !== "undefined" ? createClient() : null;
+
 /**
  * Hook to get the current authenticated user and their profile
  */
 export function useUser() {
-  // Create client instance inside the hook (memoized)
-  const supabase = useMemo(() => createClient(), []);
-  
   const [state, setState] = useState<UserState>({
     user: null,
     profile: null,
@@ -31,6 +31,8 @@ export function useUser() {
   });
 
   const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
+    if (!supabase) return null;
+    
     try {
       const { data: profile } = await (supabase
         .from("users") as any)
@@ -41,12 +43,23 @@ export function useUser() {
     } catch {
       return null;
     }
-  }, [supabase]);
+  }, []);
 
   useEffect(() => {
+    if (!supabase) {
+      setState({
+        user: null,
+        profile: null,
+        isLoading: false,
+        profileChecked: true,
+        isAdmin: false,
+      });
+      return;
+    }
+
     let mounted = true;
 
-    // Safety timeout to prevent infinite loading (5 seconds max)
+    // Safety timeout to prevent infinite loading (8 seconds max)
     const timeout = setTimeout(() => {
       if (mounted) {
         setState(prev => {
@@ -63,7 +76,7 @@ export function useUser() {
           return prev;
         });
       }
-    }, 5000);
+    }, 8000);
 
     const getInitialSession = async () => {
       try {
@@ -169,9 +182,11 @@ export function useUser() {
       clearTimeout(timeout);
       subscription.unsubscribe();
     };
-  }, [supabase, fetchProfile]);
+  }, [fetchProfile]);
 
   const signOut = useCallback(async () => {
+    if (!supabase) return;
+    
     await supabase.auth.signOut();
     setState({
       user: null,
@@ -180,7 +195,7 @@ export function useUser() {
       profileChecked: true,
       isAdmin: false,
     });
-  }, [supabase]);
+  }, []);
 
   return {
     ...state,

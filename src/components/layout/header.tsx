@@ -12,13 +12,19 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MapPin, Clock, Menu, X, User, LogOut, FileText, Settings, PenLine } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useUser, getDisplayName, getAvatarUrl } from "@/hooks/use-user";
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { user, profile, isLoading, isAdmin, signOut } = useUser();
   const router = useRouter();
+
+  // Prevent hydration mismatch by only rendering user-specific content after mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleSignOut = async () => {
     await signOut();
@@ -69,8 +75,8 @@ export function Header() {
 
         {/* Actions */}
         <div className="flex items-center gap-3">
-          {isLoading ? (
-            // Loading skeleton
+          {!mounted || isLoading ? (
+            // Loading skeleton - show during SSR and initial load
             <div className="flex items-center gap-3">
               <div className="hidden h-9 w-24 animate-pulse rounded bg-bone sm:block" />
               <div className="h-9 w-9 animate-pulse rounded-full bg-bone" />
