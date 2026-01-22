@@ -3,8 +3,7 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { StoryCard } from "@/components/story/story-card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin, Clock, Folder, Sparkles, ArrowRight } from "lucide-react";
+import { MapPin, Clock, Folder, ArrowRight } from "lucide-react";
 import { getFeaturedStory, getPublishedStories, getStoryDecades, getCollections } from "@/lib/supabase/queries";
 import type { StoryWithDetails } from "@/types";
 
@@ -12,7 +11,7 @@ export default async function HomePage() {
   // Fetch real data from Supabase
   const [featuredStory, { stories: recentStories }, decades, collections] = await Promise.all([
     getFeaturedStory(),
-    getPublishedStories({ perPage: 4 }),
+    getPublishedStories({ perPage: 6 }),
     getStoryDecades(),
     getCollections(),
   ]);
@@ -35,218 +34,244 @@ export default async function HomePage() {
   }));
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col bg-parchment">
       <Header />
 
       <main className="flex-1">
-        {/* Hero Section — Featured Exhibition */}
-        <section className="py-8 md:py-12">
-          <div className="mx-auto max-w-[1400px] px-4">
+        {/* Hero Section — Bold Editorial */}
+        <section className="border-b border-bone py-16 md:py-24">
+          <div className="mx-auto max-w-[1320px] px-4 sm:px-6">
             {featured ? (
-              <StoryCard story={featured} featured />
-            ) : (
-              <Card className="overflow-hidden border-0 bg-gradient-to-br from-atlantic-blue to-atlantic-blue-dark text-chalk-white shadow-xl">
-                <CardContent className="p-8 md:p-12 text-center">
-                  <h2 className="mb-4 font-serif text-3xl font-semibold">
-                    Welcome to People of Cornwall
-                  </h2>
-                  <p className="mb-6 text-lg text-chalk-white/90">
-                    A living archive of Cornish voices. Share your stories,
-                    memories, and experiences from Cornwall.
-                  </p>
-                  <Link href="/write">
-                    <Button className="bg-copper-clay text-chalk-white hover:bg-copper-clay-light">
-                      Share the first story
+              <article className="grid gap-8 lg:grid-cols-2 lg:gap-12">
+                {/* Featured Image */}
+                <div className="aspect-[4/3] overflow-hidden rounded-lg bg-cream">
+                  {/* Placeholder for featured image - could be story media */}
+                  <div className="flex h-full items-center justify-center bg-gradient-to-br from-granite/5 to-granite/10">
+                    <span className="text-4xl">📖</span>
+                  </div>
+                </div>
+                
+                {/* Featured Content */}
+                <div className="flex flex-col justify-center">
+                  <div className="mb-4">
+                    <span className="text-xs font-medium uppercase tracking-widest text-copper">
+                      Featured Story
+                    </span>
+                  </div>
+                  <h1 className="mb-4 font-serif text-4xl font-bold leading-tight tracking-tight text-granite md:text-5xl">
+                    {featured.title}
+                  </h1>
+                  {featured.ai_summary && (
+                    <p className="mb-6 text-lg text-stone leading-relaxed">
+                      {featured.ai_summary}
+                    </p>
+                  )}
+                  <div className="mb-6 flex flex-wrap items-center gap-4 text-sm text-stone">
+                    {!featured.anonymous && featured.author_display_name && (
+                      <span>By {featured.author_display_name}</span>
+                    )}
+                    {featured.location_name && (
+                      <span className="flex items-center gap-1">
+                        <MapPin className="h-3.5 w-3.5" />
+                        {featured.location_name}
+                      </span>
+                    )}
+                    {featured.timeline_decade && (
+                      <span>{featured.timeline_decade}s</span>
+                    )}
+                  </div>
+                  <Link href={`/stories/${featured.id}`}>
+                    <Button className="w-fit gap-2 bg-granite text-parchment hover:bg-slate">
+                      Read Story
+                      <ArrowRight className="h-4 w-4" />
                     </Button>
                   </Link>
-                </CardContent>
-              </Card>
+                </div>
+              </article>
+            ) : (
+              <div className="text-center py-12">
+                <h1 className="mb-6 font-serif text-5xl font-bold tracking-tight text-granite md:text-6xl">
+                  A living archive of<br />Cornish voices
+                </h1>
+                <p className="mx-auto mb-8 max-w-xl text-lg text-stone">
+                  Stories, memories, and experiences from the people of Cornwall.
+                  Every voice matters. Every story is preserved.
+                </p>
+                <Link href="/write">
+                  <Button className="gap-2 bg-granite text-parchment hover:bg-slate">
+                    Share the first story
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+              </div>
             )}
           </div>
         </section>
 
-        {/* Museum Rooms Grid */}
-        <section className="py-8 md:py-12">
-          <div className="mx-auto max-w-[1400px] px-4">
-            <div className="grid gap-8 lg:grid-cols-3">
-              {/* Recently Shared — Main Column */}
-              <div className="lg:col-span-2">
-                <div className="mb-6 flex items-center justify-between">
-                  <h2 className="font-serif text-2xl font-semibold">
-                    Recently Shared
-                  </h2>
-                  <Link
-                    href="/stories"
-                    className="flex items-center gap-1 text-sm text-atlantic-blue hover:underline"
-                  >
-                    View all stories
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                </div>
-
-                {recent.length > 0 ? (
-                  <div className="grid gap-6 sm:grid-cols-2">
-                    {recent.map((story) => (
-                      <StoryCard key={story.id} story={story} />
-                    ))}
-                  </div>
-                ) : (
-                  <Card className="border-dashed border-chalk-white-dark">
-                    <CardContent className="py-12 text-center">
-                      <p className="mb-4 text-muted-foreground">
-                        No stories have been shared yet
-                      </p>
-                      <Link href="/write">
-                        <Button className="bg-atlantic-blue text-chalk-white hover:bg-atlantic-blue-light">
-                          Be the first to share
-                        </Button>
-                      </Link>
-                    </CardContent>
-                  </Card>
-                )}
+        {/* Recently Shared */}
+        <section className="py-16 md:py-20">
+          <div className="mx-auto max-w-[1320px] px-4 sm:px-6">
+            <div className="mb-10 flex items-end justify-between">
+              <div>
+                <h2 className="font-serif text-3xl font-bold tracking-tight text-granite">
+                  Recently Shared
+                </h2>
+                <p className="mt-2 text-stone">
+                  The latest stories from our community
+                </p>
               </div>
+              <Link
+                href="/stories"
+                className="hidden items-center gap-1 text-sm font-medium text-granite hover:text-copper sm:flex"
+              >
+                View all stories
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
 
-              {/* Sidebar — Discovery Rooms */}
-              <div className="space-y-6">
-                {/* Stories by Place */}
-                <Card className="border-chalk-white-dark bg-chalk-white">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 font-serif text-lg">
-                      <MapPin className="h-5 w-5 text-atlantic-blue" />
-                      Stories by Place
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="mb-4 text-sm text-muted-foreground">
-                      Explore stories on an interactive map of Cornwall.
-                    </p>
-                    <Link href="/map">
-                      <Button
-                        variant="outline"
-                        className="w-full border-atlantic-blue text-atlantic-blue hover:bg-atlantic-blue hover:text-chalk-white"
-                      >
-                        View Map
-                      </Button>
-                    </Link>
-                  </CardContent>
-                </Card>
-
-                {/* Stories by Time */}
-                <Card className="border-chalk-white-dark bg-chalk-white">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 font-serif text-lg">
-                      <Clock className="h-5 w-5 text-atlantic-blue" />
-                      Stories by Time
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="mb-4 text-sm text-muted-foreground">
-                      Browse stories across the decades.
-                    </p>
-                    {/* Decade quick links */}
-                    {decades.length > 0 && (
-                      <div className="mb-4 flex flex-wrap gap-2">
-                        {decades.slice(0, 6).map((decade) => (
-                          <Link
-                            key={decade}
-                            href={`/stories?decade=${decade}`}
-                            className="rounded-full bg-chalk-white-dark px-3 py-1 text-xs text-slate-grey transition-colors hover:bg-sea-foam-light"
-                          >
-                            {decade}s
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                    <Link href="/timeline">
-                      <Button
-                        variant="outline"
-                        className="w-full border-atlantic-blue text-atlantic-blue hover:bg-atlantic-blue hover:text-chalk-white"
-                      >
-                        Browse Timeline
-                      </Button>
-                    </Link>
-                  </CardContent>
-                </Card>
-
-                {/* Collections */}
-                <Card className="border-chalk-white-dark bg-chalk-white">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 font-serif text-lg">
-                      <Folder className="h-5 w-5 text-atlantic-blue" />
-                      Collections
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {collections.length > 0 ? (
-                      <ul className="space-y-2">
-                        {collections.slice(0, 4).map((collection) => (
-                          <li key={collection.id}>
-                            <Link
-                              href={`/collections/${collection.slug}`}
-                              className="text-sm text-atlantic-blue hover:underline"
-                            >
-                              {collection.title}
-                              <span className="ml-1 text-xs text-muted-foreground">
-                                ({collection.story_count})
-                              </span>
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        Collections coming soon...
-                      </p>
-                    )}
-                    {collections.length > 4 && (
-                      <Link href="/collections" className="mt-4 block">
-                        <Button variant="ghost" className="w-full text-atlantic-blue">
-                          All Collections
-                          <ArrowRight className="ml-1 h-4 w-4" />
-                        </Button>
-                      </Link>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Community Prompt */}
-                <Card className="border-copper-clay/30 bg-gradient-to-br from-copper-clay/5 to-copper-clay/10">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 font-serif text-lg">
-                      <Sparkles className="h-5 w-5 text-copper-clay" />
-                      Community Prompt
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="mb-4 font-serif text-base italic text-slate-grey">
-                      "What was market day like in your town?"
-                    </p>
-                    <Link href="/write?prompt=market-day">
-                      <Button className="w-full bg-copper-clay text-chalk-white hover:bg-copper-clay-light">
-                        Share Your Story
-                      </Button>
-                    </Link>
-                  </CardContent>
-                </Card>
+            {recent.length > 0 ? (
+              <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                {recent.map((story) => (
+                  <StoryCard key={story.id} story={story} />
+                ))}
               </div>
+            ) : (
+              <div className="rounded-lg border border-dashed border-bone bg-cream/50 py-16 text-center">
+                <p className="mb-4 text-stone">
+                  No stories have been shared yet
+                </p>
+                <Link href="/write">
+                  <Button className="bg-granite text-parchment hover:bg-slate">
+                    Be the first to share
+                  </Button>
+                </Link>
+              </div>
+            )}
+
+            <div className="mt-8 text-center sm:hidden">
+              <Link href="/stories">
+                <Button variant="outline" className="border-granite text-granite">
+                  View all stories
+                </Button>
+              </Link>
             </div>
           </div>
         </section>
 
-        {/* Call to Action */}
-        <section className="border-t border-chalk-white-dark bg-chalk-white-dark/30 py-16">
+        {/* Discovery Section — Three Ways to Explore */}
+        <section className="border-t border-bone bg-cream py-16 md:py-20">
+          <div className="mx-auto max-w-[1320px] px-4 sm:px-6">
+            <div className="mb-12 text-center">
+              <h2 className="font-serif text-3xl font-bold tracking-tight text-granite">
+                Explore Stories
+              </h2>
+              <p className="mt-2 text-stone">
+                Discover Cornwall through place, time, and theme
+              </p>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-3">
+              {/* By Place */}
+              <Link 
+                href="/map"
+                className="group rounded-lg border border-bone bg-parchment p-8 transition-all hover:border-granite hover:shadow-md"
+              >
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-bone group-hover:bg-granite group-hover:text-parchment transition-colors">
+                  <MapPin className="h-5 w-5" />
+                </div>
+                <h3 className="mb-2 font-serif text-xl font-bold text-granite">
+                  By Place
+                </h3>
+                <p className="mb-4 text-sm text-stone">
+                  Explore stories on an interactive map of Cornwall. Find tales from your town or discover new places.
+                </p>
+                <span className="inline-flex items-center gap-1 text-sm font-medium text-granite group-hover:text-copper">
+                  View Map
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </span>
+              </Link>
+
+              {/* By Time */}
+              <Link 
+                href="/timeline"
+                className="group rounded-lg border border-bone bg-parchment p-8 transition-all hover:border-granite hover:shadow-md"
+              >
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-bone group-hover:bg-granite group-hover:text-parchment transition-colors">
+                  <Clock className="h-5 w-5" />
+                </div>
+                <h3 className="mb-2 font-serif text-xl font-bold text-granite">
+                  By Time
+                </h3>
+                <p className="mb-4 text-sm text-stone">
+                  Travel through decades of Cornish history. From the 1920s to today, each era tells its own story.
+                </p>
+                {decades.length > 0 && (
+                  <div className="mb-4 flex flex-wrap gap-2">
+                    {decades.slice(0, 4).map((decade) => (
+                      <span
+                        key={decade}
+                        className="rounded-full bg-bone px-2.5 py-0.5 text-xs text-slate"
+                      >
+                        {decade}s
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <span className="inline-flex items-center gap-1 text-sm font-medium text-granite group-hover:text-copper">
+                  Browse Timeline
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </span>
+              </Link>
+
+              {/* By Collection */}
+              <Link 
+                href="/collections"
+                className="group rounded-lg border border-bone bg-parchment p-8 transition-all hover:border-granite hover:shadow-md"
+              >
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-bone group-hover:bg-granite group-hover:text-parchment transition-colors">
+                  <Folder className="h-5 w-5" />
+                </div>
+                <h3 className="mb-2 font-serif text-xl font-bold text-granite">
+                  By Theme
+                </h3>
+                <p className="mb-4 text-sm text-stone">
+                  Curated collections exploring specific themes: fishing, mining, festivals, and more.
+                </p>
+                {collections.length > 0 && (
+                  <ul className="mb-4 space-y-1">
+                    {collections.slice(0, 3).map((collection) => (
+                      <li key={collection.id} className="text-sm text-stone">
+                        {collection.title}
+                        <span className="ml-1 text-silver">
+                          ({collection.story_count})
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <span className="inline-flex items-center gap-1 text-sm font-medium text-granite group-hover:text-copper">
+                  View Collections
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </span>
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* Call to Action — Full Width */}
+        <section className="border-t border-bone bg-granite py-20 text-parchment">
           <div className="mx-auto max-w-2xl px-4 text-center">
-            <h2 className="mb-4 font-serif text-3xl font-semibold">
+            <h2 className="mb-4 font-serif text-3xl font-bold tracking-tight md:text-4xl">
               Every story matters
             </h2>
-            <p className="mb-8 text-lg text-muted-foreground">
+            <p className="mb-8 text-lg text-silver">
               Your memories are part of Cornwall's living history. Share a story
               from your family, your community, or your own experience.
             </p>
             <Link href="/write">
               <Button
                 size="lg"
-                className="bg-atlantic-blue text-chalk-white hover:bg-atlantic-blue-light"
+                className="bg-parchment text-granite hover:bg-cream font-medium"
               >
                 Share a Story
               </Button>

@@ -3,7 +3,7 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { StoryCard } from "@/components/story/story-card";
 import { Button } from "@/components/ui/button";
-import { MapPin, X } from "lucide-react";
+import { MapPin, X, ChevronRight } from "lucide-react";
 import { getPublishedStories, getStoryDecades, getStoryLocations, StoryWithCounts } from "@/lib/supabase/queries";
 import { cn } from "@/lib/utils";
 import type { StoryWithDetails } from "@/types";
@@ -16,7 +16,7 @@ interface PageProps {
 }
 
 export const metadata = {
-  title: "Stories by Time",
+  title: "Timeline | People of Cornwall",
   description: "Browse Cornwall stories across the decades.",
 };
 
@@ -54,63 +54,63 @@ export default async function TimelinePage({ searchParams }: PageProps) {
   });
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col bg-parchment">
       <Header />
 
       <main className="flex-1">
         {/* Hero */}
-        <section className="border-b border-chalk-white-dark bg-gradient-to-b from-chalk-white to-chalk-white-dark/30 py-12">
-          <div className="mx-auto max-w-[1400px] px-4">
-            <h1 className="mb-4 font-serif text-4xl font-semibold">
-              Stories by Time
+        <section className="border-b border-bone py-12 md:py-16">
+          <div className="mx-auto max-w-[1320px] px-4 sm:px-6">
+            <h1 className="mb-4 font-serif text-4xl font-bold tracking-tight text-granite md:text-5xl">
+              Timeline
             </h1>
-            <p className="max-w-2xl text-lg text-muted-foreground">
+            <p className="max-w-2xl text-lg text-stone">
               Travel through Cornwall's history, decade by decade. Each story is
               a window into a different era of Cornish life.
             </p>
           </div>
         </section>
 
-        {/* Timeline Navigation */}
-        <section className="sticky top-16 z-40 border-b border-chalk-white-dark bg-chalk-white/95 backdrop-blur">
-          <div className="mx-auto max-w-[1400px] px-4 py-4">
+        {/* Filters */}
+        <section className="sticky top-16 z-40 border-b border-bone bg-cream/95 backdrop-blur">
+          <div className="mx-auto max-w-[1320px] px-4 sm:px-6 py-4">
             <div className="flex flex-wrap items-center gap-4">
               {/* Decade filters */}
               <div className="flex flex-wrap items-center gap-2">
                 <Link href={selectedLocation ? `/timeline?location=${encodeURIComponent(selectedLocation)}` : "/timeline"}>
-                  <Button
-                    variant={selectedDecade === null ? "default" : "outline"}
-                    size="sm"
+                  <button
                     className={cn(
-                      selectedDecade === null &&
-                        "bg-atlantic-blue text-chalk-white"
+                      "rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
+                      selectedDecade === null 
+                        ? "bg-granite text-parchment"
+                        : "text-stone hover:text-granite"
                     )}
                   >
-                    All Decades
-                  </Button>
+                    All
+                  </button>
                 </Link>
                 {decades.map((decade) => (
                   <Link 
                     key={decade} 
                     href={`/timeline?decade=${decade}${selectedLocation ? `&location=${encodeURIComponent(selectedLocation)}` : ""}`}
                   >
-                    <Button
-                      variant={selectedDecade === decade ? "default" : "outline"}
-                      size="sm"
+                    <button
                       className={cn(
-                        selectedDecade === decade &&
-                          "bg-atlantic-blue text-chalk-white"
+                        "rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
+                        selectedDecade === decade 
+                          ? "bg-granite text-parchment"
+                          : "text-stone hover:text-granite"
                       )}
                     >
                       {decade}s
-                    </Button>
+                    </button>
                   </Link>
                 ))}
               </div>
 
               {/* Location filter */}
-              <div className="flex items-center gap-2 border-l border-chalk-white-dark pl-4">
-                <MapPin className="h-4 w-4 text-muted-foreground" />
+              <div className="flex items-center gap-2 border-l border-bone pl-4">
+                <MapPin className="h-4 w-4 text-stone" />
                 <select
                   defaultValue={selectedLocation || ""}
                   onChange={(e) => {
@@ -123,7 +123,7 @@ export default async function TimelinePage({ searchParams }: PageProps) {
                     }
                     window.location.href = url.toString();
                   }}
-                  className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+                  className="h-8 rounded-md border border-bone bg-parchment px-2 text-sm text-granite focus:border-granite focus:outline-none"
                 >
                   <option value="">All locations</option>
                   {locations.map((loc) => (
@@ -135,8 +135,8 @@ export default async function TimelinePage({ searchParams }: PageProps) {
                 {selectedLocation && (
                   <Link 
                     href={selectedDecade ? `/timeline?decade=${selectedDecade}` : "/timeline"}
-                    className="text-muted-foreground hover:text-foreground"
-                    title="Clear location filter"
+                    className="text-stone hover:text-granite"
+                    title="Clear location"
                   >
                     <X className="h-4 w-4" />
                   </Link>
@@ -144,36 +144,38 @@ export default async function TimelinePage({ searchParams }: PageProps) {
               </div>
             </div>
 
-            {/* Active filters display */}
+            {/* Active filters */}
             {(selectedDecade || selectedLocation) && (
-              <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="mt-3 flex items-center gap-2 text-sm text-stone">
                 <span>Showing:</span>
                 {selectedDecade && (
-                  <span className="rounded-full bg-atlantic-blue/10 px-2 py-0.5 text-atlantic-blue">
+                  <span className="rounded-full bg-granite/10 px-2.5 py-0.5 text-granite">
                     {selectedDecade}s
                   </span>
                 )}
                 {selectedLocation && (
-                  <span className="rounded-full bg-copper-clay/10 px-2 py-0.5 text-copper-clay">
+                  <span className="rounded-full bg-copper/10 px-2.5 py-0.5 text-copper">
                     {selectedLocation}
                   </span>
                 )}
-                <span>({stories.length} {stories.length === 1 ? "story" : "stories"})</span>
+                <span className="text-silver">
+                  ({stories.length} {stories.length === 1 ? "story" : "stories"})
+                </span>
               </div>
             )}
           </div>
         </section>
 
         {/* Timeline Content */}
-        <section className="py-8">
-          <div className="mx-auto max-w-[1400px] px-4">
+        <section className="py-12 md:py-16">
+          <div className="mx-auto max-w-[1320px] px-4 sm:px-6">
             {selectedDecade ? (
               // Single decade view
               <div>
-                <h2 className="mb-6 font-serif text-2xl font-semibold">
-                  {selectedDecade}s
-                  <span className="ml-2 text-base font-normal text-muted-foreground">
-                    ({storiesByDecade[selectedDecade]?.length || 0} stories)
+                <h2 className="mb-8 font-serif text-3xl font-bold text-granite">
+                  The {selectedDecade}s
+                  <span className="ml-3 text-lg font-normal text-stone">
+                    {storiesByDecade[selectedDecade]?.length || 0} stories
                   </span>
                 </h2>
 
@@ -184,12 +186,12 @@ export default async function TimelinePage({ searchParams }: PageProps) {
                     ))}
                   </div>
                 ) : (
-                  <div className="rounded-lg border border-dashed border-chalk-white-dark py-16 text-center">
-                    <p className="mb-4 text-muted-foreground">
+                  <div className="rounded-lg border border-dashed border-bone py-20 text-center">
+                    <p className="mb-4 text-stone">
                       No stories from the {selectedDecade}s yet
                     </p>
                     <Link href="/write">
-                      <Button className="bg-copper-clay text-chalk-white hover:bg-copper-clay-light">
+                      <Button className="bg-granite text-parchment hover:bg-slate">
                         Share a story from this era
                       </Button>
                     </Link>
@@ -198,7 +200,7 @@ export default async function TimelinePage({ searchParams }: PageProps) {
               </div>
             ) : (
               // All decades view
-              <div className="space-y-12">
+              <div className="space-y-16">
                 {decades.length > 0 ? (
                   [...decades].reverse().map((decade) => {
                     const decadeStories = storiesByDecade[decade] || [];
@@ -206,28 +208,25 @@ export default async function TimelinePage({ searchParams }: PageProps) {
 
                     return (
                       <div key={decade} className="relative">
-                        {/* Timeline marker */}
-                        <div className="absolute -left-4 top-0 hidden h-full w-px bg-atlantic-blue/20 md:block">
-                          <div className="absolute -left-2 top-2 h-5 w-5 rounded-full border-4 border-atlantic-blue bg-chalk-white" />
+                        {/* Timeline line */}
+                        <div className="absolute -left-4 top-0 hidden h-full w-0.5 bg-bone md:block">
+                          <div className="absolute -left-1.5 top-3 h-4 w-4 rounded-full border-2 border-granite bg-parchment" />
                         </div>
 
                         <div className="md:ml-8">
-                          <div className="mb-4 flex items-center justify-between">
-                            <h2 className="font-serif text-2xl font-semibold">
+                          <div className="mb-6 flex items-center justify-between">
+                            <h2 className="font-serif text-2xl font-bold text-granite">
                               {decade}s
-                              <span className="ml-2 text-base font-normal text-muted-foreground">
-                                ({decadeStories.length}{" "}
-                                {decadeStories.length === 1
-                                  ? "story"
-                                  : "stories"}
-                                )
+                              <span className="ml-2 text-base font-normal text-stone">
+                                ({decadeStories.length})
                               </span>
                             </h2>
                             <Link
                               href={`/timeline?decade=${decade}`}
-                              className="text-sm text-atlantic-blue hover:underline"
+                              className="flex items-center gap-1 text-sm font-medium text-granite hover:text-copper transition-colors"
                             >
-                              View all →
+                              View all
+                              <ChevronRight className="h-4 w-4" />
                             </Link>
                           </div>
 
@@ -244,23 +243,23 @@ export default async function TimelinePage({ searchParams }: PageProps) {
                     );
                   })
                 ) : (
-                  <div className="rounded-lg border border-dashed border-chalk-white-dark py-16 text-center">
-                    <p className="mb-4 text-muted-foreground">
+                  <div className="rounded-lg border border-dashed border-bone py-20 text-center">
+                    <p className="mb-4 text-stone">
                       No stories have been shared yet
                     </p>
                     <Link href="/write">
-                      <Button className="bg-copper-clay text-chalk-white hover:bg-copper-clay-light">
+                      <Button className="bg-granite text-parchment hover:bg-slate">
                         Be the first to share a story
                       </Button>
                     </Link>
                   </div>
                 )}
 
-                {/* Stories without decade */}
+                {/* Undated Stories */}
                 {storiesByDecade[0]?.length > 0 && (
-                  <div className="border-t border-chalk-white-dark pt-8">
-                    <h2 className="mb-4 font-serif text-xl font-semibold text-muted-foreground">
-                      Undated Stories
+                  <div className="border-t border-bone pt-12">
+                    <h2 className="mb-6 font-serif text-xl font-bold text-stone">
+                      Timeless Stories
                       <span className="ml-2 text-base font-normal">
                         ({storiesByDecade[0].length})
                       </span>

@@ -1,36 +1,37 @@
 import Link from "next/link";
-import { Separator } from "@/components/ui/separator";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="mt-auto border-t border-border bg-chalk-white-dark/50">
-      <div className="mx-auto max-w-[1400px] px-4 py-12">
+    <footer className="mt-auto border-t border-bone bg-cream">
+      <div className="mx-auto max-w-[1320px] px-4 sm:px-6 py-16">
         {/* Main footer content */}
-        <div className="grid gap-8 md:grid-cols-4">
+        <div className="grid gap-12 md:grid-cols-4">
           {/* Brand */}
           <div className="md:col-span-2">
-            <h3 className="font-serif text-lg font-semibold text-foreground">
+            <h3 className="font-serif text-xl font-bold text-granite">
               People of Cornwall
             </h3>
-            <p className="mt-2 max-w-md text-sm text-muted-foreground">
+            <p className="mt-3 max-w-md text-sm text-stone leading-relaxed">
               A living digital museum and community archive of Cornish stories.
               Built to help people remember, not scroll faster.
             </p>
-            <p className="mt-4 text-xs text-muted-foreground">
-              Stories are artefacts, not content.
+            <p className="mt-6 text-xs text-silver italic">
+              "Stories are artefacts, not content."
             </p>
           </div>
 
           {/* Explore */}
           <div>
-            <h4 className="text-sm font-semibold text-foreground">Explore</h4>
-            <ul className="mt-3 space-y-2">
+            <h4 className="text-sm font-semibold uppercase tracking-widest text-granite">
+              Explore
+            </h4>
+            <ul className="mt-4 space-y-3">
               <li>
                 <Link
                   href="/stories"
-                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                  className="text-sm text-stone transition-colors hover:text-granite"
                 >
                   All Stories
                 </Link>
@@ -38,23 +39,23 @@ export function Footer() {
               <li>
                 <Link
                   href="/map"
-                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                  className="text-sm text-stone transition-colors hover:text-granite"
                 >
-                  Stories by Place
+                  Map
                 </Link>
               </li>
               <li>
                 <Link
                   href="/timeline"
-                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                  className="text-sm text-stone transition-colors hover:text-granite"
                 >
-                  Stories by Time
+                  Timeline
                 </Link>
               </li>
               <li>
                 <Link
                   href="/collections"
-                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                  className="text-sm text-stone transition-colors hover:text-granite"
                 >
                   Collections
                 </Link>
@@ -64,12 +65,14 @@ export function Footer() {
 
           {/* Community */}
           <div>
-            <h4 className="text-sm font-semibold text-foreground">Community</h4>
-            <ul className="mt-3 space-y-2">
+            <h4 className="text-sm font-semibold uppercase tracking-widest text-granite">
+              Community
+            </h4>
+            <ul className="mt-4 space-y-3">
               <li>
                 <Link
                   href="/write"
-                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                  className="text-sm text-stone transition-colors hover:text-granite"
                 >
                   Share a Story
                 </Link>
@@ -77,7 +80,7 @@ export function Footer() {
               <li>
                 <Link
                   href="/about"
-                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                  className="text-sm text-stone transition-colors hover:text-granite"
                 >
                   About
                 </Link>
@@ -85,15 +88,15 @@ export function Footer() {
               <li>
                 <Link
                   href="/guidelines"
-                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                  className="text-sm text-stone transition-colors hover:text-granite"
                 >
-                  Community Guidelines
+                  Guidelines
                 </Link>
               </li>
               <li>
                 <Link
                   href="/contact"
-                  className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                  className="text-sm text-stone transition-colors hover:text-granite"
                 >
                   Contact
                 </Link>
@@ -102,29 +105,30 @@ export function Footer() {
           </div>
         </div>
 
-        <Separator className="my-8" />
+        {/* Divider */}
+        <div className="my-12 h-px bg-bone" />
 
         {/* Bottom */}
-        <div className="flex flex-col items-center justify-between gap-4 text-center md:flex-row md:text-left">
-          <p className="text-xs text-muted-foreground">
+        <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
+          <p className="text-xs text-silver">
             © {currentYear} People of Cornwall. Built with care in Cornwall.
           </p>
-          <div className="flex gap-4 text-xs text-muted-foreground">
+          <div className="flex gap-6 text-xs text-silver">
             <Link
               href="/privacy"
-              className="transition-colors hover:text-foreground"
+              className="transition-colors hover:text-granite"
             >
               Privacy
             </Link>
             <Link
               href="/terms"
-              className="transition-colors hover:text-foreground"
+              className="transition-colors hover:text-granite"
             >
               Terms
             </Link>
             <Link
               href="/accessibility"
-              className="transition-colors hover:text-foreground"
+              className="transition-colors hover:text-granite"
             >
               Accessibility
             </Link>

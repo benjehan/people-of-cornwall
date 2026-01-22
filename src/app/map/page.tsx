@@ -4,7 +4,7 @@ import { StoryMap } from "@/components/map/story-map";
 import { getPublishedStories } from "@/lib/supabase/queries";
 
 export const metadata = {
-  title: "Stories by Place",
+  title: "Map | People of Cornwall",
   description: "Explore stories from across Cornwall on an interactive map.",
 };
 
@@ -18,19 +18,21 @@ export default async function MapPage() {
   );
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col bg-parchment">
       <Header />
 
       <main className="flex flex-1 flex-col">
         {/* Header */}
-        <section className="border-b border-chalk-white-dark bg-gradient-to-b from-chalk-white to-chalk-white-dark/30 py-8">
-          <div className="mx-auto max-w-[1400px] px-4">
-            <h1 className="mb-2 font-serif text-3xl font-semibold">
+        <section className="border-b border-bone py-10">
+          <div className="mx-auto max-w-[1320px] px-4 sm:px-6">
+            <h1 className="mb-2 font-serif text-3xl font-bold tracking-tight text-granite">
               Stories by Place
             </h1>
-            <p className="text-muted-foreground">
-              Explore {storiesWithLocation.length} stories from across Cornwall.
-              Click a marker to read the story.
+            <p className="text-stone">
+              {storiesWithLocation.length > 0 
+                ? `Explore ${storiesWithLocation.length} stories from across Cornwall. Click a marker to read the story.`
+                : "No stories with locations yet. Be the first to share a story from a place in Cornwall!"
+              }
             </p>
           </div>
         </section>

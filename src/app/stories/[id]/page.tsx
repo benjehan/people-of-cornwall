@@ -6,9 +6,6 @@ import { ShareButtons } from "@/components/community/share-buttons";
 import { LikeButton } from "@/components/community/like-button";
 import { CommentSection } from "@/components/community/comment-section";
 import { AdminReviewPanel } from "@/components/admin/review-panel";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Calendar, ArrowLeft, Eye, AlertTriangle } from "lucide-react";
 import { getStoryById, getStoryComments, hasUserLikedStory } from "@/lib/supabase/queries";
 import { createClient } from "@/lib/supabase/server";
@@ -31,7 +28,7 @@ export async function generateMetadata({
   const description = story.ai_summary || story.body?.replace(/<[^>]*>/g, "").slice(0, 160);
 
   return {
-    title: story.title,
+    title: `${story.title} | People of Cornwall`,
     description,
     openGraph: {
       title: story.title,
@@ -86,7 +83,7 @@ export default async function StoryPage({
   const hasLiked = user ? await hasUserLikedStory(id, user.id) : false;
 
   const authorName = story.anonymous
-    ? "Anonymous contributor"
+    ? "Anonymous"
     : story.author_display_name || "A Cornish voice";
 
   const recordedDate = story.published_at
@@ -107,28 +104,28 @@ export default async function StoryPage({
   };
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col bg-parchment">
       <Header />
 
       <main className="flex-1">
         {/* Preview Banner */}
         {isPreview && (
-          <div className="border-b border-amber-200 bg-amber-50">
-            <div className="mx-auto max-w-3xl px-4 py-3">
+          <div className="border-b border-copper-light/30 bg-copper/5">
+            <div className="mx-auto max-w-[680px] px-4 py-3">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <Eye className="h-5 w-5 text-amber-600" />
-                  <span className="font-medium text-amber-800">
+                <div className="flex items-center gap-3">
+                  <Eye className="h-4 w-4 text-copper" />
+                  <span className="text-sm font-medium text-copper">
                     Preview Mode
                   </span>
-                  <Badge className="bg-amber-100 text-amber-700">
+                  <span className="rounded-full bg-copper/10 px-2.5 py-0.5 text-xs font-medium text-copper">
                     {statusLabels[story.status] || story.status}
-                  </Badge>
+                  </span>
                 </div>
-                <p className="text-sm text-amber-700">
+                <p className="text-xs text-copper/80">
                   {isAdmin && !isAuthor 
-                    ? "You're viewing this as an admin. This story is not public."
-                    : "This story is not published yet."}
+                    ? "Viewing as admin"
+                    : "Not published yet"}
                 </p>
               </div>
             </div>
@@ -136,99 +133,112 @@ export default async function StoryPage({
         )}
 
         {/* Back link */}
-        <div className="mx-auto max-w-3xl px-4 pt-8">
+        <div className="mx-auto max-w-[680px] px-4 pt-10">
           <Link
             href={isPreview && isAdmin ? "/admin/review" : "/stories"}
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+            className="inline-flex items-center gap-1 text-sm text-stone hover:text-granite transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-            {isPreview && isAdmin ? "Back to review queue" : "Back to stories"}
+            {isPreview && isAdmin ? "Back to review" : "All stories"}
           </Link>
         </div>
 
-        {/* Story Header */}
-        <article className="mx-auto max-w-3xl px-4 py-8">
-          {/* Historical markers */}
-          <div className="mb-4 flex flex-wrap items-center gap-3">
+        {/* Story Article */}
+        <article className="mx-auto max-w-[680px] px-4 py-10">
+          {/* Meta line */}
+          <div className="mb-6 flex flex-wrap items-center gap-3 text-xs uppercase tracking-widest text-stone">
             {story.timeline_decade && (
-              <span className="historical-marker">{story.timeline_decade}s</span>
+              <span>{story.timeline_decade}s</span>
+            )}
+            {story.timeline_decade && story.location_name && (
+              <span className="text-silver">•</span>
             )}
             {story.location_name && (
-              <span className="provenance">
-                <MapPin className="h-3.5 w-3.5" />
+              <span className="flex items-center gap-1">
+                <MapPin className="h-3 w-3" />
                 {story.location_name}
               </span>
             )}
           </div>
 
-          {/* Title (Plaque) */}
-          <h1 className="plaque mb-6 text-4xl md:text-5xl">{story.title}</h1>
+          {/* Title */}
+          <h1 className="mb-8 font-serif text-4xl font-bold leading-tight tracking-tight text-granite md:text-5xl">
+            {story.title}
+          </h1>
 
           {/* Author & Date */}
-          <div className="mb-8 flex flex-wrap items-center gap-4">
-            <span className="signature text-base">{authorName}</span>
+          <div className="mb-10 flex flex-wrap items-center gap-4 text-sm">
+            <span className="text-granite">By {authorName}</span>
             {recordedDate && (
-              <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <span className="flex items-center gap-1.5 text-stone">
                 <Calendar className="h-4 w-4" />
-                Recorded {recordedDate}
+                {recordedDate}
               </span>
             )}
           </div>
 
           {/* Curator's Note (AI Summary) */}
           {story.ai_summary && (
-            <div className="curator-note mb-8">{story.ai_summary}</div>
+            <div className="mb-10 border-l-2 border-copper pl-5">
+              <p className="text-xs font-medium uppercase tracking-widest text-copper mb-2">
+                About this story
+              </p>
+              <p className="font-serif text-lg italic text-stone leading-relaxed">
+                {story.ai_summary}
+              </p>
+            </div>
           )}
 
-          <Separator className="mb-8" />
+          {/* Divider */}
+          <div className="mb-10 h-px bg-bone" />
 
           {/* Story Body */}
           <div
-            className="story-content"
+            className="prose story-content"
             dangerouslySetInnerHTML={{ __html: story.body || "" }}
           />
 
-          <Separator className="my-8" />
+          {/* Divider */}
+          <div className="my-10 h-px bg-bone" />
 
-          {/* Archive Labels (Tags) */}
+          {/* Tags */}
           {story.ai_tags && story.ai_tags.length > 0 && (
-            <div className="mb-8">
-              <h3 className="mb-3 text-sm font-medium text-muted-foreground">
-                Archive Labels
+            <div className="mb-10">
+              <h3 className="mb-4 text-xs font-medium uppercase tracking-widest text-stone">
+                Topics
               </h3>
               <div className="flex flex-wrap gap-2">
                 {story.ai_tags.map((tag) => (
-                  <Link key={tag} href={`/stories?tag=${encodeURIComponent(tag)}`}>
-                    <Badge
-                      variant="secondary"
-                      className="cursor-pointer bg-sea-foam-light text-moss-green-dark hover:bg-sea-foam"
-                    >
-                      {tag}
-                    </Badge>
+                  <Link 
+                    key={tag} 
+                    href={`/stories?tag=${encodeURIComponent(tag)}`}
+                    className="rounded-full bg-bone px-3 py-1.5 text-sm text-slate hover:bg-granite hover:text-parchment transition-colors"
+                  >
+                    {tag}
                   </Link>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Admin Review Panel - Only for admins reviewing stories */}
+          {/* Admin Review Panel */}
           {isAdmin && story.status === "review" && (
-            <div className="mb-8">
+            <div className="mb-10 rounded-lg border border-copper/20 bg-copper/5 p-6">
               <AdminReviewPanel storyId={story.id} storyStatus={story.status} />
             </div>
           )}
 
-          {/* Engagement & Share - Only for published stories */}
+          {/* Engagement & Share */}
           {!isPreview ? (
             <>
-              <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg bg-chalk-white-dark/50 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg bg-cream p-5">
                 <div className="flex items-center gap-4">
                   <LikeButton
                     storyId={story.id}
                     initialLiked={hasLiked}
                     initialCount={story.likes_count}
                   />
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-sm text-stone">
                     {story.comments_count} {story.comments_count === 1 ? "comment" : "comments"}
                   </span>
                 </div>
@@ -239,21 +249,19 @@ export default async function StoryPage({
                 />
               </div>
 
-              {/* Comments section */}
+              {/* Comments */}
               <CommentSection
                 storyId={story.id}
                 initialComments={comments}
               />
             </>
           ) : (
-            <Card className="border-amber-200 bg-amber-50/50">
-              <CardContent className="flex items-center gap-3 py-4">
-                <AlertTriangle className="h-5 w-5 text-amber-600" />
-                <p className="text-sm text-amber-700">
-                  Likes, shares, and comments will be available once this story is published.
-                </p>
-              </CardContent>
-            </Card>
+            <div className="flex items-center gap-3 rounded-lg border border-copper/20 bg-copper/5 p-5">
+              <AlertTriangle className="h-5 w-5 text-copper" />
+              <p className="text-sm text-copper">
+                Engagement features will be available once this story is published.
+              </p>
+            </div>
           )}
         </article>
       </main>

@@ -1,8 +1,5 @@
 import Link from "next/link";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { MapPin, Heart, MessageCircle, Share2 } from "lucide-react";
-import { ShareButtons } from "@/components/community/share-buttons";
+import { MapPin, Heart, MessageCircle } from "lucide-react";
 import type { StoryWithDetails } from "@/types";
 
 interface StoryCardProps {
@@ -11,160 +8,142 @@ interface StoryCardProps {
 }
 
 /**
- * Artefact Card — Story preview with museum-inspired plaque typography
+ * Story Card — Clean, minimal design with strong typography
  */
 export function StoryCard({ story, featured = false }: StoryCardProps) {
   const authorName = story.anonymous
-    ? "Anonymous contributor"
+    ? "Anonymous"
     : story.author_display_name || "A Cornish voice";
 
-  // Format the date as "Recorded in Month Year"
+  // Format the date
   const recordedDate = story.published_at
     ? new Date(story.published_at).toLocaleDateString("en-GB", {
-        month: "long",
+        month: "short",
         year: "numeric",
       })
     : null;
 
-  // Extract first paragraph for excerpt
+  // Extract first paragraph for excerpt (strip HTML)
   const excerpt = story.body
-    ? story.body.replace(/<[^>]*>/g, "").slice(0, 200) + "..."
+    ? story.body.replace(/<[^>]*>/g, "").slice(0, 180) + "..."
     : null;
 
   if (featured) {
+    // Featured card is handled differently in the homepage now
     return (
       <Link href={`/stories/${story.id}`} className="group block">
-        <Card className="overflow-hidden border-0 bg-gradient-to-br from-atlantic-blue to-atlantic-blue-dark text-chalk-white shadow-xl transition-all duration-300 hover:shadow-2xl">
-          <CardContent className="p-8 md:p-12">
-            {/* Historical Marker */}
-            <div className="mb-4 flex items-center gap-4">
-              <span className="historical-marker text-sea-foam">
-                Featured Exhibition
-              </span>
-              {story.timeline_decade && (
-                <span className="historical-marker text-sea-foam/80">
-                  {story.timeline_decade}s
-                </span>
-              )}
-            </div>
-
-            {/* Plaque — Title */}
-            <h2 className="plaque mb-4 text-3xl text-chalk-white md:text-4xl">
-              {story.title}
-            </h2>
-
-            {/* Excerpt */}
-            {excerpt && (
-              <p className="mb-6 max-w-2xl font-serif text-lg leading-relaxed text-chalk-white/90">
-                {excerpt}
-              </p>
-            )}
-
-            {/* Metadata row */}
-            <div className="flex flex-wrap items-center gap-4">
-              {/* Signature */}
-              <span className="signature text-sea-foam">{authorName}</span>
-
-              {/* Provenance */}
-              {story.location_name && (
-                <span className="flex items-center gap-1 text-sm text-sea-foam/80">
-                  <MapPin className="h-4 w-4" />
-                  {story.location_name}
-                </span>
-              )}
-
-              {/* Recorded date */}
-              {recordedDate && (
-                <span className="historical-marker text-sea-foam/80">
-                  Recorded in {recordedDate}
-                </span>
-              )}
-            </div>
-
-            {/* Archive Labels */}
-            {story.ai_tags && story.ai_tags.length > 0 && (
-              <div className="mt-6 flex flex-wrap gap-2">
-                {story.ai_tags.slice(0, 4).map((tag) => (
-                  <Badge
-                    key={tag}
-                    variant="secondary"
-                    className="bg-chalk-white/20 text-chalk-white hover:bg-chalk-white/30"
-                  >
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </Link>
-    );
-  }
-
-  return (
-    <Link href={`/stories/${story.id}`} className="group block">
-      <Card className="artefact-card h-full border-chalk-white-dark bg-chalk-white">
-        <CardContent className="p-6">
-          {/* Historical Marker */}
-          <div className="mb-3 flex items-center gap-3">
+        <article className="rounded-lg border border-bone bg-cream p-8 transition-all hover:border-granite hover:shadow-lg md:p-10">
+          {/* Meta line */}
+          <div className="mb-4 flex flex-wrap items-center gap-3 text-xs uppercase tracking-widest text-stone">
+            <span className="text-copper font-medium">Featured</span>
             {story.timeline_decade && (
-              <span className="historical-marker">{story.timeline_decade}s</span>
+              <>
+                <span className="text-silver">•</span>
+                <span>{story.timeline_decade}s</span>
+              </>
             )}
-            {recordedDate && (
-              <span className="historical-marker">Recorded in {recordedDate}</span>
+            {story.location_name && (
+              <>
+                <span className="text-silver">•</span>
+                <span>{story.location_name}</span>
+              </>
             )}
           </div>
 
-          {/* Plaque — Title */}
-          <h3 className="plaque mb-3 line-clamp-2 group-hover:text-atlantic-blue">
+          {/* Title */}
+          <h2 className="mb-4 font-serif text-3xl font-bold leading-tight tracking-tight text-granite group-hover:text-copper transition-colors md:text-4xl">
             {story.title}
-          </h3>
+          </h2>
 
           {/* Excerpt */}
           {excerpt && (
-            <p className="mb-4 line-clamp-3 font-serif text-base leading-relaxed text-slate-grey-light">
+            <p className="mb-6 max-w-2xl font-serif text-lg leading-relaxed text-slate">
               {excerpt}
             </p>
           )}
 
-          {/* Metadata row */}
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Signature */}
-            <span className="signature">{authorName}</span>
-
-            {/* Provenance */}
-            {story.location_name && (
-              <span className="provenance text-xs">
-                <MapPin className="h-3 w-3" />
-                {story.location_name}
+          {/* Author & engagement */}
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <span className="text-sm text-stone">
+              By {authorName}
+              {recordedDate && <span className="ml-2 text-silver">· {recordedDate}</span>}
+            </span>
+            <div className="flex items-center gap-4 text-sm text-stone">
+              <span className="flex items-center gap-1.5">
+                <Heart className="h-4 w-4" />
+                {story.likes_count || 0}
               </span>
-            )}
+              <span className="flex items-center gap-1.5">
+                <MessageCircle className="h-4 w-4" />
+                {story.comments_count || 0}
+              </span>
+            </div>
           </div>
 
-          {/* Archive Labels */}
+          {/* Tags */}
           {story.ai_tags && story.ai_tags.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-1.5">
-              {story.ai_tags.slice(0, 3).map((tag) => (
-                <span key={tag} className="archive-label">
+            <div className="mt-6 flex flex-wrap gap-2">
+              {story.ai_tags.slice(0, 4).map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full bg-bone px-3 py-1 text-xs text-slate"
+                >
                   {tag}
                 </span>
               ))}
             </div>
           )}
+        </article>
+      </Link>
+    );
+  }
 
-          {/* Engagement — subtle, not prominent */}
-          <div className="mt-4 flex items-center gap-4 border-t border-chalk-white-dark pt-4 text-xs text-muted-foreground">
+  return (
+    <Link href={`/stories/${story.id}`} className="group block h-full">
+      <article className="flex h-full flex-col rounded-lg border border-transparent bg-parchment p-6 transition-all hover:border-bone hover:bg-cream">
+        {/* Meta line */}
+        <div className="mb-3 flex items-center gap-2 text-xs uppercase tracking-widest text-silver">
+          {story.timeline_decade && <span>{story.timeline_decade}s</span>}
+          {story.timeline_decade && story.location_name && <span>•</span>}
+          {story.location_name && (
             <span className="flex items-center gap-1">
-              <Heart className="h-3.5 w-3.5" />
-              {story.likes_count || 0}
+              <MapPin className="h-3 w-3" />
+              {story.location_name}
             </span>
-            <span className="flex items-center gap-1">
-              <MessageCircle className="h-3.5 w-3.5" />
-              {story.comments_count || 0}
+          )}
+        </div>
+
+        {/* Title */}
+        <h3 className="mb-3 font-serif text-xl font-bold leading-snug tracking-tight text-granite group-hover:text-copper transition-colors line-clamp-2">
+          {story.title}
+        </h3>
+
+        {/* Excerpt */}
+        {excerpt && (
+          <p className="mb-4 flex-1 text-sm leading-relaxed text-stone line-clamp-3">
+            {excerpt}
+          </p>
+        )}
+
+        {/* Author */}
+        <div className="mt-auto pt-4 border-t border-bone">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-stone">
+              {authorName}
             </span>
+            <div className="flex items-center gap-3 text-xs text-silver">
+              <span className="flex items-center gap-1">
+                <Heart className="h-3.5 w-3.5" />
+                {story.likes_count || 0}
+              </span>
+              <span className="flex items-center gap-1">
+                <MessageCircle className="h-3.5 w-3.5" />
+                {story.comments_count || 0}
+              </span>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </article>
     </Link>
   );
 }

@@ -46,38 +46,38 @@ const createCustomIcon = () => {
   return L.divIcon({
     className: "custom-marker",
     html: `<div style="
-      width: 28px;
-      height: 28px;
-      background: #1F4E5F;
-      border: 3px solid #F7F6F2;
+      width: 24px;
+      height: 24px;
+      background: #1A1A1A;
+      border: 2px solid #FAF9F6;
       border-radius: 50%;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     "></div>`,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
-    popupAnchor: [0, -14],
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+    popupAnchor: [0, -12],
   });
 };
 
 // Cluster icon
 const createClusterIcon = (cluster: any) => {
   const count = cluster.getChildCount();
-  const size = count < 10 ? 36 : count < 50 ? 44 : 52;
+  const size = count < 10 ? 32 : count < 50 ? 40 : 48;
   
   return L.divIcon({
     html: `<div style="
       width: ${size}px;
       height: ${size}px;
-      background: #B45A3C;
-      border: 3px solid #F7F6F2;
+      background: #C17F59;
+      border: 2px solid #FAF9F6;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       color: white;
       font-weight: 600;
-      font-size: ${count < 10 ? 14 : 12}px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      font-size: ${count < 10 ? 13 : 11}px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     ">${count}</div>`,
     className: "custom-cluster",
     iconSize: [size, size],
@@ -96,10 +96,10 @@ export function StoryMap({ stories }: StoryMapProps) {
 
   if (!isMounted) {
     return (
-      <div className="flex h-[400px] md:h-[600px] items-center justify-center bg-chalk-white-dark/30">
+      <div className="flex h-[400px] md:h-[600px] items-center justify-center bg-cream">
         <div className="text-center">
-          <div className="mb-2 h-8 w-8 animate-spin rounded-full border-4 border-atlantic-blue border-t-transparent mx-auto" />
-          <p className="text-sm text-muted-foreground">Loading map...</p>
+          <div className="mb-2 h-6 w-6 animate-spin rounded-full border-2 border-granite border-t-transparent mx-auto" />
+          <p className="text-sm text-stone">Loading map...</p>
         </div>
       </div>
     );
@@ -123,9 +123,10 @@ export function StoryMap({ stories }: StoryMapProps) {
           className="h-full w-full"
           style={{ background: "#e8e6e1" }}
         >
+          {/* Using Stadia Maps Alidade Smooth for a cleaner look */}
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            url="https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png"
           />
 
           <MarkerClusterGroup
@@ -146,16 +147,16 @@ export function StoryMap({ stories }: StoryMapProps) {
                 >
                   <Popup>
                     <div className="max-w-[250px] p-1">
-                      <h3 className="mb-1 font-serif font-semibold leading-tight text-slate-grey">
+                      <h3 className="mb-1 font-serif font-bold leading-tight text-granite">
                         {story.title}
                       </h3>
-                      <p className="mb-2 text-xs text-gray-500">
+                      <p className="mb-2 text-xs text-stone">
                         {story.timeline_decade && `${story.timeline_decade}s • `}
                         {story.location_name}
                       </p>
                       <Link
                         href={`/stories/${story.id}`}
-                        className="text-sm font-medium text-atlantic-blue hover:underline"
+                        className="text-sm font-medium text-granite hover:text-copper"
                       >
                         Read story →
                       </Link>
@@ -170,23 +171,26 @@ export function StoryMap({ stories }: StoryMapProps) {
 
       {/* Story list below map */}
       {stories.length > 0 && (
-        <div className="border-t border-chalk-white-dark bg-chalk-white py-8">
-          <div className="mx-auto max-w-[1400px] px-4">
-            <h2 className="mb-4 font-serif text-xl font-semibold">
-              All Locations ({stories.length} {stories.length === 1 ? "story" : "stories"})
+        <div className="border-t border-bone bg-parchment py-12">
+          <div className="mx-auto max-w-[1320px] px-4 sm:px-6">
+            <h2 className="mb-6 font-serif text-2xl font-bold text-granite">
+              All Locations
+              <span className="ml-2 text-base font-normal text-stone">
+                ({stories.length} {stories.length === 1 ? "story" : "stories"})
+              </span>
             </h2>
             <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {stories.map((story) => (
                 <Link
                   key={story.id}
                   href={`/stories/${story.id}`}
-                  className="group rounded-lg border border-chalk-white-dark bg-chalk-white p-4 transition-shadow hover:shadow-md"
+                  className="group rounded-lg border border-transparent bg-cream p-4 transition-all hover:border-bone hover:shadow-sm"
                 >
-                  <p className="mb-1 text-xs text-muted-foreground">
+                  <p className="mb-1 text-xs uppercase tracking-widest text-silver">
                     {story.location_name}
                     {story.timeline_decade && ` • ${story.timeline_decade}s`}
                   </p>
-                  <h3 className="font-serif font-medium leading-tight group-hover:text-atlantic-blue">
+                  <h3 className="font-serif font-bold leading-snug text-granite group-hover:text-copper transition-colors">
                     {story.title}
                   </h3>
                 </Link>
@@ -197,8 +201,8 @@ export function StoryMap({ stories }: StoryMapProps) {
       )}
 
       {stories.length === 0 && (
-        <div className="border-t border-chalk-white-dark bg-chalk-white py-16 text-center">
-          <p className="text-muted-foreground">
+        <div className="border-t border-bone bg-parchment py-16 text-center">
+          <p className="text-stone">
             No stories with locations yet. Be the first to share a story from a
             place in Cornwall!
           </p>

@@ -4,12 +4,9 @@ import { Footer } from "@/components/layout/footer";
 import { StoryCard } from "@/components/story/story-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { getPublishedStories, getStoryDecades, getStoryLocations } from "@/lib/supabase/queries";
 import type { StoryWithDetails } from "@/types";
-
-// Install select component
-// We need to add it, but for now let's create a simpler version
 
 interface PageProps {
   searchParams: Promise<{
@@ -46,15 +43,17 @@ export default async function StoriesPage({ searchParams }: PageProps) {
   }));
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col bg-parchment">
       <Header />
 
       <main className="flex-1">
         {/* Hero */}
-        <section className="border-b border-chalk-white-dark bg-gradient-to-b from-chalk-white to-chalk-white-dark/30 py-12">
-          <div className="mx-auto max-w-[1400px] px-4">
-            <h1 className="mb-4 font-serif text-4xl font-semibold">Stories</h1>
-            <p className="max-w-2xl text-lg text-muted-foreground">
+        <section className="border-b border-bone py-12 md:py-16">
+          <div className="mx-auto max-w-[1320px] px-4 sm:px-6">
+            <h1 className="mb-4 font-serif text-4xl font-bold tracking-tight text-granite md:text-5xl">
+              Stories
+            </h1>
+            <p className="max-w-2xl text-lg text-stone">
               Explore stories from across Cornwall, shared by our community.
               Each story is a window into the lives and memories of Cornish people.
             </p>
@@ -62,17 +61,17 @@ export default async function StoriesPage({ searchParams }: PageProps) {
         </section>
 
         {/* Filters */}
-        <section className="border-b border-chalk-white-dark py-4">
-          <div className="mx-auto max-w-[1400px] px-4">
+        <section className="border-b border-bone bg-cream py-5">
+          <div className="mx-auto max-w-[1320px] px-4 sm:px-6">
             <form className="flex flex-wrap items-center gap-3">
               {/* Search */}
-              <div className="relative flex-1 min-w-[200px]">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <div className="relative flex-1 min-w-[200px] max-w-md">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone" />
                 <Input
                   name="search"
                   placeholder="Search stories..."
                   defaultValue={search}
-                  className="pl-9"
+                  className="pl-9 bg-parchment border-bone focus:border-granite"
                 />
               </div>
 
@@ -80,7 +79,7 @@ export default async function StoriesPage({ searchParams }: PageProps) {
               <select
                 name="decade"
                 defaultValue={decade?.toString() || ""}
-                className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                className="h-10 rounded-md border border-bone bg-parchment px-3 text-sm text-granite focus:border-granite focus:outline-none"
               >
                 <option value="">All decades</option>
                 {decades.map((d) => (
@@ -94,7 +93,7 @@ export default async function StoriesPage({ searchParams }: PageProps) {
               <select
                 name="location"
                 defaultValue={location || ""}
-                className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                className="h-10 rounded-md border border-bone bg-parchment px-3 text-sm text-granite focus:border-granite focus:outline-none"
               >
                 <option value="">All places</option>
                 {locations.map((loc) => (
@@ -104,15 +103,15 @@ export default async function StoriesPage({ searchParams }: PageProps) {
                 ))}
               </select>
 
-              <Button type="submit" variant="outline" className="gap-2">
-                <SlidersHorizontal className="h-4 w-4" />
-                Filter
+              <Button type="submit" className="bg-granite text-parchment hover:bg-slate">
+                Apply
               </Button>
 
               {(search || decade || location || tag) && (
                 <Link href="/stories">
-                  <Button variant="ghost" className="text-muted-foreground">
-                    Clear filters
+                  <Button variant="ghost" className="gap-1 text-stone hover:text-granite">
+                    <X className="h-4 w-4" />
+                    Clear
                   </Button>
                 </Link>
               )}
@@ -121,9 +120,9 @@ export default async function StoriesPage({ searchParams }: PageProps) {
             {/* Active filters */}
             {tag && (
               <div className="mt-3">
-                <span className="text-sm text-muted-foreground">
+                <span className="text-sm text-stone">
                   Showing stories tagged:{" "}
-                  <span className="font-medium text-foreground">{tag}</span>
+                  <span className="font-medium text-granite">{tag}</span>
                 </span>
               </div>
             )}
@@ -131,11 +130,11 @@ export default async function StoriesPage({ searchParams }: PageProps) {
         </section>
 
         {/* Stories Grid */}
-        <section className="py-8">
-          <div className="mx-auto max-w-[1400px] px-4">
+        <section className="py-12 md:py-16">
+          <div className="mx-auto max-w-[1320px] px-4 sm:px-6">
             {storiesWithDetails.length > 0 ? (
               <>
-                <div className="mb-4 text-sm text-muted-foreground">
+                <div className="mb-8 text-sm text-stone">
                   Showing {stories.length} of {count} stories
                 </div>
 
@@ -147,16 +146,18 @@ export default async function StoriesPage({ searchParams }: PageProps) {
 
                 {/* Pagination */}
                 {totalPages > 1 && (
-                  <div className="mt-8 flex items-center justify-center gap-2">
+                  <div className="mt-12 flex items-center justify-center gap-2">
                     {page > 1 && (
                       <Link
                         href={`/stories?page=${page - 1}${decade ? `&decade=${decade}` : ""}${location ? `&location=${location}` : ""}${search ? `&search=${search}` : ""}`}
                       >
-                        <Button variant="outline">Previous</Button>
+                        <Button variant="outline" className="border-granite text-granite hover:bg-granite hover:text-parchment">
+                          Previous
+                        </Button>
                       </Link>
                     )}
 
-                    <span className="px-4 text-sm text-muted-foreground">
+                    <span className="px-4 text-sm text-stone">
                       Page {page} of {totalPages}
                     </span>
 
@@ -164,24 +165,26 @@ export default async function StoriesPage({ searchParams }: PageProps) {
                       <Link
                         href={`/stories?page=${page + 1}${decade ? `&decade=${decade}` : ""}${location ? `&location=${location}` : ""}${search ? `&search=${search}` : ""}`}
                       >
-                        <Button variant="outline">Next</Button>
+                        <Button variant="outline" className="border-granite text-granite hover:bg-granite hover:text-parchment">
+                          Next
+                        </Button>
                       </Link>
                     )}
                   </div>
                 )}
               </>
             ) : (
-              <div className="py-16 text-center">
-                <p className="mb-4 text-xl text-muted-foreground">
+              <div className="py-20 text-center">
+                <h2 className="mb-4 font-serif text-2xl font-bold text-granite">
                   No stories found
-                </p>
-                <p className="mb-8 text-muted-foreground">
+                </h2>
+                <p className="mb-8 text-stone">
                   {search || decade || location
                     ? "Try adjusting your filters"
                     : "Be the first to share a story from Cornwall"}
                 </p>
                 <Link href="/write">
-                  <Button className="bg-copper-clay text-chalk-white hover:bg-copper-clay-light">
+                  <Button className="bg-granite text-parchment hover:bg-slate">
                     Share a story
                   </Button>
                 </Link>
