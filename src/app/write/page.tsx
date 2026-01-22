@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { Suspense, useState, useEffect, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Header } from "@/components/layout/header";
@@ -24,7 +24,7 @@ import { useUser } from "@/hooks/use-user";
 import { saveStoryAction, submitStoryAction } from "@/app/actions/stories";
 import { createClient } from "@/lib/supabase/client";
 
-export default function WritePage() {
+function WritePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, isLoading: authLoading } = useUser();
@@ -58,8 +58,8 @@ export default function WritePage() {
       setIsLoadingStory(true);
       const supabase = createClient();
       
-      const { data: story, error } = await supabase
-        .from("stories")
+      const { data: story, error } = await (supabase
+        .from("stories") as any)
         .select("*")
         .eq("id", id)
         .eq("author_id", user.id)
@@ -352,5 +352,20 @@ export default function WritePage() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function WritePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen flex-col">
+        <Header />
+        <main className="flex flex-1 items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-atlantic-blue border-t-transparent" />
+        </main>
+      </div>
+    }>
+      <WritePageContent />
+    </Suspense>
   );
 }

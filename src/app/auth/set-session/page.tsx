@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-export default function SetSessionPage() {
+function SetSessionContent() {
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
 
@@ -41,23 +41,34 @@ export default function SetSessionPage() {
 
   if (error) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-chalk-white">
-        <div className="text-center">
-          <p className="text-red-600">Error: {error}</p>
-          <a href="/login" className="text-atlantic-blue underline">
-            Try again
-          </a>
-        </div>
+      <div className="text-center">
+        <p className="text-red-600">Error: {error}</p>
+        <a href="/login" className="text-atlantic-blue underline">
+          Try again
+        </a>
       </div>
     );
   }
 
   return (
+    <div className="text-center">
+      <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-atlantic-blue"></div>
+      <p className="text-slate-grey">Signing you in...</p>
+    </div>
+  );
+}
+
+export default function SetSessionPage() {
+  return (
     <div className="flex min-h-screen items-center justify-center bg-chalk-white">
-      <div className="text-center">
-        <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-atlantic-blue"></div>
-        <p className="text-slate-grey">Signing you in...</p>
-      </div>
+      <Suspense fallback={
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-atlantic-blue"></div>
+          <p className="text-slate-grey">Loading...</p>
+        </div>
+      }>
+        <SetSessionContent />
+      </Suspense>
     </div>
   );
 }

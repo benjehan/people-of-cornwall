@@ -4,13 +4,6 @@ import { Footer } from "@/components/layout/footer";
 import { StoryCard } from "@/components/story/story-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { getPublishedStories, getStoryDecades, getStoryLocations } from "@/lib/supabase/queries";
 import type { StoryWithDetails } from "@/types";

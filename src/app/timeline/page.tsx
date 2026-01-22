@@ -4,7 +4,7 @@ import { Footer } from "@/components/layout/footer";
 import { StoryCard } from "@/components/story/story-card";
 import { Button } from "@/components/ui/button";
 import { MapPin, X } from "lucide-react";
-import { getPublishedStories, getStoryDecades, getStoryLocations } from "@/lib/supabase/queries";
+import { getPublishedStories, getStoryDecades, getStoryLocations, StoryWithCounts } from "@/lib/supabase/queries";
 import { cn } from "@/lib/utils";
 import type { StoryWithDetails } from "@/types";
 
@@ -36,17 +36,17 @@ export default async function TimelinePage({ searchParams }: PageProps) {
   ]);
 
   // Group stories by decade
-  const storiesByDecade = stories.reduce((acc, story) => {
+  const storiesByDecade = stories.reduce((acc: Record<number, StoryWithCounts[]>, story) => {
     const decade = story.timeline_decade || 0;
     if (!acc[decade]) {
       acc[decade] = [];
     }
     acc[decade].push(story);
     return acc;
-  }, {} as Record<number, typeof stories>);
+  }, {} as Record<number, StoryWithCounts[]>);
 
   // Convert to StoryWithDetails
-  const convertStory = (story: typeof stories[0]): StoryWithDetails => ({
+  const convertStory = (story: StoryWithCounts): StoryWithDetails => ({
     ...story,
     author: null,
     media: [],

@@ -30,14 +30,14 @@ export function useUser() {
     isAdmin: false,
   });
 
-  const fetchProfile = useCallback(async (userId: string) => {
+  const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
     try {
-      const { data: profile } = await supabase
-        .from("users")
+      const { data: profile } = await (supabase
+        .from("users") as any)
         .select("*")
         .eq("id", userId)
         .single();
-      return profile;
+      return profile as Profile | null;
     } catch {
       return null;
     }

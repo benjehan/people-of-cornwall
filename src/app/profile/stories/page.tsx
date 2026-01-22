@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { Suspense, useEffect, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Header } from "@/components/layout/header";
@@ -48,7 +48,7 @@ const STATUS_CONFIG = {
   unpublished: { label: "Unpublished", icon: Eye, color: "bg-slate-grey/10 text-slate-grey" },
 };
 
-export default function MyStoriesPage() {
+function MyStoriesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, isLoading: authLoading } = useUser();
@@ -204,6 +204,21 @@ export default function MyStoriesPage() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function MyStoriesPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen flex-col">
+        <Header />
+        <main className="flex flex-1 items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-atlantic-blue border-t-transparent" />
+        </main>
+      </div>
+    }>
+      <MyStoriesContent />
+    </Suspense>
   );
 }
 
