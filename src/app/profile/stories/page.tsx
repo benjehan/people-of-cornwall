@@ -65,26 +65,42 @@ function MyStoriesContent() {
   }, [authLoading, user, router]);
 
   const fetchStories = async () => {
-    if (!user) return;
-    
-    const supabase = createClient();
-    const { data, error } = await (supabase
-      .from("stories") as any)
-      .select("*")
-      .eq("author_id", user.id)
-      .eq("soft_deleted", false)
-      .order("updated_at", { ascending: false });
-
-    if (error) {
-      console.error("Error fetching stories:", error);
-    } else {
-      setStories((data as Story[]) || []);
+    if (!user) {
+      console.log('[MY-STORIES] No user, skipping fetch');
+      return;
     }
+    
+    console.log('[MY-STORIES] Fetching stories for user:', user.id);
+    const supabase = createClient();
+    
+    try {
+      const { data, error } = await (supabase
+        .from("stories") as any)
+        .select("*")
+        .eq("author_id", user.id)
+        .eq("soft_deleted", false)
+        .order("updated_at", { ascending: false });
+
+      console.log('[MY-STORIES] Result:', { data: data?.length || 0, error });
+
+      if (error) {
+        console.error("[MY-STORIES] Error:", error);
+      } else {
+        setStories((data as Story[]) || []);
+      }
+    } catch (err) {
+      console.error("[MY-STORIES] Catch error:", err);
+    }
+    
     setIsLoading(false);
   };
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      console.log('[MY-STORIES] useEffect: no user yet, authLoading:', authLoading);
+      return;
+    }
+    console.log('[MY-STORIES] useEffect: user found, fetching...');
     fetchStories();
   }, [user]);
 
