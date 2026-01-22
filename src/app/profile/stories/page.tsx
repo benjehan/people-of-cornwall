@@ -73,33 +73,32 @@ function MyStoriesContent() {
     console.log('[MY-STORIES] Fetching stories for user:', user.id);
     const supabase = createClient();
     
-    // Add timeout to prevent hanging forever
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Query timeout after 10s')), 10000);
-    });
-    
     try {
-      const queryPromise = (supabase
+      console.log('[MY-STORIES] Starting query...');
+      const startTime = Date.now();
+      
+      // Simple query without Promise.race
+      const { data, error } = await (supabase
         .from("stories") as any)
-        .select("*")
+        .select("id, title, status, created_at, updated_at, location_name, timeline_year, anonymous")
         .eq("author_id", user.id)
-        .eq("soft_deleted", false)
-        .order("updated_at", { ascending: false });
+        .order("updated_at", { ascending: false })
+        .limit(50);
 
-      const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
-
+      const elapsed = Date.now() - startTime;
+      console.log('[MY-STORIES] Query completed in', elapsed, 'ms');
       console.log('[MY-STORIES] Result:', { count: data?.length || 0, error });
 
       if (error) {
         console.error("[MY-STORIES] Error:", error);
-        alert("Failed to load stories: " + (error.message || "Unknown error"));
+        alert("Failed to load stories: " + (error.message || JSON.stringify(error)));
       } else {
-        console.log('[MY-STORIES] Stories loaded:', data);
+        console.log('[MY-STORIES] Stories:', data);
         setStories((data as Story[]) || []);
       }
     } catch (err: any) {
       console.error("[MY-STORIES] Catch error:", err);
-      alert("Failed to load stories: " + (err?.message || "Connection timeout"));
+      alert("Failed to load stories: " + (err?.message || "Unknown error"));
     }
     
     setIsLoading(false);
