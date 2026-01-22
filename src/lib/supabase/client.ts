@@ -15,12 +15,28 @@ export function createClient() {
   
   // Client-side - reuse singleton
   if (!client) {
-    console.log('[SUPABASE] Creating singleton client');
-    client = createBrowserClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    console.log('[SUPABASE] Creating client, URL:', url?.substring(0, 30) + '...');
+    
+    client = createBrowserClient<Database>(url, key);
   }
   
   return client;
+}
+
+// Test function to verify Supabase connection
+export async function testSupabaseConnection() {
+  const supabase = createClient();
+  console.log('[SUPABASE] Testing connection...');
+  
+  const start = Date.now();
+  try {
+    const { data, error } = await supabase.from('stories').select('count', { count: 'exact', head: true });
+    console.log('[SUPABASE] Test result:', { data, error, time: Date.now() - start + 'ms' });
+    return !error;
+  } catch (e) {
+    console.error('[SUPABASE] Test error:', e);
+    return false;
+  }
 }

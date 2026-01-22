@@ -73,23 +73,33 @@ function MyStoriesContent() {
     console.log('[MY-STORIES] Fetching stories for user:', user.id);
     const supabase = createClient();
     
+    // Add timeout to prevent hanging forever
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Query timeout after 10s')), 10000);
+    });
+    
     try {
-      const { data, error } = await (supabase
+      const queryPromise = (supabase
         .from("stories") as any)
         .select("*")
         .eq("author_id", user.id)
         .eq("soft_deleted", false)
         .order("updated_at", { ascending: false });
 
-      console.log('[MY-STORIES] Result:', { data: data?.length || 0, error });
+      const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
+
+      console.log('[MY-STORIES] Result:', { count: data?.length || 0, error });
 
       if (error) {
         console.error("[MY-STORIES] Error:", error);
+        alert("Failed to load stories: " + (error.message || "Unknown error"));
       } else {
+        console.log('[MY-STORIES] Stories loaded:', data);
         setStories((data as Story[]) || []);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("[MY-STORIES] Catch error:", err);
+      alert("Failed to load stories: " + (err?.message || "Connection timeout"));
     }
     
     setIsLoading(false);
