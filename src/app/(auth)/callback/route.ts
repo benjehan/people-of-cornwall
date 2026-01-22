@@ -2,11 +2,17 @@ import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
 export async function GET(request: Request) {
+  console.log('[CALLBACK] ====== START ======');
+  
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
   const next = searchParams.get('next') ?? '/';
 
+  console.log('[CALLBACK] Code present:', !!code);
+  console.log('[CALLBACK] Next path:', next);
+
   if (!code) {
+    console.log('[CALLBACK] ERROR: No code');
     return NextResponse.redirect(`${origin}/login?error=No authorization code`);
   }
 
@@ -23,6 +29,8 @@ export async function GET(request: Request) {
     });
   }
 
+  console.log('[CALLBACK] Cookies count:', requestCookies.length);
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -36,19 +44,27 @@ export async function GET(request: Request) {
     }
   );
 
+  console.log('[CALLBACK] Exchanging code for session...');
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error || !data.session) {
-    console.error('[Auth] Exchange error:', error?.message);
+    console.log('[CALLBACK] ERROR:', error?.message);
     return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(error?.message || 'No session')}`);
   }
 
-  // Redirect to client-side handler with tokens in URL (temporary, will be cleared)
+  console.log('[CALLBACK] SUCCESS! User:', data.session.user.email);
+  console.log('[CALLBACK] Access token length:', data.session.access_token.length);
+
+  // Redirect to client-side handler with tokens in URL
   const params = new URLSearchParams({
     access_token: data.session.access_token,
     refresh_token: data.session.refresh_token,
     next: next,
   });
 
-  return NextResponse.redirect(`${origin}/auth/set-session?${params.toString()}`);
+  const redirectUrl = `${origin}/auth/set-session?${params.toString()}`;
+  console.log('[CALLBACK] Redirecting to set-session');
+  console.log('[CALLBACK] ====== END ======');
+
+  return NextResponse.redirect(redirectUrl);
 }

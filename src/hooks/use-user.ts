@@ -15,8 +15,7 @@ interface UserState {
 }
 
 /**
- * Fast, reliable auth hook
- * Uses getSession() for speed (reads from cookies, no network call)
+ * Auth hook with logging
  */
 export function useUser() {
   const [state, setState] = useState<UserState>({
@@ -32,6 +31,7 @@ export function useUser() {
   // Initialize client once
   if (typeof window !== "undefined" && !supabaseRef.current) {
     supabaseRef.current = createClient();
+    console.log('[USE-USER] Client created');
   }
 
   useEffect(() => {
@@ -40,16 +40,25 @@ export function useUser() {
     initRef.current = true;
 
     let mounted = true;
+    console.log('[USE-USER] ====== INIT ======');
 
     // Fast initial check using getSession (reads cookies, no network)
     const initAuth = async () => {
       try {
-        // getSession is FAST - it reads from local storage/cookies
-        const { data: { session } } = await supabase.auth.getSession();
+        console.log('[USE-USER] Calling getSession...');
+        const { data: { session }, error } = await supabase.auth.getSession();
         
-        if (!mounted) return;
+        if (error) {
+          console.log('[USE-USER] getSession error:', error.message);
+        }
+        
+        if (!mounted) {
+          console.log('[USE-USER] Component unmounted, aborting');
+          return;
+        }
         
         if (session?.user) {
+          console.log('[USE-USER] Session found:', session.user.email);
           setState({
             user: session.user,
             profile: null,
@@ -57,7 +66,8 @@ export function useUser() {
             isAdmin: false,
           });
 
-          // Fetch profile in background (non-blocking)
+          // Fetch profile in background
+          console.log('[USE-USER] Fetching profile...');
           const { data: profile } = await (supabase
             .from("users") as any)
             .select("*")
@@ -65,6 +75,7 @@ export function useUser() {
             .single();
           
           if (mounted) {
+            console.log('[USE-USER] Profile loaded, admin:', profile?.role === "admin");
             setState({
               user: session.user,
               profile: profile || null,
@@ -73,6 +84,7 @@ export function useUser() {
             });
           }
         } else {
+          console.log('[USE-USER] No session found');
           setState({
             user: null,
             profile: null,
@@ -80,8 +92,8 @@ export function useUser() {
             isAdmin: false,
           });
         }
-      } catch (error) {
-        console.error("Auth init error:", error);
+      } catch (error: any) {
+        console.log('[USE-USER] Init error:', error?.message);
         if (mounted) {
           setState({
             user: null,
@@ -96,11 +108,14 @@ export function useUser() {
     initAuth();
 
     // Listen for auth changes
+    console.log('[USE-USER] Setting up auth listener...');
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('[USE-USER] Auth event:', event);
         if (!mounted) return;
 
         if (event === 'SIGNED_OUT') {
+          console.log('[USE-USER] Signed out');
           setState({
             user: null,
             profile: null,
@@ -111,6 +126,7 @@ export function useUser() {
         }
 
         if (session?.user) {
+          console.log('[USE-USER] Auth change, user:', session.user.email);
           setState(prev => ({
             ...prev,
             user: session.user,
@@ -137,12 +153,14 @@ export function useUser() {
     );
 
     return () => {
+      console.log('[USE-USER] Cleanup');
       mounted = false;
       subscription.unsubscribe();
     };
   }, []);
 
   const signOut = useCallback(async () => {
+    console.log('[USE-USER] Sign out called');
     if (!supabaseRef.current) return;
     
     await supabaseRef.current.auth.signOut();
