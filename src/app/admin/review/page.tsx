@@ -53,8 +53,8 @@ export default function ReviewQueuePage() {
 
   const fetchStories = async () => {
     const supabase = createClient();
-    const { data, error } = await supabase
-      .from("stories")
+    const { data, error } = await (supabase
+      .from("stories") as any)
       .select(`
         *,
         users:author_id (display_name, email)
@@ -65,7 +65,7 @@ export default function ReviewQueuePage() {
     if (error) {
       console.error("Error fetching stories:", error);
     } else {
-      setStories(data || []);
+      setStories((data as Story[]) || []);
     }
     setLoadingStories(false);
   };
@@ -78,8 +78,8 @@ export default function ReviewQueuePage() {
   const handleApprove = (story: Story) => {
     startTransition(async () => {
       const supabase = createClient();
-      const { error } = await supabase
-        .from("stories")
+      const { error } = await (supabase
+        .from("stories") as any)
         .update({
           status: "published",
           published_at: new Date().toISOString(),
@@ -99,8 +99,8 @@ export default function ReviewQueuePage() {
 
     startTransition(async () => {
       const supabase = createClient();
-      const { error } = await supabase
-        .from("stories")
+      const { error } = await (supabase
+        .from("stories") as any)
         .update({
           status: "rejected",
           rejection_reason: rejectReason,

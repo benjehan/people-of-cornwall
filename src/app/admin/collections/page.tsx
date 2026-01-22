@@ -58,15 +58,19 @@ export default function AdminCollectionsPage() {
 
   const fetchCollections = async () => {
     const supabase = createClient();
-    const { data } = await supabase
-      .from("collections")
+    const { data } = await (supabase
+      .from("collections") as any)
       .select("*, story_collections(count)")
       .order("title");
 
     if (data) {
       setCollections(
-        data.map((c) => ({
-          ...c,
+        data.map((c: any) => ({
+          id: c.id,
+          title: c.title,
+          slug: c.slug,
+          description: c.description,
+          created_at: c.created_at,
           story_count: Array.isArray(c.story_collections)
             ? c.story_collections[0]?.count || 0
             : 0,
@@ -92,13 +96,13 @@ export default function AdminCollectionsPage() {
 
       if (editingId) {
         // Update
-        await supabase
-          .from("collections")
+        await (supabase
+          .from("collections") as any)
           .update({ title, slug, description: description || null })
           .eq("id", editingId);
       } else {
         // Create
-        await supabase.from("collections").insert({
+        await (supabase.from("collections") as any).insert({
           title,
           slug,
           description: description || null,
@@ -124,7 +128,7 @@ export default function AdminCollectionsPage() {
     if (!confirm("Delete this collection? Stories will not be deleted.")) return;
 
     const supabase = createClient();
-    await supabase.from("collections").delete().eq("id", id);
+    await (supabase.from("collections") as any).delete().eq("id", id);
     fetchCollections();
   };
 

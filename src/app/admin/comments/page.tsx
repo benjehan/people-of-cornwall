@@ -53,8 +53,8 @@ export default function AdminCommentsPage() {
 
   const fetchComments = async () => {
     const supabase = createClient();
-    let query = supabase
-      .from("comments")
+    let query = (supabase
+      .from("comments") as any)
       .select(`
         id, body, status, created_at, story_id,
         story:stories(title),
@@ -75,7 +75,7 @@ export default function AdminCommentsPage() {
   const updateStatus = (commentId: string, newStatus: string) => {
     startTransition(async () => {
       const supabase = createClient();
-      await supabase.from("comments").update({ status: newStatus }).eq("id", commentId);
+      await (supabase.from("comments") as any).update({ status: newStatus }).eq("id", commentId);
       fetchComments();
     });
   };
@@ -84,7 +84,7 @@ export default function AdminCommentsPage() {
     if (!confirm("Delete this comment permanently?")) return;
 
     const supabase = createClient();
-    await supabase.from("comments").delete().eq("id", commentId);
+    await (supabase.from("comments") as any).delete().eq("id", commentId);
     fetchComments();
   };
 

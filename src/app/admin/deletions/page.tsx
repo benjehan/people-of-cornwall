@@ -43,8 +43,8 @@ export default function AdminDeletionsPage() {
 
   const fetchRequests = async () => {
     const supabase = createClient();
-    const { data, error } = await supabase
-      .from("stories")
+    const { data, error } = await (supabase
+      .from("stories") as any)
       .select(`
         id, title, status, deletion_reason, deletion_requested_at, author_display_name,
         author:users(display_name, email)

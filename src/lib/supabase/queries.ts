@@ -38,8 +38,8 @@ export async function getPublishedStories({
   const from = (page - 1) * perPage;
   const to = from + perPage - 1;
 
-  let query = supabase
-    .from("stories")
+  let query = (supabase
+    .from("stories") as any)
     .select("*, likes(count), comments(count)", { count: "exact" })
     .eq("status", "published")
     .eq("soft_deleted", false)
@@ -70,7 +70,7 @@ export async function getPublishedStories({
   }
 
   // Transform the count aggregates
-  const stories: StoryWithCounts[] = (data || []).map((story) => ({
+  const stories: StoryWithCounts[] = (data || []).map((story: any) => ({
     ...story,
     likes_count: Array.isArray(story.likes) ? story.likes[0]?.count || 0 : 0,
     comments_count: Array.isArray(story.comments) ? story.comments[0]?.count || 0 : 0,
@@ -85,8 +85,8 @@ export async function getPublishedStories({
 export async function getFeaturedStory() {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("stories")
+  const { data, error } = await (supabase
+    .from("stories") as any)
     .select("*, likes(count), comments(count)")
     .eq("status", "published")
     .eq("soft_deleted", false)
@@ -115,8 +115,8 @@ export async function getFeaturedStory() {
 export async function getStoryById(id: string) {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("stories")
+  const { data, error } = await (supabase
+    .from("stories") as any)
     .select("*, likes(count), comments(count)")
     .eq("id", id)
     .eq("soft_deleted", false)
@@ -140,8 +140,8 @@ export async function getStoryById(id: string) {
 export async function getUserStories(userId: string) {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("stories")
+  const { data, error } = await (supabase
+    .from("stories") as any)
     .select("*, likes(count), comments(count)")
     .eq("author_id", userId)
     .eq("soft_deleted", false)
@@ -152,7 +152,7 @@ export async function getUserStories(userId: string) {
     return [];
   }
 
-  return (data || []).map((story) => ({
+  return (data || []).map((story: any) => ({
     ...story,
     likes_count: Array.isArray(story.likes) ? story.likes[0]?.count || 0 : 0,
     comments_count: Array.isArray(story.comments) ? story.comments[0]?.count || 0 : 0,
@@ -165,8 +165,8 @@ export async function getUserStories(userId: string) {
 export async function createStory(story: TablesInsert<"stories">) {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("stories")
+  const { data, error } = await (supabase
+    .from("stories") as any)
     .insert(story)
     .select()
     .single();
@@ -185,8 +185,8 @@ export async function createStory(story: TablesInsert<"stories">) {
 export async function updateStory(id: string, updates: TablesUpdate<"stories">) {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("stories")
+  const { data, error } = await (supabase
+    .from("stories") as any)
     .update(updates)
     .eq("id", id)
     .select()
@@ -206,8 +206,8 @@ export async function updateStory(id: string, updates: TablesUpdate<"stories">) 
 export async function getStoryLocations() {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("stories")
+  const { data, error } = await (supabase
+    .from("stories") as any)
     .select("location_name")
     .eq("status", "published")
     .eq("soft_deleted", false)
@@ -220,7 +220,7 @@ export async function getStoryLocations() {
   }
 
   // Get unique locations
-  const locations = [...new Set(data?.map((s) => s.location_name).filter(Boolean))];
+  const locations = [...new Set(data?.map((s: any) => s.location_name).filter(Boolean))];
   return locations as string[];
 }
 
@@ -230,8 +230,8 @@ export async function getStoryLocations() {
 export async function getStoryDecades() {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("stories")
+  const { data, error } = await (supabase
+    .from("stories") as any)
     .select("timeline_decade")
     .eq("status", "published")
     .eq("soft_deleted", false)
@@ -244,7 +244,7 @@ export async function getStoryDecades() {
   }
 
   // Get unique decades
-  const decades = [...new Set(data?.map((s) => s.timeline_decade).filter(Boolean))];
+  const decades = [...new Set(data?.map((s: any) => s.timeline_decade).filter(Boolean))];
   return decades as number[];
 }
 
@@ -266,8 +266,8 @@ export type CommentWithAuthor = Tables<"comments"> & {
 export async function getStoryComments(storyId: string) {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("comments")
+  const { data, error } = await (supabase
+    .from("comments") as any)
     .select(`
       *,
       author:users(id, display_name, avatar_url)
@@ -290,8 +290,8 @@ export async function getStoryComments(storyId: string) {
 export async function createComment(comment: TablesInsert<"comments">) {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("comments")
+  const { data, error } = await (supabase
+    .from("comments") as any)
     .insert(comment)
     .select(`
       *,
@@ -317,8 +317,8 @@ export async function createComment(comment: TablesInsert<"comments">) {
 export async function hasUserLikedStory(storyId: string, userId: string) {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("likes")
+  const { data, error } = await (supabase
+    .from("likes") as any)
     .select("id")
     .eq("story_id", storyId)
     .eq("user_id", userId)
@@ -338,8 +338,8 @@ export async function toggleLike(storyId: string, userId: string) {
   const supabase = await createClient();
 
   // Check if already liked
-  const { data: existing } = await supabase
-    .from("likes")
+  const { data: existing } = await (supabase
+    .from("likes") as any)
     .select("id")
     .eq("story_id", storyId)
     .eq("user_id", userId)
@@ -347,8 +347,8 @@ export async function toggleLike(storyId: string, userId: string) {
 
   if (existing) {
     // Unlike
-    const { error } = await supabase
-      .from("likes")
+    const { error } = await (supabase
+      .from("likes") as any)
       .delete()
       .eq("id", existing.id);
 
@@ -360,8 +360,8 @@ export async function toggleLike(storyId: string, userId: string) {
     return { liked: false, error: null };
   } else {
     // Like
-    const { error } = await supabase
-      .from("likes")
+    const { error } = await (supabase
+      .from("likes") as any)
       .insert({ story_id: storyId, user_id: userId });
 
     if (error) {
@@ -387,8 +387,8 @@ export type CollectionWithCount = Tables<"collections"> & {
 export async function getCollections() {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("collections")
+  const { data, error } = await (supabase
+    .from("collections") as any)
     .select("*, story_collections(count)")
     .order("title");
 
@@ -397,7 +397,7 @@ export async function getCollections() {
     return [];
   }
 
-  return (data || []).map((collection) => ({
+  return (data || []).map((collection: any) => ({
     ...collection,
     story_count: Array.isArray(collection.story_collections)
       ? collection.story_collections[0]?.count || 0
@@ -411,31 +411,31 @@ export async function getCollections() {
 export async function getCollectionStories(collectionSlug: string) {
   const supabase = await createClient();
 
-  const { data: collection } = await supabase
-    .from("collections")
+  const { data: collection } = await (supabase
+    .from("collections") as any)
     .select("id, title, description")
     .eq("slug", collectionSlug)
     .single();
 
   if (!collection) return { collection: null, stories: [] };
 
-  const { data: storyLinks } = await supabase
-    .from("story_collections")
+  const { data: storyLinks } = await (supabase
+    .from("story_collections") as any)
     .select("story_id")
     .eq("collection_id", collection.id);
 
   if (!storyLinks?.length) return { collection, stories: [] };
 
-  const storyIds = storyLinks.map((l) => l.story_id);
+  const storyIds = storyLinks.map((l: any) => l.story_id);
 
-  const { data: stories } = await supabase
-    .from("stories")
+  const { data: stories } = await (supabase
+    .from("stories") as any)
     .select("*, likes(count), comments(count)")
     .in("id", storyIds)
     .eq("status", "published")
     .eq("soft_deleted", false);
 
-  const storiesWithCounts = (stories || []).map((story) => ({
+  const storiesWithCounts = (stories || []).map((story: any) => ({
     ...story,
     likes_count: Array.isArray(story.likes) ? story.likes[0]?.count || 0 : 0,
     comments_count: Array.isArray(story.comments) ? story.comments[0]?.count || 0 : 0,

@@ -89,8 +89,8 @@ export default function AdminStoriesPage() {
 
   const fetchStories = async () => {
     const supabase = createClient();
-    let query = supabase
-      .from("stories")
+    let query = (supabase
+      .from("stories") as any)
       .select("id, title, author_display_name, status, featured, created_at, published_at, deletion_requested")
       .eq("soft_deleted", false)
       .order("created_at", { ascending: false });
@@ -100,7 +100,7 @@ export default function AdminStoriesPage() {
     }
 
     const { data } = await query;
-    setStories(data || []);
+    setStories((data as Story[]) || []);
     setLoadingStories(false);
   };
 
@@ -115,14 +115,14 @@ export default function AdminStoriesPage() {
 
   const fetchCollections = async () => {
     const supabase = createClient();
-    const { data } = await supabase.from("collections").select("id, title").order("title");
-    setCollections(data || []);
+    const { data } = await (supabase.from("collections") as any).select("id, title").order("title");
+    setCollections((data as Collection[]) || []);
   };
 
   const toggleFeatured = (storyId: string, currentFeatured: boolean) => {
     startTransition(async () => {
       const supabase = createClient();
-      await supabase.from("stories").update({ featured: !currentFeatured }).eq("id", storyId);
+      await (supabase.from("stories") as any).update({ featured: !currentFeatured }).eq("id", storyId);
       fetchStories();
     });
   };
@@ -138,7 +138,7 @@ export default function AdminStoriesPage() {
 
     startTransition(async () => {
       const supabase = createClient();
-      await supabase.from("story_collections").upsert({
+      await (supabase.from("story_collections") as any).upsert({
         story_id: selectedStoryId,
         collection_id: selectedCollectionId,
       });

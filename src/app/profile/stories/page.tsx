@@ -68,8 +68,8 @@ export default function MyStoriesPage() {
     if (!user) return;
     
     const supabase = createClient();
-    const { data, error } = await supabase
-      .from("stories")
+    const { data, error } = await (supabase
+      .from("stories") as any)
       .select("*")
       .eq("author_id", user.id)
       .eq("soft_deleted", false)
@@ -78,7 +78,7 @@ export default function MyStoriesPage() {
     if (error) {
       console.error("Error fetching stories:", error);
     } else {
-      setStories(data || []);
+      setStories((data as Story[]) || []);
     }
     setIsLoading(false);
   };

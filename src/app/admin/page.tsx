@@ -49,12 +49,12 @@ export default function AdminDashboard() {
 
       // Fetch counts
       const [storiesRes, reviewRes, publishedRes, usersRes, commentsRes, deletionsRes] = await Promise.all([
-        supabase.from("stories").select("id", { count: "exact", head: true }),
-        supabase.from("stories").select("id", { count: "exact", head: true }).eq("status", "review"),
-        supabase.from("stories").select("id", { count: "exact", head: true }).eq("status", "published"),
-        supabase.from("users").select("id", { count: "exact", head: true }),
-        supabase.from("comments").select("id", { count: "exact", head: true }),
-        supabase.from("stories").select("id", { count: "exact", head: true }).eq("deletion_requested", true).eq("soft_deleted", false),
+        (supabase.from("stories") as any).select("id", { count: "exact", head: true }),
+        (supabase.from("stories") as any).select("id", { count: "exact", head: true }).eq("status", "review"),
+        (supabase.from("stories") as any).select("id", { count: "exact", head: true }).eq("status", "published"),
+        (supabase.from("users") as any).select("id", { count: "exact", head: true }),
+        (supabase.from("comments") as any).select("id", { count: "exact", head: true }),
+        (supabase.from("stories") as any).select("id", { count: "exact", head: true }).eq("deletion_requested", true).eq("soft_deleted", false),
       ]);
 
       setStats({
