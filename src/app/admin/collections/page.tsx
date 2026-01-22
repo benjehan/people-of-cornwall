@@ -34,7 +34,7 @@ interface Collection {
 
 export default function AdminCollectionsPage() {
   const router = useRouter();
-  const { user, isAdmin, isLoading, profileChecked } = useUser();
+  const { user, isAdmin, isLoading } = useUser();
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loadingCollections, setLoadingCollections] = useState(true);
   const [isPending, startTransition] = useTransition();
@@ -46,10 +46,10 @@ export default function AdminCollectionsPage() {
   const [description, setDescription] = useState("");
 
   useEffect(() => {
-    if (!isLoading && profileChecked && (!user || !isAdmin)) {
+    if (!isLoading && (!user || !isAdmin)) {
       router.push("/");
     }
-  }, [isLoading, profileChecked, user, isAdmin, router]);
+  }, [isLoading, user, isAdmin, router]);
 
   useEffect(() => {
     if (!user || !isAdmin) return;
@@ -139,7 +139,7 @@ export default function AdminCollectionsPage() {
     setIsDialogOpen(true);
   };
 
-  if (isLoading || !profileChecked || !user || !isAdmin) {
+  if (isLoading || !user || !isAdmin) {
     return (
       <div className="flex min-h-screen flex-col bg-parchment">
         <Header />

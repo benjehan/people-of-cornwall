@@ -34,17 +34,17 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function AdminCommentsPage() {
   const router = useRouter();
-  const { user, isAdmin, isLoading, profileChecked } = useUser();
+  const { user, isAdmin, isLoading } = useUser();
   const [comments, setComments] = useState<Comment[]>([]);
   const [loadingComments, setLoadingComments] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    if (!isLoading && profileChecked && (!user || !isAdmin)) {
+    if (!isLoading && (!user || !isAdmin)) {
       router.push("/");
     }
-  }, [isLoading, profileChecked, user, isAdmin, router]);
+  }, [isLoading, user, isAdmin, router]);
 
   useEffect(() => {
     if (!user || !isAdmin) return;
@@ -88,7 +88,7 @@ export default function AdminCommentsPage() {
     fetchComments();
   };
 
-  if (isLoading || !profileChecked || !user || !isAdmin) {
+  if (isLoading || !user || !isAdmin) {
     return (
       <div className="flex min-h-screen flex-col">
         <Header />

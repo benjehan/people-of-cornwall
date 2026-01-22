@@ -32,16 +32,15 @@ interface Stats {
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const { user, isAdmin, isLoading, profileChecked } = useUser();
+  const { user, isAdmin, isLoading } = useUser();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loadingStats, setLoadingStats] = useState(true);
 
   useEffect(() => {
-    // Wait for both auth loading AND profile check before redirecting
-    if (!isLoading && profileChecked && (!user || !isAdmin)) {
+    if (!isLoading && (!user || !isAdmin)) {
       router.push("/");
     }
-  }, [isLoading, profileChecked, user, isAdmin, router]);
+  }, [isLoading, user, isAdmin, router]);
 
   useEffect(() => {
     if (!user || !isAdmin) return;
@@ -75,7 +74,7 @@ export default function AdminDashboard() {
     fetchStats();
   }, [user, isAdmin]);
 
-  if (isLoading || !profileChecked || !user || !isAdmin) {
+  if (isLoading || !user || !isAdmin) {
     return (
       <div className="flex min-h-screen flex-col bg-parchment">
         <Header />

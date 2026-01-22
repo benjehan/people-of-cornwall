@@ -11,179 +11,136 @@ interface UserState {
   user: User | null;
   profile: Profile | null;
   isLoading: boolean;
-  profileChecked: boolean;
   isAdmin: boolean;
 }
 
 /**
- * Bulletproof auth hook
- * Uses onAuthStateChange as the primary source of truth
+ * Fast, reliable auth hook
+ * Uses getSession() for speed (reads from cookies, no network call)
  */
 export function useUser() {
   const [state, setState] = useState<UserState>({
     user: null,
     profile: null,
     isLoading: true,
-    profileChecked: false,
     isAdmin: false,
   });
 
-  // Track if we've received any auth event
-  const hasReceivedAuthEvent = useRef(false);
   const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
+  const initRef = useRef(false);
 
   // Initialize client once
   if (typeof window !== "undefined" && !supabaseRef.current) {
     supabaseRef.current = createClient();
   }
 
-  const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
-    if (!supabaseRef.current) return null;
-    
-    try {
-      const { data } = await (supabaseRef.current
-        .from("users") as any)
-        .select("*")
-        .eq("id", userId)
-        .single();
-      return data as Profile | null;
-    } catch {
-      return null;
-    }
-  }, []);
-
   useEffect(() => {
     const supabase = supabaseRef.current;
-    if (!supabase) {
-      setState({
-        user: null,
-        profile: null,
-        isLoading: false,
-        profileChecked: true,
-        isAdmin: false,
-      });
-      return;
-    }
+    if (!supabase || initRef.current) return;
+    initRef.current = true;
 
     let mounted = true;
 
-    // The auth state change listener is the PRIMARY source of truth
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+    // Fast initial check using getSession (reads cookies, no network)
+    const initAuth = async () => {
+      try {
+        // getSession is FAST - it reads from local storage/cookies
+        const { data: { session } } = await supabase.auth.getSession();
+        
         if (!mounted) return;
+        
+        if (session?.user) {
+          setState({
+            user: session.user,
+            profile: null,
+            isLoading: false,
+            isAdmin: false,
+          });
 
-        hasReceivedAuthEvent.current = true;
-
-        if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' && !session) {
+          // Fetch profile in background (non-blocking)
+          const { data: profile } = await (supabase
+            .from("users") as any)
+            .select("*")
+            .eq("id", session.user.id)
+            .single();
+          
+          if (mounted) {
+            setState({
+              user: session.user,
+              profile: profile || null,
+              isLoading: false,
+              isAdmin: profile?.role === "admin",
+            });
+          }
+        } else {
           setState({
             user: null,
             profile: null,
             isLoading: false,
-            profileChecked: true,
+            isAdmin: false,
+          });
+        }
+      } catch (error) {
+        console.error("Auth init error:", error);
+        if (mounted) {
+          setState({
+            user: null,
+            profile: null,
+            isLoading: false,
+            isAdmin: false,
+          });
+        }
+      }
+    };
+
+    initAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!mounted) return;
+
+        if (event === 'SIGNED_OUT') {
+          setState({
+            user: null,
+            profile: null,
+            isLoading: false,
             isAdmin: false,
           });
           return;
         }
 
         if (session?.user) {
-          // Immediately update with user
           setState(prev => ({
             ...prev,
             user: session.user,
             isLoading: false,
           }));
 
-          // Fetch profile in background
-          const profile = await fetchProfile(session.user.id);
+          // Fetch profile
+          const { data: profile } = await (supabase
+            .from("users") as any)
+            .select("*")
+            .eq("id", session.user.id)
+            .single();
+          
           if (mounted) {
-            setState(prev => ({
-              ...prev,
-              user: session.user, // Keep user in case state was reset
+            setState({
+              user: session.user,
               profile: profile || null,
-              profileChecked: true,
-              isAdmin: profile?.role === "admin",
               isLoading: false,
-            }));
+              isAdmin: profile?.role === "admin",
+            });
           }
-        } else {
-          // No session
-          setState({
-            user: null,
-            profile: null,
-            isLoading: false,
-            profileChecked: true,
-            isAdmin: false,
-          });
         }
       }
     );
-
-    // Also do an immediate session check as a backup
-    // This handles the case where we already have a session on page load
-    const checkInitialSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!mounted) return;
-        
-        // Only use this if we haven't received an auth event yet
-        if (!hasReceivedAuthEvent.current) {
-          if (session?.user) {
-            setState(prev => ({
-              ...prev,
-              user: session.user,
-              isLoading: false,
-            }));
-
-            const profile = await fetchProfile(session.user.id);
-            if (mounted && !hasReceivedAuthEvent.current) {
-              setState(prev => ({
-                ...prev,
-                user: session.user,
-                profile: profile || null,
-                profileChecked: true,
-                isAdmin: profile?.role === "admin",
-                isLoading: false,
-              }));
-            }
-          } else {
-            // No session found, but wait a bit for auth event
-            setTimeout(() => {
-              if (mounted && !hasReceivedAuthEvent.current) {
-                setState(prev => {
-                  // Only update if still loading
-                  if (prev.isLoading) {
-                    return {
-                      ...prev,
-                      isLoading: false,
-                      profileChecked: true,
-                    };
-                  }
-                  return prev;
-                });
-              }
-            }, 1000);
-          }
-        }
-      } catch (error) {
-        console.error("Session check error:", error);
-        if (mounted && !hasReceivedAuthEvent.current) {
-          setState(prev => ({
-            ...prev,
-            isLoading: false,
-            profileChecked: true,
-          }));
-        }
-      }
-    };
-
-    checkInitialSession();
 
     return () => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [fetchProfile]);
+  }, []);
 
   const signOut = useCallback(async () => {
     if (!supabaseRef.current) return;
@@ -193,7 +150,6 @@ export function useUser() {
       user: null,
       profile: null,
       isLoading: false,
-      profileChecked: true,
       isAdmin: false,
     });
   }, []);

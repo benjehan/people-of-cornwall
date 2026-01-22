@@ -37,7 +37,7 @@ type Story = Tables<"stories"> & {
 
 export default function ReviewQueuePage() {
   const router = useRouter();
-  const { user, isAdmin, isLoading, profileChecked } = useUser();
+  const { user, isAdmin, isLoading } = useUser();
   const [stories, setStories] = useState<Story[]>([]);
   const [loadingStories, setLoadingStories] = useState(true);
   const [selectedStory, setSelectedStory] = useState<Story | null>(null);
@@ -46,10 +46,10 @@ export default function ReviewQueuePage() {
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    if (!isLoading && profileChecked && (!user || !isAdmin)) {
+    if (!isLoading && (!user || !isAdmin)) {
       router.push("/");
     }
-  }, [isLoading, profileChecked, user, isAdmin, router]);
+  }, [isLoading, user, isAdmin, router]);
 
   const fetchStories = async () => {
     const supabase = createClient();
@@ -123,7 +123,7 @@ export default function ReviewQueuePage() {
     setRejectDialogOpen(true);
   };
 
-  if (isLoading || !profileChecked || !user || !isAdmin) {
+  if (isLoading || !user || !isAdmin) {
     return (
       <div className="flex min-h-screen flex-col">
         <Header />

@@ -1,19 +1,21 @@
 /**
  * Supabase Middleware Client
  * 
- * Refreshes the user's session on every request
- * Note: Auth redirects are now handled client-side for better reliability
+ * Only refreshes cookies - NO auth checks on every request
+ * Auth is handled client-side for speed and reliability
  */
 
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
+  const response = NextResponse.next({
     request,
   });
 
-  const supabase = createServerClient(
+  // Create Supabase client just to handle cookie refresh
+  // This does NOT make network calls - it only manages local cookies
+  createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -22,28 +24,16 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
-          supabaseResponse = NextResponse.next({
-            request,
-          });
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+            response.cookies.set(name, value, options)
           );
         },
       },
     }
   );
 
-  // Just refresh the session - don't redirect
-  // Auth protection is handled client-side for better reliability
-  try {
-    await supabase.auth.getUser();
-  } catch (error) {
-    // Silently fail - client will handle auth
-    console.error("Middleware auth refresh error:", error);
-  }
+  // DO NOT call getUser() here - it's slow and unnecessary
+  // Client-side auth handles everything
 
-  return supabaseResponse;
+  return response;
 }

@@ -25,16 +25,16 @@ interface DeletionRequest {
 
 export default function AdminDeletionsPage() {
   const router = useRouter();
-  const { user, isAdmin, isLoading, profileChecked } = useUser();
+  const { user, isAdmin, isLoading } = useUser();
   const [requests, setRequests] = useState<DeletionRequest[]>([]);
   const [loadingRequests, setLoadingRequests] = useState(true);
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    if (!isLoading && profileChecked && (!user || !isAdmin)) {
+    if (!isLoading && (!user || !isAdmin)) {
       router.push("/");
     }
-  }, [isLoading, profileChecked, user, isAdmin, router]);
+  }, [isLoading, user, isAdmin, router]);
 
   useEffect(() => {
     if (!user || !isAdmin) return;
@@ -77,7 +77,7 @@ export default function AdminDeletionsPage() {
     });
   };
 
-  if (isLoading || !profileChecked || !user || !isAdmin) {
+  if (isLoading || !user || !isAdmin) {
     return (
       <div className="flex min-h-screen flex-col bg-parchment">
         <Header />

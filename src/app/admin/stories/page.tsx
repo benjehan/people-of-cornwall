@@ -56,7 +56,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function AdminStoriesPage() {
   const router = useRouter();
-  const { user, isAdmin, isLoading, profileChecked } = useUser();
+  const { user, isAdmin, isLoading } = useUser();
   const [stories, setStories] = useState<Story[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loadingStories, setLoadingStories] = useState(true);
@@ -69,10 +69,10 @@ export default function AdminStoriesPage() {
   const [selectedCollectionId, setSelectedCollectionId] = useState<string>("");
 
   useEffect(() => {
-    if (!isLoading && profileChecked && (!user || !isAdmin)) {
+    if (!isLoading && (!user || !isAdmin)) {
       router.push("/");
     }
-  }, [isLoading, profileChecked, user, isAdmin, router]);
+  }, [isLoading, user, isAdmin, router]);
 
   useEffect(() => {
     if (!user || !isAdmin) return;
@@ -140,7 +140,7 @@ export default function AdminStoriesPage() {
     });
   };
 
-  if (isLoading || !profileChecked || !user || !isAdmin) {
+  if (isLoading || !user || !isAdmin) {
     return (
       <div className="flex min-h-screen flex-col bg-parchment">
         <Header />
