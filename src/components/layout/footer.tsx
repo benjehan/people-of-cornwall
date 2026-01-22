@@ -4,7 +4,7 @@ export function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="mt-auto border-t border-bone bg-cream">
+    <footer className="mt-auto border-t border-bone bg-cream dark:bg-cream dark:border-bone">
       <div className="mx-auto max-w-[1320px] px-4 sm:px-6 py-16">
         {/* Main footer content */}
         <div className="grid gap-12 md:grid-cols-4">
@@ -87,26 +87,10 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/about"
+                  href="/search"
                   className="text-sm text-stone transition-colors hover:text-granite"
                 >
-                  About
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/guidelines"
-                  className="text-sm text-stone transition-colors hover:text-granite"
-                >
-                  Guidelines
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/contact"
-                  className="text-sm text-stone transition-colors hover:text-granite"
-                >
-                  Contact
+                  Search
                 </Link>
               </li>
             </ul>

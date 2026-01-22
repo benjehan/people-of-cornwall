@@ -136,9 +136,13 @@ function WritePageContent() {
   }, [user, title, body, locationName, timelineYear, anonymous, originalStatus]);
 
   const handleSave = () => {
-    if (!user || !title.trim()) return;
+    if (!user || !title.trim()) {
+      console.log('[WRITE] Cannot save - no user or title');
+      return;
+    }
 
     startTransition(async () => {
+      console.log('[WRITE] Saving story...');
       const result = await saveStoryAction({
         id: storyId || undefined,
         title: title.trim(),
@@ -151,17 +155,40 @@ function WritePageContent() {
         prompt_id: promptId,
       });
 
+      console.log('[WRITE] Save result:', result);
+
+      if (result.error) {
+        console.error('[WRITE] Save error:', result.error);
+        alert('Failed to save: ' + result.error);
+        return;
+      }
+
       if (result.data) {
         setStoryId(result.data.id);
         setLastSaved(new Date());
+        console.log('[WRITE] Saved! Story ID:', result.data.id);
       }
     });
   };
 
   const handleSubmit = () => {
-    if (!user || !title.trim() || !body.trim()) return;
+    if (!user) {
+      console.log('[WRITE] Cannot submit - no user');
+      alert('Please sign in to submit');
+      return;
+    }
+    if (!title.trim()) {
+      alert('Please add a title');
+      return;
+    }
+    if (!body.trim()) {
+      alert('Please write some content');
+      return;
+    }
 
     startTransition(async () => {
+      console.log('[WRITE] Submitting story...');
+      
       // First save
       const saveResult = await saveStoryAction({
         id: storyId || undefined,
@@ -175,13 +202,29 @@ function WritePageContent() {
         prompt_id: promptId,
       });
 
+      console.log('[WRITE] Save result:', saveResult);
+
+      if (saveResult.error) {
+        console.error('[WRITE] Save error:', saveResult.error);
+        alert('Failed to save: ' + saveResult.error);
+        return;
+      }
+
       if (saveResult.data) {
         // Then submit for review
+        console.log('[WRITE] Submitting for review, ID:', saveResult.data.id);
         const submitResult = await submitStoryAction(saveResult.data.id);
         
-        if (!submitResult.error) {
-          router.push("/profile/stories?submitted=true");
+        console.log('[WRITE] Submit result:', submitResult);
+        
+        if (submitResult.error) {
+          console.error('[WRITE] Submit error:', submitResult.error);
+          alert('Failed to submit: ' + submitResult.error);
+          return;
         }
+        
+        console.log('[WRITE] Success! Redirecting...');
+        router.push("/profile/stories?submitted=true");
       }
     });
   };
