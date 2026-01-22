@@ -36,7 +36,7 @@ function WritePageContent() {
   const [isPending, startTransition] = useTransition();
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isLoadingStory, setIsLoadingStory] = useState(false);
-  const [authCheckComplete, setAuthCheckComplete] = useState(false);
+  const [shouldRedirect, setShouldRedirect] = useState(false);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -51,23 +51,29 @@ function WritePageContent() {
   const [promptId, setPromptId] = useState<string | null>(null);
   const [promptTitle, setPromptTitle] = useState<string | null>(null);
 
-  // Mark auth check as complete once loading finishes
+  // Redirect logic - only redirect if auth is done loading AND no user
   useEffect(() => {
-    if (!authLoading) {
-      // Give a brief moment for any auth state to settle
-      const timer = setTimeout(() => {
-        setAuthCheckComplete(true);
-      }, 100);
-      return () => clearTimeout(timer);
+    // If we have a user, never redirect
+    if (user) {
+      setShouldRedirect(false);
+      return;
     }
-  }, [authLoading]);
-
-  // Redirect if not logged in (only after auth check is truly complete)
-  useEffect(() => {
-    if (authCheckComplete && !user) {
-      router.push("/login?redirect=/write");
+    
+    // If still loading, wait
+    if (authLoading) {
+      return;
     }
-  }, [authCheckComplete, user, router]);
+    
+    // Auth is done and no user - wait a moment then redirect
+    const timer = setTimeout(() => {
+      if (!user) {
+        setShouldRedirect(true);
+        router.push("/login?redirect=/write");
+      }
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [authLoading, user, router]);
 
   // Load existing story if ID provided, or prompt if prompt ID provided
   useEffect(() => {
@@ -194,8 +200,8 @@ function WritePageContent() {
   const isEditingPublished = originalStatus === "published";
   const isEditingRejected = originalStatus === "rejected";
 
-  // Show loading while auth is being checked
-  if (!authCheckComplete || isLoadingStory) {
+  // Show loading while auth is being checked or story is loading
+  if ((authLoading && !user) || isLoadingStory) {
     return (
       <div className="flex min-h-screen flex-col bg-parchment">
         <Header />
@@ -203,7 +209,7 @@ function WritePageContent() {
           <div className="text-center">
             <div className="h-6 w-6 mx-auto animate-spin rounded-full border-2 border-granite border-t-transparent" />
             <p className="mt-4 text-stone">
-              {isLoadingStory ? "Loading your story..." : "Checking authentication..."}
+              {isLoadingStory ? "Loading your story..." : "Loading..."}
             </p>
           </div>
         </main>
@@ -211,8 +217,8 @@ function WritePageContent() {
     );
   }
 
-  // Redirect will happen via useEffect if not logged in
-  if (!user) {
+  // No user after auth check - show redirect message
+  if (!user && shouldRedirect) {
     return (
       <div className="flex min-h-screen flex-col bg-parchment">
         <Header />
@@ -220,6 +226,21 @@ function WritePageContent() {
           <div className="text-center">
             <div className="h-6 w-6 mx-auto animate-spin rounded-full border-2 border-granite border-t-transparent" />
             <p className="mt-4 text-stone">Redirecting to login...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Still checking but no user yet - keep showing loading
+  if (!user) {
+    return (
+      <div className="flex min-h-screen flex-col bg-parchment">
+        <Header />
+        <main className="flex flex-1 items-center justify-center">
+          <div className="text-center">
+            <div className="h-6 w-6 mx-auto animate-spin rounded-full border-2 border-granite border-t-transparent" />
+            <p className="mt-4 text-stone">Checking authentication...</p>
           </div>
         </main>
       </div>

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback, useSyncExternalStore } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { User, Session } from "@supabase/supabase-js";
+import type { User } from "@supabase/supabase-js";
 import type { Tables } from "@/types/supabase";
 
 type Profile = Tables<"users">;
@@ -16,8 +16,8 @@ interface UserState {
 }
 
 /**
- * Hook to get the current authenticated user and their profile
- * Uses a more reliable approach with immediate session check
+ * Bulletproof auth hook
+ * Uses onAuthStateChange as the primary source of truth
  */
 export function useUser() {
   const [state, setState] = useState<UserState>({
@@ -28,26 +28,32 @@ export function useUser() {
     isAdmin: false,
   });
 
-  const [supabase] = useState(() => 
-    typeof window !== "undefined" ? createClient() : null
-  );
+  // Track if we've received any auth event
+  const hasReceivedAuthEvent = useRef(false);
+  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
+
+  // Initialize client once
+  if (typeof window !== "undefined" && !supabaseRef.current) {
+    supabaseRef.current = createClient();
+  }
 
   const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
-    if (!supabase) return null;
+    if (!supabaseRef.current) return null;
     
     try {
-      const { data: profile } = await (supabase
+      const { data } = await (supabaseRef.current
         .from("users") as any)
         .select("*")
         .eq("id", userId)
         .single();
-      return profile as Profile | null;
+      return data as Profile | null;
     } catch {
       return null;
     }
-  }, [supabase]);
+  }, []);
 
   useEffect(() => {
+    const supabase = supabaseRef.current;
     if (!supabase) {
       setState({
         user: null,
@@ -60,132 +66,129 @@ export function useUser() {
     }
 
     let mounted = true;
-    let timeoutId: NodeJS.Timeout;
 
-    const checkAuth = async () => {
-      try {
-        // Try to get the session - this reads from cookies/storage
-        const { data: { session }, error } = await supabase.auth.getSession();
-
+    // The auth state change listener is the PRIMARY source of truth
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
         if (!mounted) return;
 
-        if (error) {
-          console.error("Session error:", error.message);
+        hasReceivedAuthEvent.current = true;
+
+        if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' && !session) {
+          setState({
+            user: null,
+            profile: null,
+            isLoading: false,
+            profileChecked: true,
+            isAdmin: false,
+          });
+          return;
         }
 
         if (session?.user) {
-          // User is authenticated
+          // Immediately update with user
           setState(prev => ({
             ...prev,
             user: session.user,
             isLoading: false,
           }));
 
-          // Fetch profile (non-blocking)
-          fetchProfile(session.user.id).then(profile => {
-            if (mounted) {
+          // Fetch profile in background
+          const profile = await fetchProfile(session.user.id);
+          if (mounted) {
+            setState(prev => ({
+              ...prev,
+              user: session.user, // Keep user in case state was reset
+              profile: profile || null,
+              profileChecked: true,
+              isAdmin: profile?.role === "admin",
+              isLoading: false,
+            }));
+          }
+        } else {
+          // No session
+          setState({
+            user: null,
+            profile: null,
+            isLoading: false,
+            profileChecked: true,
+            isAdmin: false,
+          });
+        }
+      }
+    );
+
+    // Also do an immediate session check as a backup
+    // This handles the case where we already have a session on page load
+    const checkInitialSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
+        
+        // Only use this if we haven't received an auth event yet
+        if (!hasReceivedAuthEvent.current) {
+          if (session?.user) {
+            setState(prev => ({
+              ...prev,
+              user: session.user,
+              isLoading: false,
+            }));
+
+            const profile = await fetchProfile(session.user.id);
+            if (mounted && !hasReceivedAuthEvent.current) {
               setState(prev => ({
                 ...prev,
+                user: session.user,
                 profile: profile || null,
                 profileChecked: true,
                 isAdmin: profile?.role === "admin",
+                isLoading: false,
               }));
             }
-          });
-        } else {
-          // No session found
-          setState({
-            user: null,
-            profile: null,
-            isLoading: false,
-            profileChecked: true,
-            isAdmin: false,
-          });
+          } else {
+            // No session found, but wait a bit for auth event
+            setTimeout(() => {
+              if (mounted && !hasReceivedAuthEvent.current) {
+                setState(prev => {
+                  // Only update if still loading
+                  if (prev.isLoading) {
+                    return {
+                      ...prev,
+                      isLoading: false,
+                      profileChecked: true,
+                    };
+                  }
+                  return prev;
+                });
+              }
+            }, 1000);
+          }
         }
       } catch (error) {
-        console.error("Auth check error:", error);
-        if (mounted) {
-          setState({
-            user: null,
-            profile: null,
-            isLoading: false,
-            profileChecked: true,
-            isAdmin: false,
-          });
-        }
-      }
-    };
-
-    // Start auth check immediately
-    checkAuth();
-
-    // Safety timeout - but much shorter now (3 seconds)
-    timeoutId = setTimeout(() => {
-      if (mounted) {
-        setState(prev => {
-          if (prev.isLoading) {
-            console.warn("Auth loading timeout");
-            return {
-              ...prev,
-              isLoading: false,
-              profileChecked: true,
-            };
-          }
-          return prev;
-        });
-      }
-    }, 3000);
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mounted) return;
-
-      console.log("Auth state change:", event);
-
-      if (event === 'SIGNED_OUT' || !session) {
-        setState({
-          user: null,
-          profile: null,
-          isLoading: false,
-          profileChecked: true,
-          isAdmin: false,
-        });
-        return;
-      }
-
-      if (session?.user) {
-        setState(prev => ({
-          ...prev,
-          user: session.user,
-          isLoading: false,
-        }));
-
-        // Fetch profile
-        const profile = await fetchProfile(session.user.id);
-        if (mounted) {
+        console.error("Session check error:", error);
+        if (mounted && !hasReceivedAuthEvent.current) {
           setState(prev => ({
             ...prev,
-            profile: profile || null,
+            isLoading: false,
             profileChecked: true,
-            isAdmin: profile?.role === "admin",
           }));
         }
       }
-    });
+    };
+
+    checkInitialSession();
 
     return () => {
       mounted = false;
-      clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
-  }, [supabase, fetchProfile]);
+  }, [fetchProfile]);
 
   const signOut = useCallback(async () => {
-    if (!supabase) return;
+    if (!supabaseRef.current) return;
     
-    await supabase.auth.signOut();
+    await supabaseRef.current.auth.signOut();
     setState({
       user: null,
       profile: null,
@@ -193,7 +196,7 @@ export function useUser() {
       profileChecked: true,
       isAdmin: false,
     });
-  }, [supabase]);
+  }, []);
 
   return {
     ...state,
