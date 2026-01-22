@@ -5,19 +5,67 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { CheckCircle, XCircle, Loader2, Sparkles, Tag } from "lucide-react";
 
 interface ReviewPanelProps {
   storyId: string;
   storyStatus: string;
+  storyTitle: string;
+  storyBody: string;
+  currentSummary?: string | null;
+  currentTags?: string[] | null;
 }
 
-export function AdminReviewPanel({ storyId, storyStatus }: ReviewPanelProps) {
+export function AdminReviewPanel({ 
+  storyId, 
+  storyStatus,
+  storyTitle,
+  storyBody,
+  currentSummary,
+  currentTags,
+}: ReviewPanelProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [actionResult, setActionResult] = useState<{ success: boolean; message: string } | null>(null);
+  
+  // AI Summary state
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [aiSummary, setAiSummary] = useState(currentSummary || "");
+  const [aiTags, setAiTags] = useState<string[]>(currentTags || []);
+
+  const handleGenerateAI = async () => {
+    setIsGenerating(true);
+    setActionResult(null);
+
+    try {
+      const response = await fetch("/api/ai/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          storyId, 
+          title: storyTitle, 
+          body: storyBody 
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.error) {
+        setActionResult({ success: false, message: `AI Error: ${data.error}` });
+      } else {
+        setAiSummary(data.summary);
+        setAiTags(data.tags || []);
+        setActionResult({ success: true, message: "AI summary generated and saved!" });
+      }
+    } catch (error) {
+      setActionResult({ success: false, message: "Failed to generate summary" });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const handleApprove = () => {
     startTransition(async () => {
@@ -82,9 +130,10 @@ export function AdminReviewPanel({ storyId, storyStatus }: ReviewPanelProps) {
   }
 
   return (
-    <Card className="border-atlantic-blue/30 bg-atlantic-blue/5">
+    <Card className="border-copper/30 bg-copper/5">
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg text-atlantic-blue">
+        <CardTitle className="flex items-center gap-2 text-lg text-granite">
+          <Sparkles className="h-5 w-5 text-copper" />
           Admin Review
         </CardTitle>
       </CardHeader>
@@ -93,20 +142,61 @@ export function AdminReviewPanel({ storyId, storyStatus }: ReviewPanelProps) {
           <div
             className={`rounded-md p-3 text-sm ${
               actionResult.success
-                ? "bg-moss-green/10 text-moss-green-dark"
-                : "bg-copper-clay/10 text-copper-clay-dark"
+                ? "bg-green-100 text-green-800"
+                : "bg-red-100 text-red-800"
             }`}
           >
             {actionResult.message}
           </div>
         )}
 
+        {/* AI Summary Section */}
+        <div className="border-b border-bone pb-4">
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-sm font-medium text-granite">AI Summary & Tags</label>
+            <Button
+              onClick={handleGenerateAI}
+              disabled={isGenerating}
+              variant="outline"
+              size="sm"
+              className="gap-1.5 border-copper text-copper hover:bg-copper hover:text-parchment"
+            >
+              {isGenerating ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="h-3.5 w-3.5" />
+              )}
+              {aiSummary ? "Regenerate" : "Generate"}
+            </Button>
+          </div>
+          
+          {aiSummary ? (
+            <div className="space-y-2">
+              <p className="text-sm text-stone italic">"{aiSummary}"</p>
+              {aiTags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  <Tag className="h-3.5 w-3.5 text-silver" />
+                  {aiTags.map((tag) => (
+                    <Badge key={tag} variant="outline" className="text-xs border-bone">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-stone">
+              Click "Generate" to create an AI summary and tags for this story.
+            </p>
+          )}
+        </div>
+
         {!showRejectForm ? (
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button
               onClick={handleApprove}
               disabled={isPending}
-              className="flex-1 gap-2 bg-moss-green text-chalk-white hover:bg-moss-green-dark"
+              className="flex-1 gap-2 bg-green-600 text-white hover:bg-green-700"
             >
               {isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -119,7 +209,7 @@ export function AdminReviewPanel({ storyId, storyStatus }: ReviewPanelProps) {
               onClick={() => setShowRejectForm(true)}
               disabled={isPending}
               variant="outline"
-              className="flex-1 gap-2 border-copper-clay text-copper-clay hover:bg-copper-clay/10"
+              className="flex-1 gap-2 border-copper text-copper hover:bg-copper/10"
             >
               <XCircle className="h-4 w-4" />
               Request Changes
@@ -132,13 +222,13 @@ export function AdminReviewPanel({ storyId, storyStatus }: ReviewPanelProps) {
               onChange={(e) => setRejectionReason(e.target.value)}
               placeholder="Provide feedback to help the author improve their story..."
               rows={4}
-              className="resize-none"
+              className="resize-none border-bone"
             />
             <div className="flex gap-2">
               <Button
                 onClick={handleReject}
                 disabled={isPending || !rejectionReason.trim()}
-                className="gap-2 bg-copper-clay text-chalk-white hover:bg-copper-clay-dark"
+                className="gap-2 bg-copper text-parchment hover:bg-copper-dark"
               >
                 {isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -161,7 +251,7 @@ export function AdminReviewPanel({ storyId, storyStatus }: ReviewPanelProps) {
           </div>
         )}
 
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-stone">
           Approving will publish the story publicly. Requesting changes will return it to the author with your feedback.
         </p>
       </CardContent>

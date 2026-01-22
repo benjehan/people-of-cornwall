@@ -223,8 +223,15 @@ export default async function StoryPage({
 
           {/* Admin Review Panel */}
           {isAdmin && story.status === "review" && (
-            <div className="mb-10 rounded-lg border border-copper/20 bg-copper/5 p-6">
-              <AdminReviewPanel storyId={story.id} storyStatus={story.status} />
+            <div className="mb-10">
+              <AdminReviewPanel 
+                storyId={story.id} 
+                storyStatus={story.status}
+                storyTitle={story.title}
+                storyBody={story.body || ""}
+                currentSummary={story.ai_summary}
+                currentTags={story.ai_tags}
+              />
             </div>
           )}
 
