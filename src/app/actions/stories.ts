@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import type { TablesInsert, TablesUpdate } from "@/types/supabase";
 
 interface SaveStoryData {
   id?: string;
@@ -31,17 +32,19 @@ export async function saveStoryAction(data: SaveStoryData) {
 
   if (data.id) {
     // Update existing story
+    const updateData: TablesUpdate<"stories"> = {
+      title: data.title,
+      body: data.body,
+      location_name: data.location_name,
+      location_lat: data.location_lat,
+      location_lng: data.location_lng,
+      timeline_year: data.timeline_year,
+      anonymous: data.anonymous,
+    };
+
     const { data: story, error } = await supabase
       .from("stories")
-      .update({
-        title: data.title,
-        body: data.body,
-        location_name: data.location_name,
-        location_lat: data.location_lat,
-        location_lng: data.location_lng,
-        timeline_year: data.timeline_year,
-        anonymous: data.anonymous,
-      })
+      .update(updateData)
       .eq("id", data.id)
       .eq("author_id", user.id) // Security: only update own stories
       .select()
@@ -56,19 +59,21 @@ export async function saveStoryAction(data: SaveStoryData) {
     return { data: story, error: null };
   } else {
     // Create new story
+    const insertData: TablesInsert<"stories"> = {
+      title: data.title,
+      body: data.body,
+      author_id: user.id,
+      location_name: data.location_name,
+      location_lat: data.location_lat,
+      location_lng: data.location_lng,
+      timeline_year: data.timeline_year,
+      anonymous: data.anonymous,
+      status: "draft",
+    };
+
     const { data: story, error } = await supabase
       .from("stories")
-      .insert({
-        title: data.title,
-        body: data.body,
-        author_id: user.id,
-        location_name: data.location_name,
-        location_lat: data.location_lat,
-        location_lng: data.location_lng,
-        timeline_year: data.timeline_year,
-        anonymous: data.anonymous,
-        status: "draft",
-      })
+      .insert(insertData)
       .select()
       .single();
 
@@ -98,9 +103,11 @@ export async function submitStoryAction(storyId: string) {
   }
 
   // Update story status to review
+  const updateData: TablesUpdate<"stories"> = { status: "review" };
+
   const { error } = await supabase
     .from("stories")
-    .update({ status: "review" })
+    .update(updateData)
     .eq("id", storyId)
     .eq("author_id", user.id) // Security: only submit own stories
     .in("status", ["draft", "rejected"]); // Can only submit drafts or rejected stories
@@ -128,9 +135,11 @@ export async function unpublishStoryAction(storyId: string) {
     return { error: "Not authenticated" };
   }
 
+  const updateData: TablesUpdate<"stories"> = { status: "unpublished" };
+
   const { error } = await supabase
     .from("stories")
-    .update({ status: "unpublished" })
+    .update(updateData)
     .eq("id", storyId)
     .eq("author_id", user.id)
     .eq("status", "published");
@@ -160,9 +169,11 @@ export async function deleteStoryAction(storyId: string) {
   }
 
   // Can only directly delete drafts
+  const updateData: TablesUpdate<"stories"> = { soft_deleted: true };
+
   const { error } = await supabase
     .from("stories")
-    .update({ soft_deleted: true })
+    .update(updateData)
     .eq("id", storyId)
     .eq("author_id", user.id)
     .eq("status", "draft");
@@ -191,13 +202,15 @@ export async function requestDeletionAction(storyId: string, reason?: string) {
     return { error: "Not authenticated" };
   }
 
+  const updateData: TablesUpdate<"stories"> = {
+    deletion_requested: true,
+    deletion_requested_at: new Date().toISOString(),
+    deletion_reason: reason || null,
+  };
+
   const { error } = await supabase
     .from("stories")
-    .update({
-      deletion_requested: true,
-      deletion_requested_at: new Date().toISOString(),
-      deletion_reason: reason || null,
-    })
+    .update(updateData)
     .eq("id", storyId)
     .eq("author_id", user.id)
     .eq("soft_deleted", false);
@@ -225,13 +238,15 @@ export async function cancelDeletionRequestAction(storyId: string) {
     return { error: "Not authenticated" };
   }
 
+  const updateData: TablesUpdate<"stories"> = {
+    deletion_requested: false,
+    deletion_requested_at: null,
+    deletion_reason: null,
+  };
+
   const { error } = await supabase
     .from("stories")
-    .update({
-      deletion_requested: false,
-      deletion_requested_at: null,
-      deletion_reason: null,
-    })
+    .update(updateData)
     .eq("id", storyId)
     .eq("author_id", user.id);
 
@@ -270,12 +285,14 @@ export async function approveDeletionAction(storyId: string) {
   }
 
   // Soft delete the story
+  const updateData: TablesUpdate<"stories"> = {
+    soft_deleted: true,
+    deletion_requested: false,
+  };
+
   const { error } = await supabase
     .from("stories")
-    .update({
-      soft_deleted: true,
-      deletion_requested: false,
-    })
+    .update(updateData)
     .eq("id", storyId);
 
   if (error) {
@@ -314,13 +331,15 @@ export async function rejectDeletionAction(storyId: string) {
   }
 
   // Clear the deletion request
+  const updateData: TablesUpdate<"stories"> = {
+    deletion_requested: false,
+    deletion_requested_at: null,
+    deletion_reason: null,
+  };
+
   const { error } = await supabase
     .from("stories")
-    .update({
-      deletion_requested: false,
-      deletion_requested_at: null,
-      deletion_reason: null,
-    })
+    .update(updateData)
     .eq("id", storyId);
 
   if (error) {
@@ -358,9 +377,11 @@ export async function adminDeleteStoryAction(storyId: string) {
   }
 
   // Soft delete the story
+  const updateData: TablesUpdate<"stories"> = { soft_deleted: true };
+
   const { error } = await supabase
     .from("stories")
-    .update({ soft_deleted: true })
+    .update(updateData)
     .eq("id", storyId);
 
   if (error) {

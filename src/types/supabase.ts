@@ -66,6 +66,9 @@ export type Database = {
           ai_summary: string | null;
           ai_tags: string[] | null;
           soft_deleted: boolean;
+          deletion_requested: boolean;
+          deletion_requested_at: string | null;
+          deletion_reason: string | null;
         };
         Insert: {
           id?: string;
@@ -88,6 +91,9 @@ export type Database = {
           ai_summary?: string | null;
           ai_tags?: string[] | null;
           soft_deleted?: boolean;
+          deletion_requested?: boolean;
+          deletion_requested_at?: string | null;
+          deletion_reason?: string | null;
         };
         Update: {
           id?: string;
@@ -110,6 +116,9 @@ export type Database = {
           ai_summary?: string | null;
           ai_tags?: string[] | null;
           soft_deleted?: boolean;
+          deletion_requested?: boolean;
+          deletion_requested_at?: string | null;
+          deletion_reason?: string | null;
         };
       };
       media: {

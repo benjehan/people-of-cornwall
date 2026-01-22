@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import type { TablesInsert } from "@/types/supabase";
 
 export async function toggleLikeAction(storyId: string) {
   const supabase = await createClient();
@@ -39,9 +40,14 @@ export async function toggleLikeAction(storyId: string) {
     return { liked: false, error: null };
   } else {
     // Like
+    const likeData: TablesInsert<"likes"> = {
+      story_id: storyId,
+      user_id: user.id,
+    };
+
     const { error } = await supabase
       .from("likes")
-      .insert({ story_id: storyId, user_id: user.id });
+      .insert(likeData);
 
     if (error) {
       console.error("Error adding like:", error);

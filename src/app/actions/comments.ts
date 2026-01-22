@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import type { CommentWithAuthor } from "@/lib/supabase/queries";
+import type { TablesInsert } from "@/types/supabase";
 
 export async function addCommentAction(storyId: string, body: string) {
   const supabase = await createClient();
@@ -21,13 +22,15 @@ export async function addCommentAction(storyId: string, body: string) {
   }
 
   // Insert comment
+  const commentData: TablesInsert<"comments"> = {
+    story_id: storyId,
+    user_id: user.id,
+    body: body.trim(),
+  };
+
   const { data, error } = await supabase
     .from("comments")
-    .insert({
-      story_id: storyId,
-      user_id: user.id,
-      body: body.trim(),
-    })
+    .insert(commentData)
     .select(`
       *,
       author:users(id, display_name, avatar_url)
