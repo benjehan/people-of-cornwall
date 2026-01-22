@@ -44,7 +44,7 @@ export function useUser() {
   // Initialize auth only once globally
   useEffect(() => {
     if (globalInitialized) {
-      console.log('[USE-USER] Already initialized globally');
+      console.log('[USE-USER] Already initialized, user:', globalUser?.email || 'none');
       return;
     }
     globalInitialized = true;
@@ -53,56 +53,10 @@ export function useUser() {
     
     const supabase = createClient();
     
-    // Get initial session with timeout
-    const initAuth = async () => {
-      console.log('[USE-USER] Getting session...');
-      
-      // Timeout after 3 seconds
-      const timeoutPromise = new Promise<null>((resolve) => {
-        setTimeout(() => {
-          console.log('[USE-USER] getSession timeout!');
-          resolve(null);
-        }, 3000);
-      });
-      
-      const sessionPromise = supabase.auth.getSession().then(({ data }) => data.session);
-      
-      const session = await Promise.race([sessionPromise, timeoutPromise]);
-      
-      if (session?.user) {
-        console.log('[USE-USER] Session found:', session.user.email);
-        globalUser = session.user;
-        globalLoading = false;
-        notifySubscribers();
-        
-        // Fetch profile
-        const { data: profile } = await (supabase.from("users") as any)
-          .select("*")
-          .eq("id", session.user.id)
-          .single();
-        
-        if (profile) {
-          console.log('[USE-USER] Profile loaded, admin:', profile.role === "admin");
-          globalProfile = profile;
-          globalIsAdmin = profile.role === "admin";
-          notifySubscribers();
-        }
-      } else {
-        console.log('[USE-USER] No session');
-        globalUser = null;
-        globalProfile = null;
-        globalIsAdmin = false;
-        globalLoading = false;
-        notifySubscribers();
-      }
-    };
-    
-    initAuth();
-    
-    // Listen for auth changes
+    // Listen for auth changes FIRST - this is the source of truth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('[USE-USER] Auth event:', event);
+        console.log('[USE-USER] Auth event:', event, session?.user?.email || 'no user');
         
         if (event === 'SIGNED_OUT') {
           globalUser = null;
@@ -113,13 +67,13 @@ export function useUser() {
           return;
         }
         
-        if (event === 'SIGNED_IN' && session?.user) {
-          console.log('[USE-USER] Signed in:', session.user.email);
+        if (session?.user) {
+          console.log('[USE-USER] Setting user from auth event:', session.user.email);
           globalUser = session.user;
           globalLoading = false;
           notifySubscribers();
           
-          // Fetch profile
+          // Fetch profile in background
           const { data: profile } = await (supabase.from("users") as any)
             .select("*")
             .eq("id", session.user.id)
@@ -134,13 +88,55 @@ export function useUser() {
       }
     );
     
-    // Don't cleanup on unmount - keep subscription alive
-    return () => {
-      // Only cleanup if page is actually unloading
-      if (typeof window !== 'undefined' && window.performance?.navigation?.type === 2) {
-        subscription.unsubscribe();
-        globalInitialized = false;
+    // Also try getSession as backup, but DON'T overwrite if auth event already fired
+    const initAuth = async () => {
+      console.log('[USE-USER] Checking session...');
+      
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        // ONLY set user if we don't already have one from auth event
+        if (session?.user && !globalUser) {
+          console.log('[USE-USER] Session found (backup):', session.user.email);
+          globalUser = session.user;
+          globalLoading = false;
+          notifySubscribers();
+          
+          const { data: profile } = await (supabase.from("users") as any)
+            .select("*")
+            .eq("id", session.user.id)
+            .single();
+          
+          if (profile) {
+            globalProfile = profile;
+            globalIsAdmin = profile.role === "admin";
+            notifySubscribers();
+          }
+        } else if (!session && !globalUser) {
+          // No session AND no user from auth event = truly not logged in
+          console.log('[USE-USER] No session, no auth event user');
+          globalLoading = false;
+          notifySubscribers();
+        } else {
+          console.log('[USE-USER] Session check complete, user already set from auth event');
+          globalLoading = false;
+          notifySubscribers();
+        }
+      } catch (err) {
+        console.log('[USE-USER] getSession error:', err);
+        // Don't clear user on error - might already be set from auth event
+        if (!globalUser) {
+          globalLoading = false;
+          notifySubscribers();
+        }
       }
+    };
+    
+    // Small delay to let auth event fire first
+    setTimeout(initAuth, 100);
+    
+    return () => {
+      // Don't cleanup - keep global state
     };
   }, []);
 
