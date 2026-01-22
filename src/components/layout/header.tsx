@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MapPin, Clock, Menu, X, User, LogOut, FileText, Settings, PenLine } from "lucide-react";
+import { MapPin, Clock, Menu, X, User, LogOut, FileText, Settings, PenLine, Search } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useUser, getDisplayName, getAvatarUrl } from "@/hooks/use-user";
 
@@ -75,6 +76,16 @@ export function Header() {
 
         {/* Actions */}
         <div className="flex items-center gap-3">
+          {/* Search */}
+          <Link href="/search" className="hidden sm:block">
+            <Button variant="ghost" size="icon" className="text-stone hover:text-granite dark:text-silver dark:hover:text-parchment">
+              <Search className="h-5 w-5" />
+            </Button>
+          </Link>
+
+          {/* Theme Toggle */}
+          <ThemeToggle />
+
           {!mounted || isLoading ? (
             // Loading skeleton - show during SSR and initial load
             <div className="flex items-center gap-3">

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
-import { MapPin, Heart, MessageCircle, ImageIcon } from "lucide-react";
+import { MapPin, Heart, MessageCircle, Clock } from "lucide-react";
+import { calculateReadingTime, formatReadingTime } from "@/lib/utils/reading-time";
 import type { StoryWithDetails } from "@/types";
 
 interface StoryCardProps {
@@ -32,6 +33,9 @@ export function StoryCard({ story, featured = false, showImage = true }: StoryCa
 
   // Get image URL - check for first_image_url or extract from body
   const imageUrl = story.first_image_url || extractImageFromBody(story.body);
+
+  // Calculate reading time
+  const readingTime = calculateReadingTime(story.body);
 
   if (featured) {
     // Featured card with large image
@@ -176,12 +180,12 @@ export function StoryCard({ story, featured = false, showImage = true }: StoryCa
               </span>
               <div className="flex items-center gap-2 text-xs text-silver">
                 <span className="flex items-center gap-1">
-                  <Heart className="h-3 w-3" />
-                  {story.likes_count || 0}
+                  <Clock className="h-3 w-3" />
+                  {readingTime}m
                 </span>
                 <span className="flex items-center gap-1">
-                  <MessageCircle className="h-3 w-3" />
-                  {story.comments_count || 0}
+                  <Heart className="h-3 w-3" />
+                  {story.likes_count || 0}
                 </span>
               </div>
             </div>

@@ -7,9 +7,18 @@ import { LikeButton } from "@/components/community/like-button";
 import { CommentSection } from "@/components/community/comment-section";
 import { AdminReviewPanel } from "@/components/admin/review-panel";
 import { MapPin, Calendar, ArrowLeft, Eye, AlertTriangle } from "lucide-react";
-import { getStoryById, getStoryComments, hasUserLikedStory } from "@/lib/supabase/queries";
+import { getStoryById, getStoryComments, hasUserLikedStory, getRelatedStories } from "@/lib/supabase/queries";
+import { StoryCard } from "@/components/story/story-card";
+import type { StoryWithDetails } from "@/types";
 import { createClient } from "@/lib/supabase/server";
 import type { Metadata } from "next";
+
+// Extract first image from story body
+function extractFirstImage(body: string | null): string | null {
+  if (!body) return null;
+  const imgMatch = body.match(/<img[^>]+src="([^">]+)"/);
+  return imgMatch ? imgMatch[1] : null;
+}
 
 export async function generateMetadata({ 
   params 
@@ -25,7 +34,9 @@ export async function generateMetadata({
     };
   }
 
-  const description = story.ai_summary || story.body?.replace(/<[^>]*>/g, "").slice(0, 160);
+  const description = story.ai_summary || story.body?.replace(/<[^>]*>/g, "").slice(0, 160) + "...";
+  const imageUrl = extractFirstImage(story.body);
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://peopleofcornwall.com";
 
   return {
     title: `${story.title} | People of Cornwall`,
@@ -36,6 +47,29 @@ export async function generateMetadata({
       type: "article",
       publishedTime: story.published_at || undefined,
       authors: story.anonymous ? undefined : [story.author_display_name || "Anonymous"],
+      siteName: "People of Cornwall",
+      url: `${siteUrl}/stories/${id}`,
+      images: imageUrl ? [
+        {
+          url: imageUrl,
+          width: 1200,
+          height: 630,
+          alt: story.title,
+        }
+      ] : [
+        {
+          url: `${siteUrl}/og-default.png`,
+          width: 1200,
+          height: 630,
+          alt: "People of Cornwall",
+        }
+      ],
+    },
+    twitter: {
+      card: imageUrl ? "summary_large_image" : "summary",
+      title: story.title,
+      description,
+      images: imageUrl ? [imageUrl] : undefined,
     },
   };
 }
@@ -81,6 +115,19 @@ export default async function StoryPage({
 
   // Check if current user has liked
   const hasLiked = user ? await hasUserLikedStory(id, user.id) : false;
+
+  // Get related stories (only for published stories)
+  const relatedStories = story.status === "published" 
+    ? await getRelatedStories(id, story.ai_tags, story.location_name, story.timeline_decade, 3)
+    : [];
+
+  // Convert to StoryWithDetails for StoryCard
+  const relatedStoriesForCard: StoryWithDetails[] = relatedStories.map((s) => ({
+    ...s,
+    author: null,
+    media: [],
+    has_liked: false,
+  }) as StoryWithDetails);
 
   const authorName = story.anonymous
     ? "Anonymous"
@@ -269,6 +316,20 @@ export default async function StoryPage({
                 Engagement features will be available once this story is published.
               </p>
             </div>
+          )}
+
+          {/* Related Stories */}
+          {!isPreview && relatedStoriesForCard.length > 0 && (
+            <section className="mt-16 border-t border-bone pt-12">
+              <h2 className="mb-8 font-serif text-2xl font-bold tracking-tight text-granite">
+                More stories you might enjoy
+              </h2>
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {relatedStoriesForCard.map((relatedStory) => (
+                  <StoryCard key={relatedStory.id} story={relatedStory} />
+                ))}
+              </div>
+            </section>
           )}
         </article>
       </main>

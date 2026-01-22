@@ -316,6 +316,87 @@ export async function getStoryDecades() {
   return decades as number[];
 }
 
+/**
+ * Get related stories based on tags, location, or decade
+ */
+export async function getRelatedStories(
+  storyId: string, 
+  tags: string[] | null, 
+  locationName: string | null, 
+  decade: number | null, 
+  limit = 3
+): Promise<StoryWithCounts[]> {
+  const supabase = await createClient();
+  
+  let query = (supabase
+    .from("stories") as any)
+    .select("*, likes(count), comments(count)")
+    .eq("status", "published")
+    .eq("soft_deleted", false)
+    .neq("id", storyId)
+    .limit(limit);
+
+  // Try to match by tags first, then location, then decade
+  if (tags && tags.length > 0) {
+    query = query.overlaps("ai_tags", tags);
+  } else if (locationName) {
+    query = query.ilike("location_name", `%${locationName}%`);
+  } else if (decade) {
+    query = query.eq("timeline_decade", decade);
+  }
+
+  const { data } = await query.order("published_at", { ascending: false });
+
+  if (!data || data.length === 0) {
+    // Fallback: just get recent stories
+    const { data: fallbackData } = await (supabase
+      .from("stories") as any)
+      .select("*, likes(count), comments(count)")
+      .eq("status", "published")
+      .eq("soft_deleted", false)
+      .neq("id", storyId)
+      .order("published_at", { ascending: false })
+      .limit(limit);
+    
+    return (fallbackData || []).map((story: any) => ({
+      ...story,
+      likes_count: Array.isArray(story.likes) ? story.likes[0]?.count || 0 : 0,
+      comments_count: Array.isArray(story.comments) ? story.comments[0]?.count || 0 : 0,
+      first_image_url: extractFirstImage(story.body),
+    })) as StoryWithCounts[];
+  }
+
+  return (data || []).map((story: any) => ({
+    ...story,
+    likes_count: Array.isArray(story.likes) ? story.likes[0]?.count || 0 : 0,
+    comments_count: Array.isArray(story.comments) ? story.comments[0]?.count || 0 : 0,
+    first_image_url: extractFirstImage(story.body),
+  })) as StoryWithCounts[];
+}
+
+/**
+ * Get featured collections for homepage
+ */
+export async function getFeaturedCollections(limit = 3) {
+  const supabase = await createClient();
+  
+  const { data } = await (supabase
+    .from("collections") as any)
+    .select("*, story_collections(count)")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  return (data || []).map((c: any) => ({
+    id: c.id,
+    title: c.title,
+    slug: c.slug,
+    description: c.description,
+    story_count: Array.isArray(c.story_collections)
+      ? c.story_collections[0]?.count || 0
+      : 0,
+  }));
+}
+
 // =============================================================================
 // COMMENTS
 // =============================================================================

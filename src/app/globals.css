@@ -74,7 +74,64 @@
   --sidebar-accent-foreground: var(--granite);
   --sidebar-border: var(--bone);
   --sidebar-ring: var(--granite);
+}
 
+/* --------------------------------------------------------------------------
+   Dark Mode — Inverted Cornwall Palette
+   -------------------------------------------------------------------------- */
+.dark {
+  /* Inverted palette for dark mode */
+  --granite: #F5F4F0;             /* Light text on dark */
+  --slate: #E0DFDB;               /* Secondary light text */
+  --stone: #A8A7A3;               /* Muted text */
+  --silver: #777673;              /* Subtle text */
+  --parchment: #121212;           /* Deep dark background */
+  --cream: #1A1A1A;               /* Card background */
+  --bone: #2A2A2A;                /* Borders, dividers */
+  
+  /* Accent stays similar but adjusted for contrast */
+  --copper: #D4A07A;
+  --copper-light: #E5C4A8;
+  --copper-dark: #C17F59;
+  
+  /* Functional */
+  --success: #7A9B6A;
+  --error: #C76B6B;
+  --link: var(--granite);
+
+  /* Semantic variables auto-update */
+  --background: var(--parchment);
+  --foreground: var(--granite);
+  --card: var(--cream);
+  --card-foreground: var(--granite);
+  --popover: var(--cream);
+  --popover-foreground: var(--granite);
+  --primary: var(--granite);
+  --primary-foreground: var(--parchment);
+  --secondary: var(--bone);
+  --secondary-foreground: var(--granite);
+  --muted: var(--bone);
+  --muted-foreground: var(--stone);
+  --accent: var(--bone);
+  --accent-foreground: var(--granite);
+  --destructive: var(--error);
+  --destructive-foreground: var(--granite);
+  --border: var(--bone);
+  --input: var(--bone);
+  --ring: var(--granite);
+
+  /* Sidebar */
+  --sidebar: var(--parchment);
+  --sidebar-foreground: var(--granite);
+  --sidebar-primary: var(--granite);
+  --sidebar-primary-foreground: var(--parchment);
+  --sidebar-accent: var(--bone);
+  --sidebar-accent-foreground: var(--granite);
+  --sidebar-border: var(--bone);
+  --sidebar-ring: var(--granite);
+}
+
+:root {
   /* Type Scale - Larger, bolder (Medium-inspired) */
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;

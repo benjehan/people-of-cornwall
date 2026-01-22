@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { notifyAdminsOfNewStory } from "@/lib/email";
 
 interface SaveStoryData {
   id?: string;
@@ -100,6 +101,13 @@ export async function submitStoryAction(storyId: string) {
     return { error: "Not authenticated" };
   }
 
+  // Get story details for email notification
+  const { data: story } = await (supabase
+    .from("stories") as any)
+    .select("title, author_display_name")
+    .eq("id", storyId)
+    .single();
+
   // Update story status to review
   // Authors can submit/resubmit from: draft, rejected, published (edit), unpublished
   const { error } = await (supabase
@@ -116,6 +124,15 @@ export async function submitStoryAction(storyId: string) {
   if (error) {
     console.error("Error submitting story:", error);
     return { error: error.message };
+  }
+
+  // Send admin notification email (non-blocking)
+  if (story) {
+    notifyAdminsOfNewStory({
+      storyTitle: story.title || "Untitled",
+      authorName: story.author_display_name || user.user_metadata?.full_name || "Anonymous",
+      storyId,
+    }).catch(console.error);
   }
 
   revalidatePath("/profile/stories");

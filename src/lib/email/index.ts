@@ -343,3 +343,26 @@ export async function sendStorySubmittedEmail({
     html,
   });
 }
+
+/**
+ * Notify all admins about a new story submission
+ */
+export async function notifyAdminsOfNewStory({
+  storyTitle,
+  authorName,
+  storyId,
+}: {
+  storyTitle: string;
+  authorName: string;
+  storyId: string;
+}): Promise<void> {
+  // Admin email - you can change this or make it an env var
+  const adminEmail = process.env.ADMIN_EMAIL || "hello@peopleofcornwall.com";
+  
+  await sendStorySubmittedEmail({
+    to: adminEmail,
+    storyTitle,
+    authorName,
+    storyId,
+  });
+}

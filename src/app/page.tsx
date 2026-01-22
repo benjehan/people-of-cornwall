@@ -4,17 +4,26 @@ import { Footer } from "@/components/layout/footer";
 import { StoryCard } from "@/components/story/story-card";
 import { Button } from "@/components/ui/button";
 import { MapPin, Clock, Folder, ArrowRight, Sparkles, PenLine } from "lucide-react";
-import { getFeaturedStory, getPublishedStories, getStoryDecades, getCollections, getFeaturedPrompt } from "@/lib/supabase/queries";
+import { getFeaturedStory, getPublishedStories, getStoryDecades, getCollections, getFeaturedPrompt, getFeaturedCollections } from "@/lib/supabase/queries";
 import type { StoryWithDetails } from "@/types";
+
+interface FeaturedCollection {
+  id: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  story_count: number;
+}
 
 export default async function HomePage() {
   // Fetch real data from Supabase
-  const [featuredStory, { stories: recentStories }, decades, collections, featuredPrompt] = await Promise.all([
+  const [featuredStory, { stories: recentStories }, decades, collections, featuredPrompt, featuredCollections] = await Promise.all([
     getFeaturedStory(),
     getPublishedStories({ perPage: 6 }),
     getStoryDecades(),
     getCollections(),
     getFeaturedPrompt(),
+    getFeaturedCollections(3),
   ]);
 
   // Convert to StoryWithDetails format
@@ -299,20 +308,70 @@ export default async function HomePage() {
           </section>
         )}
 
+        {/* Featured Collections */}
+        {featuredCollections.length > 0 && (
+          <section className="border-t border-bone py-16 md:py-20">
+            <div className="mx-auto max-w-[1320px] px-4 sm:px-6">
+              <div className="mb-10 flex items-end justify-between">
+                <div>
+                  <h2 className="font-serif text-3xl font-bold tracking-tight text-granite md:text-4xl">
+                    Collections
+                  </h2>
+                  <p className="mt-2 text-stone">
+                    Curated stories exploring Cornwall's rich heritage
+                  </p>
+                </div>
+                <Link
+                  href="/collections"
+                  className="hidden sm:inline-flex items-center gap-1 text-sm font-medium text-granite hover:text-slate transition-colors"
+                >
+                  View all
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {featuredCollections.map((collection: FeaturedCollection) => (
+                  <Link
+                    key={collection.id}
+                    href={`/collections/${collection.slug}`}
+                    className="group rounded-lg border border-bone bg-cream p-6 transition-all hover:border-granite hover:shadow-md"
+                  >
+                    <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-bone group-hover:bg-granite group-hover:text-parchment transition-colors">
+                      <Folder className="h-4 w-4" />
+                    </div>
+                    <h3 className="mb-2 font-serif text-lg font-bold text-granite group-hover:text-slate">
+                      {collection.title}
+                    </h3>
+                    {collection.description && (
+                      <p className="mb-3 text-sm text-stone line-clamp-2">
+                        {collection.description}
+                      </p>
+                    )}
+                    <span className="text-xs text-silver">
+                      {collection.story_count} {collection.story_count === 1 ? "story" : "stories"}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* Call to Action — Full Width */}
-        <section className="border-t border-bone bg-granite py-20 text-parchment">
+        <section className="border-t border-bone bg-granite py-20 text-parchment dark:bg-bone dark:text-granite">
           <div className="mx-auto max-w-2xl px-4 text-center">
             <h2 className="mb-4 font-serif text-3xl font-bold tracking-tight md:text-4xl">
               Every story matters
             </h2>
-            <p className="mb-8 text-lg text-silver">
+            <p className="mb-8 text-lg text-silver dark:text-stone">
               Your memories are part of Cornwall's living history. Share a story
               from your family, your community, or your own experience.
             </p>
             <Link href="/write">
               <Button
                 size="lg"
-                className="bg-parchment text-granite hover:bg-cream font-medium"
+                className="bg-parchment text-granite hover:bg-cream font-medium dark:bg-granite dark:text-parchment dark:hover:bg-slate"
               >
                 Share a Story
               </Button>
