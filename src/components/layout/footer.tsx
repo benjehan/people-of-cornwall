@@ -60,6 +60,14 @@ export function Footer() {
                   Collections
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/prompts"
+                  className="text-sm text-stone transition-colors hover:text-granite"
+                >
+                  Prompts
+                </Link>
+              </li>
             </ul>
           </div>
 

@@ -224,6 +224,13 @@ export function Header() {
             >
               Collections
             </Link>
+            <Link
+              href="/prompts"
+              className="rounded-md px-3 py-2.5 text-sm font-medium text-granite hover:bg-cream"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Prompts
+            </Link>
             {user && (
               <Link
                 href="/write"

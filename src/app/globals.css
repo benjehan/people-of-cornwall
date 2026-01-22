@@ -522,6 +522,68 @@ blockquote {
 }
 
 /* --------------------------------------------------------------------------
+   Mobile Responsive Adjustments
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 640px) {
+  :root {
+    --text-base: 1rem;
+    --text-lg: 1.125rem;
+    --text-xl: 1.25rem;
+    --text-2xl: 1.5rem;
+    --text-3xl: 1.875rem;
+    --text-4xl: 2.5rem;
+    --text-5xl: 3rem;
+  }
+
+  h1 {
+    font-size: var(--text-3xl);
+    letter-spacing: -0.02em;
+  }
+  
+  h2 {
+    font-size: var(--text-2xl);
+  }
+
+  .prose,
+  .story-content {
+    font-size: 1.0625rem;
+    line-height: 1.75;
+  }
+
+  .plaque {
+    font-size: var(--text-xl);
+  }
+
+  .curator-note {
+    padding-left: 1rem;
+    margin: 1.5rem 0;
+  }
+
+  /* Better touch targets */
+  button,
+  .btn-primary,
+  .btn-secondary,
+  .btn-accent {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Reduce card padding on mobile */
+  .artefact-card {
+    padding: 1.25rem;
+  }
+}
+
+/* Tablet adjustments */
+@media (max-width: 768px) and (min-width: 641px) {
+  :root {
+    --text-4xl: 2.75rem;
+    --text-5xl: 3.5rem;
+  }
+}
+
+/* --------------------------------------------------------------------------
    Print Styles
    -------------------------------------------------------------------------- */
 
