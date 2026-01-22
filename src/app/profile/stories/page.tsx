@@ -67,35 +67,46 @@ function MyStoriesContent() {
   const fetchStories = async () => {
     if (!user) {
       console.log('[MY-STORIES] No user, skipping fetch');
+      setIsLoading(false);
       return;
     }
     
     console.log('[MY-STORIES] Fetching stories for user:', user.id);
-    const supabase = createClient();
     
     try {
-      console.log('[MY-STORIES] Starting query...');
-      const startTime = Date.now();
+      // Use fetch directly to bypass any Supabase client issues
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
       
-      // Simple query without Promise.race
-      const { data, error } = await (supabase
-        .from("stories") as any)
-        .select("id, title, status, created_at, updated_at, location_name, timeline_year, anonymous")
-        .eq("author_id", user.id)
-        .order("updated_at", { ascending: false })
-        .limit(50);
-
-      const elapsed = Date.now() - startTime;
-      console.log('[MY-STORIES] Query completed in', elapsed, 'ms');
-      console.log('[MY-STORIES] Result:', { count: data?.length || 0, error });
-
-      if (error) {
-        console.error("[MY-STORIES] Error:", error);
-        alert("Failed to load stories: " + (error.message || JSON.stringify(error)));
-      } else {
-        console.log('[MY-STORIES] Stories:', data);
-        setStories((data as Story[]) || []);
+      console.log('[MY-STORIES] Using direct fetch, URL:', supabaseUrl?.substring(0, 30));
+      
+      const response = await fetch(
+        `${supabaseUrl}/rest/v1/stories?author_id=eq.${user.id}&order=updated_at.desc&limit=50&select=id,title,status,created_at,updated_at,location_name,timeline_year,anonymous,soft_deleted`,
+        {
+          headers: {
+            'apikey': supabaseKey!,
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      
+      console.log('[MY-STORIES] Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[MY-STORIES] Error response:', errorText);
+        alert('Failed to load stories: ' + errorText);
+        setIsLoading(false);
+        return;
       }
+      
+      const data = await response.json();
+      console.log('[MY-STORIES] Data received:', data?.length || 0, 'stories');
+      
+      // Filter out soft deleted
+      const filtered = data?.filter((s: any) => !s.soft_deleted) || [];
+      setStories(filtered as Story[]);
     } catch (err: any) {
       console.error("[MY-STORIES] Catch error:", err);
       alert("Failed to load stories: " + (err?.message || "Unknown error"));
