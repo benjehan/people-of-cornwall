@@ -2,9 +2,10 @@ import Link from "next/link";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { StoryCard } from "@/components/story/story-card";
+import { RotatingPrompts } from "@/components/home/rotating-prompts";
 import { Button } from "@/components/ui/button";
-import { MapPin, Clock, Folder, ArrowRight, Sparkles, PenLine } from "lucide-react";
-import { getFeaturedStory, getPublishedStories, getStoryDecades, getCollections, getFeaturedPrompt, getFeaturedCollections } from "@/lib/supabase/queries";
+import { MapPin, Clock, Folder, ArrowRight } from "lucide-react";
+import { getFeaturedStory, getPublishedStories, getStoryDecades, getCollections, getRotatingPrompts, getFeaturedCollections } from "@/lib/supabase/queries";
 import type { StoryWithDetails } from "@/types";
 
 interface FeaturedCollection {
@@ -17,12 +18,12 @@ interface FeaturedCollection {
 
 export default async function HomePage() {
   // Fetch real data from Supabase
-  const [featuredStory, { stories: recentStories }, decades, collections, featuredPrompt, featuredCollections] = await Promise.all([
+  const [featuredStory, { stories: recentStories }, decades, collections, rotatingPrompts, featuredCollections] = await Promise.all([
     getFeaturedStory(),
     getPublishedStories({ perPage: 6 }),
     getStoryDecades(),
     getCollections(),
-    getFeaturedPrompt(),
+    getRotatingPrompts(12), // Get 12 random prompts for the carousel
     getFeaturedCollections(3),
   ]);
 
@@ -268,44 +269,9 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Community Prompt */}
-        {featuredPrompt && (
-          <section className="border-t border-bone bg-cream py-16 md:py-20">
-            <div className="mx-auto max-w-[1320px] px-4 sm:px-6">
-              <div className="mx-auto max-w-2xl text-center">
-                <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-copper/10 px-4 py-1.5 text-sm font-medium text-copper">
-                  <Sparkles className="h-4 w-4" />
-                  Community Prompt
-                </div>
-                <h2 className="mb-4 font-serif text-3xl font-bold tracking-tight text-granite md:text-4xl">
-                  "{featuredPrompt.title}"
-                </h2>
-                {featuredPrompt.description && (
-                  <p className="mb-8 text-lg text-stone">
-                    {featuredPrompt.description}
-                  </p>
-                )}
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                  <Link href={`/write?prompt=${featuredPrompt.id}`}>
-                    <Button className="gap-2 bg-granite text-parchment hover:bg-slate font-medium">
-                      <PenLine className="h-4 w-4" />
-                      Answer this prompt
-                    </Button>
-                  </Link>
-                  <Link href="/prompts">
-                    <Button variant="outline" className="border-granite text-granite hover:bg-granite hover:text-parchment">
-                      View all prompts
-                    </Button>
-                  </Link>
-                </div>
-                {featuredPrompt.story_count > 0 && (
-                  <p className="mt-6 text-sm text-stone">
-                    {featuredPrompt.story_count} {featuredPrompt.story_count === 1 ? "story" : "stories"} written for this prompt
-                  </p>
-                )}
-              </div>
-            </div>
-          </section>
+        {/* Rotating Prompts Carousel */}
+        {rotatingPrompts.length > 0 && (
+          <RotatingPrompts prompts={rotatingPrompts} />
         )}
 
         {/* Featured Collections */}

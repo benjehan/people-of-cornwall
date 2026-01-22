@@ -613,6 +613,29 @@ export async function getFeaturedPrompt() {
 }
 
 /**
+ * Get random prompts for homepage carousel
+ */
+export async function getRotatingPrompts(limit: number = 10) {
+  const supabase = await createClient();
+
+  // Get all active prompts and shuffle them client-side for randomness
+  const { data, error } = await (supabase
+    .from("prompts") as any)
+    .select("id, title, description")
+    .eq("active", true)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching rotating prompts:", error);
+    return [];
+  }
+
+  // Shuffle array and return limited results
+  const shuffled = (data || []).sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, limit) as Prompt[];
+}
+
+/**
  * Get stories for a prompt
  */
 export async function getPromptStories(promptId: string) {
