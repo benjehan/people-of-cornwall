@@ -21,8 +21,8 @@ export async function POST(request: Request) {
     }
 
     // Check if admin
-    const { data: profile } = await supabase
-      .from("users")
+    const { data: profile } = await (supabase
+      .from("users") as any)
       .select("role")
       .eq("id", user.id)
       .single();
@@ -32,8 +32,8 @@ export async function POST(request: Request) {
     }
 
     // Approve the story
-    const { error } = await supabase
-      .from("stories")
+    const { error } = await (supabase
+      .from("stories") as any)
       .update({
         status: "published",
         published_at: new Date().toISOString(),
