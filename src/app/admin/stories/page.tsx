@@ -142,25 +142,25 @@ export default function AdminStoriesPage() {
 
   if (isLoading || !profileChecked || !user || !isAdmin) {
     return (
-      <div className="flex min-h-screen flex-col">
+      <div className="flex min-h-screen flex-col bg-parchment">
         <Header />
         <main className="flex flex-1 items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-atlantic-blue border-t-transparent" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-granite border-t-transparent" />
         </main>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-chalk-white">
+    <div className="flex min-h-screen flex-col bg-parchment">
       <Header />
 
-      <main className="flex-1 py-8">
-        <div className="mx-auto max-w-6xl px-4">
+      <main className="flex-1 py-10">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
           {/* Back link */}
           <Link
             href="/admin"
-            className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+            className="mb-6 inline-flex items-center gap-1 text-sm text-stone hover:text-granite transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to dashboard
@@ -168,8 +168,8 @@ export default function AdminStoriesPage() {
 
           <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h1 className="mb-2 font-serif text-3xl font-semibold">All Stories</h1>
-              <p className="text-muted-foreground">
+              <h1 className="mb-2 font-serif text-3xl font-bold tracking-tight text-granite">All Stories</h1>
+              <p className="text-stone">
                 Manage stories, featuring, and collections.
               </p>
             </div>
@@ -178,7 +178,7 @@ export default function AdminStoriesPage() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                className="h-10 rounded-md border border-bone bg-parchment px-3 text-sm text-granite focus:border-granite focus:outline-none"
               >
                 <option value="all">All statuses</option>
                 <option value="draft">Drafts</option>
@@ -192,21 +192,21 @@ export default function AdminStoriesPage() {
           {/* Stories List */}
           {loadingStories ? (
             <div className="flex items-center justify-center py-12">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-atlantic-blue border-t-transparent" />
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-granite border-t-transparent" />
             </div>
           ) : stories.length > 0 ? (
             <div className="space-y-3">
               {stories.map((story) => (
-                <Card key={story.id} className="border-chalk-white-dark">
+                <Card key={story.id} className="border-bone bg-cream">
                   <CardContent className="flex items-center justify-between py-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-medium truncate">{story.title || "Untitled"}</h3>
+                        <h3 className="font-serif font-bold text-granite truncate">{story.title || "Untitled"}</h3>
                         <Badge className={STATUS_COLORS[story.status] || ""}>
                           {story.status}
                         </Badge>
                         {story.featured && (
-                          <Badge className="bg-amber-100 text-amber-700">
+                          <Badge className="bg-copper/10 text-copper border-0">
                             <Star className="mr-1 h-3 w-3 fill-current" />
                             Featured
                           </Badge>
@@ -214,11 +214,11 @@ export default function AdminStoriesPage() {
                         {story.deletion_requested && (
                           <Badge className="bg-red-100 text-red-700">
                             <AlertTriangle className="mr-1 h-3 w-3" />
-                            Deletion Requested
+                            Deletion
                           </Badge>
                         )}
                       </div>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-stone">
                         by {story.author_display_name || "Anonymous"} •{" "}
                         {new Date(story.created_at).toLocaleDateString("en-GB")}
                       </p>
@@ -239,7 +239,8 @@ export default function AdminStoriesPage() {
                             size="sm"
                             onClick={() => toggleFeatured(story.id, story.featured)}
                             disabled={isPending}
-                            className={story.featured ? "text-amber-600" : ""}
+                            className={story.featured ? "text-copper" : "text-stone hover:text-copper"}
+                            title={story.featured ? "Remove from featured" : "Feature this story"}
                           >
                             {story.featured ? (
                               <StarOff className="h-4 w-4" />
@@ -274,9 +275,9 @@ export default function AdminStoriesPage() {
               ))}
             </div>
           ) : (
-            <Card className="border-dashed border-chalk-white-dark">
+            <Card className="border-dashed border-bone">
               <CardContent className="py-12 text-center">
-                <p className="text-muted-foreground">
+                <p className="text-stone">
                   No stories found with the selected filter.
                 </p>
               </CardContent>
@@ -289,7 +290,7 @@ export default function AdminStoriesPage() {
       <Dialog open={collectionDialogOpen} onOpenChange={setCollectionDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add to Collection</DialogTitle>
+            <DialogTitle className="font-serif">Add to Collection</DialogTitle>
             <DialogDescription>
               Choose a collection to add this story to.
             </DialogDescription>
@@ -299,7 +300,7 @@ export default function AdminStoriesPage() {
               <select
                 value={selectedCollectionId}
                 onChange={(e) => setSelectedCollectionId(e.target.value)}
-                className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+                className="w-full h-10 rounded-md border border-bone bg-parchment px-3 text-sm text-granite focus:border-granite focus:outline-none"
               >
                 <option value="">Select a collection...</option>
                 {collections.map((c) => (
@@ -309,22 +310,22 @@ export default function AdminStoriesPage() {
                 ))}
               </select>
             ) : (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-stone">
                 No collections yet.{" "}
-                <Link href="/admin/collections" className="text-atlantic-blue hover:underline">
+                <Link href="/admin/collections" className="text-granite font-medium hover:text-copper">
                   Create one first.
                 </Link>
               </p>
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCollectionDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setCollectionDialogOpen(false)} className="border-granite text-granite hover:bg-granite hover:text-parchment">
               Cancel
             </Button>
             <Button
               onClick={addToCollection}
               disabled={isPending || !selectedCollectionId}
-              className="bg-atlantic-blue text-chalk-white hover:bg-atlantic-blue-light"
+              className="bg-granite text-parchment hover:bg-slate"
             >
               Add to Collection
             </Button>
