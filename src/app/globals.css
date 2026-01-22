@@ -50,8 +50,8 @@
   --secondary-foreground: var(--granite);
   --muted: var(--bone);
   --muted-foreground: var(--stone);
-  --accent: var(--copper);
-  --accent-foreground: var(--parchment);
+  --accent: var(--bone);
+  --accent-foreground: var(--granite);
   --destructive: var(--error);
   --destructive-foreground: var(--parchment);
   --border: var(--bone);

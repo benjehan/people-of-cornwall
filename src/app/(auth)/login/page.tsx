@@ -53,7 +53,7 @@ function LoginForm() {
       options: {
         redirectTo: `${window.location.origin}/callback?next=${redirect}`,
         queryParams: {
-          prompt: 'select_account', // Force account selector
+          prompt: 'select_account',
         },
       },
     });
@@ -65,17 +65,17 @@ function LoginForm() {
   };
 
   return (
-    <Card className="w-full max-w-md border-chalk-white-dark bg-chalk-white">
+    <Card className="w-full max-w-md border-bone bg-cream">
       <CardHeader className="text-center">
-        <CardTitle className="font-serif text-2xl">Welcome</CardTitle>
-        <CardDescription className="text-base">
+        <CardTitle className="font-serif text-2xl text-granite">Welcome</CardTitle>
+        <CardDescription className="text-base text-stone">
           Sign in to share your stories of Cornwall
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Error from URL */}
         {error && (
-          <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+          <div className="rounded-md bg-red-50 p-3 text-sm text-red-600">
             {error}
           </div>
         )}
@@ -85,8 +85,8 @@ function LoginForm() {
           <div
             className={`rounded-md p-3 text-sm ${
               message.type === "success"
-                ? "bg-moss-green/10 text-moss-green-dark"
-                : "bg-destructive/10 text-destructive"
+                ? "bg-green-50 text-green-600"
+                : "bg-red-50 text-red-600"
             }`}
           >
             {message.text}
@@ -96,7 +96,7 @@ function LoginForm() {
         {/* Google OAuth */}
         <Button
           variant="outline"
-          className="w-full border-border hover:bg-chalk-white-dark"
+          className="w-full border-bone bg-parchment hover:bg-bone"
           onClick={handleGoogleLogin}
           disabled={isLoading}
         >
@@ -123,10 +123,10 @@ function LoginForm() {
 
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
-            <Separator />
+            <Separator className="bg-bone" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-chalk-white px-2 text-muted-foreground">
+            <span className="bg-cream px-2 text-stone">
               Or continue with email
             </span>
           </div>
@@ -142,25 +142,25 @@ function LoginForm() {
               onChange={(e) => setEmail(e.target.value)}
               required
               disabled={isLoading}
-              className="border-border bg-chalk-white"
+              className="border-bone bg-parchment"
             />
           </div>
           <Button
             type="submit"
-            className="w-full bg-atlantic-blue text-chalk-white hover:bg-atlantic-blue-light"
+            className="w-full bg-granite text-parchment hover:bg-slate"
             disabled={isLoading}
           >
             {isLoading ? "Sending..." : "Send magic link"}
           </Button>
         </form>
 
-        <p className="text-center text-xs text-muted-foreground">
+        <p className="text-center text-xs text-stone">
           By signing in, you agree to our{" "}
-          <Link href="/terms" className="underline hover:text-foreground">
+          <Link href="/terms" className="underline hover:text-granite">
             Terms
           </Link>{" "}
           and{" "}
-          <Link href="/privacy" className="underline hover:text-foreground">
+          <Link href="/privacy" className="underline hover:text-granite">
             Privacy Policy
           </Link>
           .
@@ -172,12 +172,12 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen flex-col bg-chalk-white">
+    <div className="flex min-h-screen flex-col bg-parchment">
       {/* Header */}
-      <header className="border-b border-border px-4 py-4">
+      <header className="border-b border-bone px-4 py-4">
         <div className="mx-auto max-w-[1400px]">
           <Link href="/" className="hover:no-underline">
-            <span className="font-serif text-xl font-semibold text-foreground">
+            <span className="font-serif text-xl font-bold text-granite">
               People of Cornwall
             </span>
           </Link>
@@ -188,7 +188,7 @@ export default function LoginPage() {
       <main className="flex flex-1 items-center justify-center px-4 py-12">
         <Suspense fallback={
           <div className="flex items-center justify-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-atlantic-blue border-t-transparent" />
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-granite border-t-transparent" />
           </div>
         }>
           <LoginForm />
@@ -196,7 +196,7 @@ export default function LoginPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border px-4 py-4 text-center text-xs text-muted-foreground">
+      <footer className="border-t border-bone px-4 py-4 text-center text-xs text-stone">
         <p>© {new Date().getFullYear()} People of Cornwall. Built with care in Cornwall.</p>
       </footer>
     </div>
