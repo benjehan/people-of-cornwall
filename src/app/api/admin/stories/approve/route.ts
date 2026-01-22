@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import { getUserEmail } from "@/lib/supabase/admin";
+import { sendStoryApprovedEmail } from "@/lib/email";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
@@ -31,6 +33,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
+    // Get story details for email
+    const { data: story } = await (supabase
+      .from("stories") as any)
+      .select("id, title, author_id, author_display_name")
+      .eq("id", storyId)
+      .single();
+
     // Approve the story
     const { error } = await (supabase
       .from("stories") as any)
@@ -45,6 +54,20 @@ export async function POST(request: Request) {
     if (error) {
       console.error("Error approving story:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    // Send email notification to author (non-blocking)
+    if (story?.author_id) {
+      getUserEmail(story.author_id).then((email) => {
+        if (email) {
+          sendStoryApprovedEmail({
+            to: email,
+            authorName: story.author_display_name || "Contributor",
+            storyTitle: story.title,
+            storyId: story.id,
+          }).catch(console.error);
+        }
+      });
     }
 
     return NextResponse.json({ success: true });
