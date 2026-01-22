@@ -74,18 +74,22 @@ function MyStoriesContent() {
     console.log('[MY-STORIES] Fetching stories for user:', user.id);
     
     try {
-      // Use fetch directly to bypass any Supabase client issues
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
       
-      console.log('[MY-STORIES] Using direct fetch, URL:', supabaseUrl?.substring(0, 30));
+      // Get the current session to use the user's access token
+      const supabase = createClient();
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token || supabaseKey;
+      
+      console.log('[MY-STORIES] Using token:', accessToken ? 'user token' : 'anon key');
       
       const response = await fetch(
-        `${supabaseUrl}/rest/v1/stories?author_id=eq.${user.id}&order=updated_at.desc&limit=50&select=id,title,status,created_at,updated_at,location_name,timeline_year,anonymous,soft_deleted`,
+        `${supabaseUrl}/rest/v1/stories?author_id=eq.${user.id}&soft_deleted=eq.false&order=updated_at.desc&limit=50&select=id,title,status,created_at,updated_at,location_name,timeline_year,anonymous,soft_deleted`,
         {
           headers: {
             'apikey': supabaseKey!,
-            'Authorization': `Bearer ${supabaseKey}`,
+            'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
           },
         }
@@ -103,10 +107,7 @@ function MyStoriesContent() {
       
       const data = await response.json();
       console.log('[MY-STORIES] Data received:', data?.length || 0, 'stories');
-      
-      // Filter out soft deleted
-      const filtered = data?.filter((s: any) => !s.soft_deleted) || [];
-      setStories(filtered as Story[]);
+      setStories((data as Story[]) || []);
     } catch (err: any) {
       console.error("[MY-STORIES] Catch error:", err);
       alert("Failed to load stories: " + (err?.message || "Unknown error"));

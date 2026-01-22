@@ -41,6 +41,39 @@ function setState(newState: Partial<AuthState>) {
   listeners.forEach(l => l());
 }
 
+// Fetch profile using direct fetch (bypass Supabase client issues)
+async function fetchProfileDirect(userId: string, accessToken: string): Promise<Profile | null> {
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    
+    console.log('[AUTH] Fetching profile for:', userId);
+    
+    const response = await fetch(
+      `${supabaseUrl}/rest/v1/users?id=eq.${userId}&select=*`,
+      {
+        headers: {
+          'apikey': supabaseKey!,
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    
+    if (!response.ok) {
+      console.log('[AUTH] Profile fetch failed:', response.status);
+      return null;
+    }
+    
+    const data = await response.json();
+    console.log('[AUTH] Profile data:', data?.[0]?.role || 'no role');
+    return data?.[0] || null;
+  } catch (e) {
+    console.log('[AUTH] Profile fetch error:', e);
+    return null;
+  }
+}
+
 // Initialize auth once
 function initAuth() {
   if (initialized || typeof window === 'undefined') return;
@@ -61,18 +94,11 @@ function initAuth() {
     if (session?.user) {
       setState({ user: session.user, isLoading: false });
       
-      // Fetch profile
-      try {
-        const { data: profile } = await (supabase.from("users") as any)
-          .select("*")
-          .eq("id", session.user.id)
-          .single();
-        
-        if (profile) {
-          setState({ profile, isAdmin: profile.role === "admin" });
-        }
-      } catch (e) {
-        console.log('[AUTH] Profile fetch error:', e);
+      // Fetch profile using direct fetch
+      const profile = await fetchProfileDirect(session.user.id, session.access_token);
+      if (profile) {
+        console.log('[AUTH] Profile loaded, admin:', profile.role === 'admin');
+        setState({ profile, isAdmin: profile.role === "admin" });
       }
     }
   });
@@ -84,17 +110,11 @@ function initAuth() {
     if (session?.user) {
       setState({ user: session.user, isLoading: false });
       
-      try {
-        const { data: profile } = await (supabase.from("users") as any)
-          .select("*")
-          .eq("id", session.user.id)
-          .single();
-        
-        if (profile) {
-          setState({ profile, isAdmin: profile.role === "admin" });
-        }
-      } catch (e) {
-        console.log('[AUTH] Profile fetch error:', e);
+      // Fetch profile using direct fetch
+      const profile = await fetchProfileDirect(session.user.id, session.access_token);
+      if (profile) {
+        console.log('[AUTH] Profile loaded, admin:', profile.role === 'admin');
+        setState({ profile, isAdmin: profile.role === "admin" });
       }
     } else {
       setState({ isLoading: false });
