@@ -19,10 +19,15 @@ import {
   Send,
   ArrowLeft,
   CheckCircle,
+  AlertCircle,
+  RefreshCw,
+  Sparkles,
 } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
 import { saveStoryAction, submitStoryAction } from "@/app/actions/stories";
 import { createClient } from "@/lib/supabase/client";
+
+type StoryStatus = "draft" | "review" | "published" | "rejected" | "unpublished";
 
 function WritePageContent() {
   const router = useRouter();
@@ -41,6 +46,9 @@ function WritePageContent() {
   const [timelineYear, setTimelineYear] = useState("");
   const [anonymous, setAnonymous] = useState(false);
   const [storyId, setStoryId] = useState<string | null>(null);
+  const [originalStatus, setOriginalStatus] = useState<StoryStatus | null>(null);
+  const [promptId, setPromptId] = useState<string | null>(null);
+  const [promptTitle, setPromptTitle] = useState<string | null>(null);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -49,54 +57,76 @@ function WritePageContent() {
     }
   }, [authLoading, user, router]);
 
-  // Load existing story if ID provided
+  // Load existing story if ID provided, or prompt if prompt ID provided
   useEffect(() => {
     const id = searchParams.get("id");
-    if (!id || !user) return;
+    const prompt = searchParams.get("prompt");
+    
+    if (!user) return;
 
-    const loadStory = async () => {
+    const loadData = async () => {
       setIsLoadingStory(true);
       const supabase = createClient();
       
-      const { data: story, error } = await (supabase
-        .from("stories") as any)
-        .select("*")
-        .eq("id", id)
-        .eq("author_id", user.id)
-        .single();
+      // Load existing story
+      if (id) {
+        const { data: story, error } = await (supabase
+          .from("stories") as any)
+          .select("*")
+          .eq("id", id)
+          .eq("author_id", user.id)
+          .single();
 
-      if (error) {
-        console.error("Error loading story:", error);
-        setIsLoadingStory(false);
-        return;
-      }
+        if (error) {
+          console.error("Error loading story:", error);
+          setIsLoadingStory(false);
+          return;
+        }
 
-      if (story) {
-        setStoryId(story.id);
-        setTitle(story.title || "");
-        setBody(story.body || "");
-        setLocationName(story.location_name || "");
-        setLocationLat(story.location_lat || null);
-        setLocationLng(story.location_lng || null);
-        setTimelineYear(story.timeline_year?.toString() || "");
-        setAnonymous(story.anonymous || false);
+        if (story) {
+          setStoryId(story.id);
+          setOriginalStatus(story.status as StoryStatus);
+          setTitle(story.title || "");
+          setBody(story.body || "");
+          setLocationName(story.location_name || "");
+          setLocationLat(story.location_lat || null);
+          setLocationLng(story.location_lng || null);
+          setTimelineYear(story.timeline_year?.toString() || "");
+          setAnonymous(story.anonymous || false);
+          setPromptId(story.prompt_id || null);
+        }
       }
+      
+      // Load prompt if provided
+      if (prompt && !id) {
+        const { data: promptData } = await (supabase
+          .from("prompts") as any)
+          .select("id, title")
+          .eq("id", prompt)
+          .single();
+          
+        if (promptData) {
+          setPromptId(promptData.id);
+          setPromptTitle(promptData.title);
+        }
+      }
+      
       setIsLoadingStory(false);
     };
 
-    loadStory();
+    loadData();
   }, [searchParams, user]);
 
-  // Autosave every 30 seconds
+  // Autosave every 30 seconds (only for drafts)
   useEffect(() => {
-    if (!user || !title.trim()) return;
+    if (!user || !title.trim() || originalStatus === "published") return;
 
     const timer = setInterval(() => {
       handleSave();
     }, 30000);
 
     return () => clearInterval(timer);
-  }, [user, title, body, locationName, timelineYear, anonymous]);
+  }, [user, title, body, locationName, timelineYear, anonymous, originalStatus]);
 
   const handleSave = () => {
     if (!user || !title.trim()) return;
@@ -111,6 +141,7 @@ function WritePageContent() {
         location_lng: locationLng,
         timeline_year: timelineYear ? parseInt(timelineYear) : null,
         anonymous,
+        prompt_id: promptId,
       });
 
       if (result.data) {
@@ -134,6 +165,7 @@ function WritePageContent() {
         location_lng: locationLng,
         timeline_year: timelineYear ? parseInt(timelineYear) : null,
         anonymous,
+        prompt_id: promptId,
       });
 
       if (saveResult.data) {
@@ -147,14 +179,17 @@ function WritePageContent() {
     });
   };
 
+  const isEditingPublished = originalStatus === "published";
+  const isEditingRejected = originalStatus === "rejected";
+
   if (authLoading || isLoadingStory) {
     return (
-      <div className="flex min-h-screen flex-col">
+      <div className="flex min-h-screen flex-col bg-parchment">
         <Header />
         <main className="flex flex-1 items-center justify-center">
           <div className="text-center">
-            <div className="h-8 w-8 mx-auto animate-spin rounded-full border-4 border-atlantic-blue border-t-transparent" />
-            {isLoadingStory && <p className="mt-4 text-muted-foreground">Loading your story...</p>}
+            <div className="h-6 w-6 mx-auto animate-spin rounded-full border-2 border-granite border-t-transparent" />
+            {isLoadingStory && <p className="mt-4 text-stone">Loading your story...</p>}
           </div>
         </main>
       </div>
@@ -166,28 +201,74 @@ function WritePageContent() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-chalk-white">
+    <div className="flex min-h-screen flex-col bg-parchment">
       <Header />
 
       <main className="flex-1 py-8">
-        <div className="mx-auto max-w-4xl px-4">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6">
           {/* Back link */}
           <Link
-            href="/"
-            className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+            href="/profile/stories"
+            className="mb-6 inline-flex items-center gap-1 text-sm text-stone hover:text-granite transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to home
+            Back to my stories
           </Link>
+
+          {/* Notice for community prompt */}
+          {promptTitle && !storyId && (
+            <Card className="mb-6 border-copper/30 bg-copper/5">
+              <CardContent className="flex items-start gap-3 py-4">
+                <Sparkles className="h-5 w-5 text-copper mt-0.5" />
+                <div>
+                  <p className="font-medium text-copper">Community Prompt</p>
+                  <p className="text-sm text-copper/80">
+                    You're writing a story for: <strong>"{promptTitle}"</strong>
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Notice for editing published story */}
+          {isEditingPublished && (
+            <Card className="mb-6 border-copper/30 bg-copper/5">
+              <CardContent className="flex items-start gap-3 py-4">
+                <RefreshCw className="h-5 w-5 text-copper mt-0.5" />
+                <div>
+                  <p className="font-medium text-copper">Editing Published Story</p>
+                  <p className="text-sm text-copper/80">
+                    When you submit your changes, the story will be sent for review again.
+                    It will remain visible until the updated version is approved.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Notice for rejected story */}
+          {isEditingRejected && (
+            <Card className="mb-6 border-copper/30 bg-copper/5">
+              <CardContent className="flex items-start gap-3 py-4">
+                <AlertCircle className="h-5 w-5 text-copper mt-0.5" />
+                <div>
+                  <p className="font-medium text-copper">Story Needs Changes</p>
+                  <p className="text-sm text-copper/80">
+                    Please review the feedback and make the necessary changes before resubmitting.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <div className="grid gap-8 lg:grid-cols-3">
             {/* Main Editor */}
             <div className="lg:col-span-2">
               <div className="mb-6">
-                <h1 className="mb-2 font-serif text-3xl font-semibold">
-                  Share a Story
+                <h1 className="mb-2 font-serif text-3xl font-bold tracking-tight text-granite">
+                  {storyId ? "Edit Story" : "Share a Story"}
                 </h1>
-                <p className="text-muted-foreground">
+                <p className="text-stone">
                   Every story matters. Share your memories, experiences, and
                   moments from Cornwall.
                 </p>
@@ -199,7 +280,7 @@ function WritePageContent() {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Give your story a title..."
-                  className="border-0 bg-transparent text-3xl font-serif font-semibold placeholder:text-muted-foreground/50 focus-visible:ring-0"
+                  className="border-0 bg-transparent text-3xl font-serif font-bold placeholder:text-stone/40 focus-visible:ring-0 px-0"
                 />
               </div>
 
@@ -212,11 +293,11 @@ function WritePageContent() {
               />
 
               {/* Save Status */}
-              <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
+              <div className="mt-4 flex items-center justify-between text-sm text-stone">
                 <div className="flex items-center gap-2">
                   {lastSaved && (
                     <>
-                      <CheckCircle className="h-4 w-4 text-moss-green" />
+                      <CheckCircle className="h-4 w-4 text-green-600" />
                       <span>
                         Saved {lastSaved.toLocaleTimeString()}
                       </span>
@@ -232,14 +313,14 @@ function WritePageContent() {
             {/* Sidebar */}
             <div className="space-y-6">
               {/* Metadata */}
-              <Card className="border-chalk-white-dark bg-chalk-white">
+              <Card className="border-bone bg-cream">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">Story Details</CardTitle>
+                  <CardTitle className="text-lg font-serif">Story Details</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Location */}
                   <div>
-                    <label className="mb-1.5 text-sm font-medium">
+                    <label className="mb-1.5 text-sm font-medium text-granite">
                       Location in Cornwall
                     </label>
                     <LocationAutocomplete
@@ -251,15 +332,15 @@ function WritePageContent() {
                       }}
                       placeholder="Search for a place..."
                     />
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Start typing to search villages, towns, beaches, landmarks...
+                    <p className="mt-1 text-xs text-stone">
+                      Villages, towns, beaches, landmarks...
                     </p>
                   </div>
 
                   {/* Year */}
                   <div>
-                    <label className="mb-1.5 flex items-center gap-1.5 text-sm font-medium">
-                      <Calendar className="h-4 w-4 text-atlantic-blue" />
+                    <label className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-granite">
+                      <Calendar className="h-4 w-4 text-copper" />
                       Year (approximate)
                     </label>
                     <Input
@@ -269,23 +350,24 @@ function WritePageContent() {
                       placeholder="e.g. 1985"
                       min="1900"
                       max={new Date().getFullYear()}
+                      className="border-bone bg-parchment"
                     />
                   </div>
 
-                  <Separator />
+                  <Separator className="bg-bone" />
 
                   {/* Anonymous */}
                   <div className="flex items-center justify-between">
                     <div>
-                      <label className="flex items-center gap-1.5 text-sm font-medium">
+                      <label className="flex items-center gap-1.5 text-sm font-medium text-granite">
                         {anonymous ? (
-                          <EyeOff className="h-4 w-4 text-muted-foreground" />
+                          <EyeOff className="h-4 w-4 text-stone" />
                         ) : (
-                          <Eye className="h-4 w-4 text-atlantic-blue" />
+                          <Eye className="h-4 w-4 text-copper" />
                         )}
                         {anonymous ? "Anonymous" : "Show my name"}
                       </label>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-stone">
                         {anonymous
                           ? "Your name won't be shown"
                           : "Your name will appear on the story"}
@@ -296,6 +378,7 @@ function WritePageContent() {
                       variant="outline"
                       size="sm"
                       onClick={() => setAnonymous(!anonymous)}
+                      className="border-bone text-granite hover:bg-bone"
                     >
                       {anonymous ? "Show name" : "Go anonymous"}
                     </Button>
@@ -304,40 +387,46 @@ function WritePageContent() {
               </Card>
 
               {/* Actions */}
-              <Card className="border-chalk-white-dark bg-chalk-white">
+              <Card className="border-bone bg-cream">
                 <CardContent className="space-y-3 pt-6">
                   <Button
                     onClick={handleSubmit}
                     disabled={isPending || !title.trim() || !body.trim()}
-                    className="w-full gap-2 bg-copper-clay text-chalk-white hover:bg-copper-clay-light"
+                    className="w-full gap-2 bg-granite text-parchment hover:bg-slate font-medium"
                   >
                     <Send className="h-4 w-4" />
-                    Send for review
+                    {isEditingPublished ? "Submit changes" : "Send for review"}
                   </Button>
-                  <Button
-                    onClick={handleSave}
-                    disabled={isPending || !title.trim()}
-                    variant="outline"
-                    className="w-full gap-2"
-                  >
-                    <Save className="h-4 w-4" />
-                    Save as draft
-                  </Button>
-                  <p className="text-center text-xs text-muted-foreground">
-                    Stories are reviewed before publishing to maintain quality.
+                  
+                  {!isEditingPublished && (
+                    <Button
+                      onClick={handleSave}
+                      disabled={isPending || !title.trim()}
+                      variant="outline"
+                      className="w-full gap-2 border-granite text-granite hover:bg-granite hover:text-parchment"
+                    >
+                      <Save className="h-4 w-4" />
+                      Save as draft
+                    </Button>
+                  )}
+                  
+                  <p className="text-center text-xs text-stone">
+                    {isEditingPublished 
+                      ? "Your changes will be reviewed before publishing."
+                      : "Stories are reviewed before publishing to maintain quality."}
                   </p>
                 </CardContent>
               </Card>
 
               {/* Tips */}
-              <Card className="border-sea-foam/30 bg-sea-foam/10">
+              <Card className="border-bone/50 bg-bone/30">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">
+                  <CardTitle className="text-sm font-medium text-granite">
                     Writing Tips
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ul className="space-y-2 text-xs text-muted-foreground">
+                  <ul className="space-y-2 text-xs text-stone">
                     <li>• Be specific about places and times</li>
                     <li>• Include sensory details — sights, sounds, smells</li>
                     <li>• Focus on a single moment or memory</li>
@@ -358,10 +447,10 @@ function WritePageContent() {
 export default function WritePage() {
   return (
     <Suspense fallback={
-      <div className="flex min-h-screen flex-col">
+      <div className="flex min-h-screen flex-col bg-parchment">
         <Header />
         <main className="flex flex-1 items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-atlantic-blue border-t-transparent" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-granite border-t-transparent" />
         </main>
       </div>
     }>

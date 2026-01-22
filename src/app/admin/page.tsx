@@ -15,6 +15,7 @@ import {
   MessageSquare,
   Folder,
   Trash2,
+  Sparkles,
 } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
 import { createClient } from "@/lib/supabase/client";
@@ -26,6 +27,7 @@ interface Stats {
   totalUsers: number;
   totalComments: number;
   pendingDeletions: number;
+  activePrompts: number;
 }
 
 export default function AdminDashboard() {
@@ -48,13 +50,14 @@ export default function AdminDashboard() {
       const supabase = createClient();
 
       // Fetch counts
-      const [storiesRes, reviewRes, publishedRes, usersRes, commentsRes, deletionsRes] = await Promise.all([
+      const [storiesRes, reviewRes, publishedRes, usersRes, commentsRes, deletionsRes, promptsRes] = await Promise.all([
         (supabase.from("stories") as any).select("id", { count: "exact", head: true }),
         (supabase.from("stories") as any).select("id", { count: "exact", head: true }).eq("status", "review"),
         (supabase.from("stories") as any).select("id", { count: "exact", head: true }).eq("status", "published"),
         (supabase.from("users") as any).select("id", { count: "exact", head: true }),
         (supabase.from("comments") as any).select("id", { count: "exact", head: true }),
         (supabase.from("stories") as any).select("id", { count: "exact", head: true }).eq("deletion_requested", true).eq("soft_deleted", false),
+        (supabase.from("prompts") as any).select("id", { count: "exact", head: true }).eq("active", true),
       ]);
 
       setStats({
@@ -64,6 +67,7 @@ export default function AdminDashboard() {
         totalUsers: usersRes.count || 0,
         totalComments: commentsRes.count || 0,
         pendingDeletions: deletionsRes.count || 0,
+        activePrompts: promptsRes.count || 0,
       });
       setLoadingStats(false);
     };
@@ -73,62 +77,62 @@ export default function AdminDashboard() {
 
   if (isLoading || !profileChecked || !user || !isAdmin) {
     return (
-      <div className="flex min-h-screen flex-col">
+      <div className="flex min-h-screen flex-col bg-parchment">
         <Header />
         <main className="flex flex-1 items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-atlantic-blue border-t-transparent" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-granite border-t-transparent" />
         </main>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-chalk-white">
+    <div className="flex min-h-screen flex-col bg-parchment">
       <Header />
 
-      <main className="flex-1 py-8">
-        <div className="mx-auto max-w-6xl px-4">
+      <main className="flex-1 py-10">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mb-8">
-            <h1 className="mb-2 font-serif text-3xl font-semibold">Admin Dashboard</h1>
-            <p className="text-muted-foreground">
+            <h1 className="mb-2 font-serif text-3xl font-bold tracking-tight text-granite">Admin Dashboard</h1>
+            <p className="text-stone">
               Manage stories, users, and community content.
             </p>
           </div>
 
           {/* Stats Grid */}
-          <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Card className="border-chalk-white-dark">
+          <div className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Card className="border-bone bg-cream">
               <CardContent className="pt-6">
                 <div className="flex items-center gap-4">
-                  <div className="rounded-full bg-atlantic-blue/10 p-3">
-                    <FileText className="h-6 w-6 text-atlantic-blue" />
+                  <div className="rounded-full bg-granite/10 p-3">
+                    <FileText className="h-6 w-6 text-granite" />
                   </div>
                   <div>
-                    <p className="text-2xl font-semibold">
+                    <p className="text-2xl font-bold text-granite">
                       {loadingStats ? "..." : stats?.totalStories}
                     </p>
-                    <p className="text-sm text-muted-foreground">Total Stories</p>
+                    <p className="text-sm text-stone">Total Stories</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             <Link href="/admin/review">
-              <Card className="border-chalk-white-dark transition-colors hover:border-copper-clay/50 hover:bg-copper-clay/5">
+              <Card className="border-bone bg-cream transition-all hover:border-copper/50 hover:shadow-md">
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-4">
-                    <div className="rounded-full bg-copper-clay/10 p-3">
-                      <Clock className="h-6 w-6 text-copper-clay" />
+                    <div className="rounded-full bg-copper/10 p-3">
+                      <Clock className="h-6 w-6 text-copper" />
                     </div>
                     <div>
-                      <p className="text-2xl font-semibold">
+                      <p className="text-2xl font-bold text-granite">
                         {loadingStats ? "..." : stats?.pendingReview}
                       </p>
-                      <p className="text-sm text-muted-foreground">Pending Review</p>
+                      <p className="text-sm text-stone">Pending Review</p>
                     </div>
                   </div>
                   {stats && stats.pendingReview > 0 && (
-                    <Badge className="mt-3 bg-copper-clay text-chalk-white">
+                    <Badge className="mt-3 bg-copper text-parchment border-0">
                       Action needed
                     </Badge>
                   )}
@@ -136,33 +140,33 @@ export default function AdminDashboard() {
               </Card>
             </Link>
 
-            <Card className="border-chalk-white-dark">
+            <Card className="border-bone bg-cream">
               <CardContent className="pt-6">
                 <div className="flex items-center gap-4">
-                  <div className="rounded-full bg-moss-green/10 p-3">
-                    <CheckCircle className="h-6 w-6 text-moss-green" />
+                  <div className="rounded-full bg-green-100 p-3">
+                    <CheckCircle className="h-6 w-6 text-green-600" />
                   </div>
                   <div>
-                    <p className="text-2xl font-semibold">
+                    <p className="text-2xl font-bold text-granite">
                       {loadingStats ? "..." : stats?.publishedStories}
                     </p>
-                    <p className="text-sm text-muted-foreground">Published</p>
+                    <p className="text-sm text-stone">Published</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="border-chalk-white-dark">
+            <Card className="border-bone bg-cream">
               <CardContent className="pt-6">
                 <div className="flex items-center gap-4">
-                  <div className="rounded-full bg-sea-foam/30 p-3">
-                    <Users className="h-6 w-6 text-atlantic-blue" />
+                  <div className="rounded-full bg-stone/10 p-3">
+                    <Users className="h-6 w-6 text-granite" />
                   </div>
                   <div>
-                    <p className="text-2xl font-semibold">
+                    <p className="text-2xl font-bold text-granite">
                       {loadingStats ? "..." : stats?.totalUsers}
                     </p>
-                    <p className="text-sm text-muted-foreground">Contributors</p>
+                    <p className="text-sm text-stone">Contributors</p>
                   </div>
                 </div>
               </CardContent>
@@ -170,15 +174,16 @@ export default function AdminDashboard() {
           </div>
 
           {/* Quick Actions */}
+          <h2 className="mb-4 font-serif text-xl font-bold text-granite">Quick Actions</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Link href="/admin/review">
-              <Card className="h-full border-chalk-white-dark transition-colors hover:border-atlantic-blue/30 hover:bg-chalk-white-dark/30">
+              <Card className="h-full border-bone bg-cream transition-all hover:border-granite/30 hover:shadow-md">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Clock className="h-5 w-5 text-atlantic-blue" />
+                  <CardTitle className="flex items-center gap-2 text-lg font-serif text-granite">
+                    <Clock className="h-5 w-5 text-copper" />
                     Review Queue
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-stone">
                     Review and moderate submitted stories.
                   </CardDescription>
                 </CardHeader>
@@ -186,27 +191,46 @@ export default function AdminDashboard() {
             </Link>
 
             <Link href="/admin/stories">
-              <Card className="h-full border-chalk-white-dark transition-colors hover:border-atlantic-blue/30 hover:bg-chalk-white-dark/30">
+              <Card className="h-full border-bone bg-cream transition-all hover:border-granite/30 hover:shadow-md">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <FileText className="h-5 w-5 text-atlantic-blue" />
+                  <CardTitle className="flex items-center gap-2 text-lg font-serif text-granite">
+                    <FileText className="h-5 w-5 text-granite" />
                     All Stories
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-stone">
                     Browse and manage all stories.
                   </CardDescription>
                 </CardHeader>
               </Card>
             </Link>
 
-            <Link href="/admin/comments">
-              <Card className="h-full border-chalk-white-dark transition-colors hover:border-atlantic-blue/30 hover:bg-chalk-white-dark/30">
+            <Link href="/admin/prompts">
+              <Card className="h-full border-bone bg-cream transition-all hover:border-granite/30 hover:shadow-md">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <MessageSquare className="h-5 w-5 text-atlantic-blue" />
+                  <CardTitle className="flex items-center gap-2 text-lg font-serif text-granite">
+                    <Sparkles className="h-5 w-5 text-copper" />
+                    Prompts
+                    {stats && stats.activePrompts > 0 && (
+                      <Badge className="ml-auto bg-copper/10 text-copper border-0 text-xs">
+                        {stats.activePrompts} active
+                      </Badge>
+                    )}
+                  </CardTitle>
+                  <CardDescription className="text-stone">
+                    Manage community writing prompts.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
+
+            <Link href="/admin/comments">
+              <Card className="h-full border-bone bg-cream transition-all hover:border-granite/30 hover:shadow-md">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg font-serif text-granite">
+                    <MessageSquare className="h-5 w-5 text-granite" />
                     Comments
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-stone">
                     Moderate community comments.
                   </CardDescription>
                 </CardHeader>
@@ -214,13 +238,13 @@ export default function AdminDashboard() {
             </Link>
 
             <Link href="/admin/collections">
-              <Card className="h-full border-chalk-white-dark transition-colors hover:border-atlantic-blue/30 hover:bg-chalk-white-dark/30">
+              <Card className="h-full border-bone bg-cream transition-all hover:border-granite/30 hover:shadow-md">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Folder className="h-5 w-5 text-atlantic-blue" />
+                  <CardTitle className="flex items-center gap-2 text-lg font-serif text-granite">
+                    <Folder className="h-5 w-5 text-granite" />
                     Collections
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-stone">
                     Manage themed story collections.
                   </CardDescription>
                 </CardHeader>
@@ -228,18 +252,18 @@ export default function AdminDashboard() {
             </Link>
 
             <Link href="/admin/deletions">
-              <Card className="h-full border-chalk-white-dark transition-colors hover:border-red-200 hover:bg-red-50/30">
+              <Card className="h-full border-bone bg-cream transition-all hover:border-red-200 hover:shadow-md">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-lg">
+                  <CardTitle className="flex items-center gap-2 text-lg font-serif text-granite">
                     <Trash2 className="h-5 w-5 text-red-500" />
                     Deletion Requests
                     {stats && stats.pendingDeletions > 0 && (
-                      <Badge className="ml-auto bg-red-100 text-red-700">
+                      <Badge className="ml-auto bg-red-100 text-red-700 border-0">
                         {stats.pendingDeletions}
                       </Badge>
                     )}
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-stone">
                     Review story deletion requests.
                   </CardDescription>
                 </CardHeader>

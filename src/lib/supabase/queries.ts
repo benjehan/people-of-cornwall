@@ -459,6 +459,94 @@ export async function getCollections() {
   })) as CollectionWithCount[];
 }
 
+// =============================================================================
+// PROMPTS
+// =============================================================================
+
+export interface Prompt {
+  id: string;
+  title: string;
+  description: string | null;
+  active: boolean;
+  featured: boolean;
+  created_at: string;
+  expires_at: string | null;
+  story_count: number;
+}
+
+/**
+ * Get active prompts
+ */
+export async function getActivePrompts() {
+  const supabase = await createClient();
+
+  const { data, error } = await (supabase
+    .from("prompts") as any)
+    .select("*")
+    .eq("active", true)
+    .order("featured", { ascending: false })
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching prompts:", error);
+    return [];
+  }
+
+  return (data || []) as Prompt[];
+}
+
+/**
+ * Get featured prompt
+ */
+export async function getFeaturedPrompt() {
+  const supabase = await createClient();
+
+  const { data, error } = await (supabase
+    .from("prompts") as any)
+    .select("*")
+    .eq("active", true)
+    .eq("featured", true)
+    .limit(1)
+    .single();
+
+  if (error && error.code !== "PGRST116") {
+    console.error("Error fetching featured prompt:", error);
+    return null;
+  }
+
+  return data as Prompt | null;
+}
+
+/**
+ * Get stories for a prompt
+ */
+export async function getPromptStories(promptId: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await (supabase
+    .from("stories") as any)
+    .select("*, likes(count), comments(count)")
+    .eq("prompt_id", promptId)
+    .eq("status", "published")
+    .eq("soft_deleted", false)
+    .order("published_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching prompt stories:", error);
+    return [];
+  }
+
+  return (data || []).map((story: any) => ({
+    ...story,
+    likes_count: Array.isArray(story.likes) ? story.likes[0]?.count || 0 : 0,
+    comments_count: Array.isArray(story.comments) ? story.comments[0]?.count || 0 : 0,
+  })) as StoryWithCounts[];
+}
+
+// =============================================================================
+// COLLECTIONS
+// =============================================================================
+
 /**
  * Get stories in a collection
  */

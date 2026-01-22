@@ -12,6 +12,7 @@ interface SaveStoryData {
   location_lng?: number | null;
   timeline_year?: number | null;
   anonymous?: boolean;
+  prompt_id?: string | null;
 }
 
 /**
@@ -41,6 +42,7 @@ export async function saveStoryAction(data: SaveStoryData) {
         location_lng: data.location_lng,
         timeline_year: data.timeline_year,
         anonymous: data.anonymous,
+        prompt_id: data.prompt_id,
       })
       .eq("id", data.id)
       .eq("author_id", user.id) // Security: only update own stories
@@ -67,6 +69,7 @@ export async function saveStoryAction(data: SaveStoryData) {
         location_lng: data.location_lng,
         timeline_year: data.timeline_year,
         anonymous: data.anonymous,
+        prompt_id: data.prompt_id,
         status: "draft",
       })
       .select()
@@ -83,7 +86,7 @@ export async function saveStoryAction(data: SaveStoryData) {
 }
 
 /**
- * Submit a story for review
+ * Submit a story for review (works for drafts, rejected, published, and unpublished)
  */
 export async function submitStoryAction(storyId: string) {
   const supabase = await createClient();
@@ -98,12 +101,17 @@ export async function submitStoryAction(storyId: string) {
   }
 
   // Update story status to review
+  // Authors can submit/resubmit from: draft, rejected, published (edit), unpublished
   const { error } = await (supabase
     .from("stories") as any)
-    .update({ status: "review" })
+    .update({ 
+      status: "review",
+      // Clear any rejection reason when resubmitting
+      rejection_reason: null,
+    })
     .eq("id", storyId)
     .eq("author_id", user.id) // Security: only submit own stories
-    .in("status", ["draft", "rejected"]); // Can only submit drafts or rejected stories
+    .in("status", ["draft", "rejected", "published", "unpublished"]);
 
   if (error) {
     console.error("Error submitting story:", error);
@@ -111,6 +119,7 @@ export async function submitStoryAction(storyId: string) {
   }
 
   revalidatePath("/profile/stories");
+  revalidatePath(`/stories/${storyId}`);
   return { error: null };
 }
 

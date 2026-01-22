@@ -241,12 +241,12 @@ function StoryCard({ story, onRefresh }: StoryCardProps) {
     year: "numeric",
   });
 
-  // Determine link based on status
+  // Determine link based on status - clicking goes to view or edit
   const storyLink = story.status === "published" 
     ? `/stories/${story.id}` 
-    : (story.status === "draft" || story.status === "rejected") 
+    : (story.status === "draft" || story.status === "rejected" || story.status === "unpublished") 
       ? `/write?id=${story.id}`
-      : null;
+      : null; // "review" status - no direct link, user waits for approval
 
   const handleDelete = () => {
     if (story.status === "draft") {
@@ -353,7 +353,8 @@ function StoryCard({ story, onRefresh }: StoryCardProps) {
               </div>
 
               <div className="flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
-                {(story.status === "draft" || story.status === "rejected") && (
+                {/* Edit button for drafts, rejected, unpublished */}
+                {(story.status === "draft" || story.status === "rejected" || story.status === "unpublished") && (
                   <Link href={`/write?id=${story.id}`}>
                     <Button variant="outline" size="sm" className="w-full gap-1 border-granite text-granite hover:bg-granite hover:text-parchment">
                       <Edit className="h-4 w-4" />
@@ -361,13 +362,28 @@ function StoryCard({ story, onRefresh }: StoryCardProps) {
                     </Button>
                   </Link>
                 )}
+                {/* Published stories: View + Edit buttons */}
                 {story.status === "published" && (
-                  <Link href={`/stories/${story.id}`}>
-                    <Button variant="outline" size="sm" className="w-full gap-1 border-granite text-granite hover:bg-granite hover:text-parchment">
-                      <Eye className="h-4 w-4" />
-                      View
-                    </Button>
-                  </Link>
+                  <>
+                    <Link href={`/stories/${story.id}`}>
+                      <Button variant="outline" size="sm" className="w-full gap-1 border-granite text-granite hover:bg-granite hover:text-parchment">
+                        <Eye className="h-4 w-4" />
+                        View
+                      </Button>
+                    </Link>
+                    <Link href={`/write?id=${story.id}`}>
+                      <Button variant="outline" size="sm" className="w-full gap-1 border-copper text-copper hover:bg-copper hover:text-parchment">
+                        <Edit className="h-4 w-4" />
+                        Edit
+                      </Button>
+                    </Link>
+                  </>
+                )}
+                {/* In review: just show status, no actions */}
+                {story.status === "review" && (
+                  <div className="text-xs text-stone text-center py-2">
+                    Awaiting review...
+                  </div>
                 )}
                 
                 {/* Delete/Cancel buttons */}
