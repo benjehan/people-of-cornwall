@@ -36,6 +36,7 @@ function WritePageContent() {
   const [isPending, startTransition] = useTransition();
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isLoadingStory, setIsLoadingStory] = useState(false);
+  const [authCheckComplete, setAuthCheckComplete] = useState(false);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -50,17 +51,23 @@ function WritePageContent() {
   const [promptId, setPromptId] = useState<string | null>(null);
   const [promptTitle, setPromptTitle] = useState<string | null>(null);
 
-  // Redirect if not logged in (only after auth is fully checked)
+  // Mark auth check as complete once loading finishes
   useEffect(() => {
-    // Wait for auth to be fully checked before redirecting
-    // Give a small delay to allow auth state to stabilize
-    if (!authLoading && !user) {
-      const redirectTimer = setTimeout(() => {
-        router.push("/login?redirect=/write");
-      }, 500);
-      return () => clearTimeout(redirectTimer);
+    if (!authLoading) {
+      // Give a brief moment for any auth state to settle
+      const timer = setTimeout(() => {
+        setAuthCheckComplete(true);
+      }, 100);
+      return () => clearTimeout(timer);
     }
-  }, [authLoading, user, router]);
+  }, [authLoading]);
+
+  // Redirect if not logged in (only after auth check is truly complete)
+  useEffect(() => {
+    if (authCheckComplete && !user) {
+      router.push("/login?redirect=/write");
+    }
+  }, [authCheckComplete, user, router]);
 
   // Load existing story if ID provided, or prompt if prompt ID provided
   useEffect(() => {
@@ -187,22 +194,36 @@ function WritePageContent() {
   const isEditingPublished = originalStatus === "published";
   const isEditingRejected = originalStatus === "rejected";
 
-  if (authLoading || isLoadingStory) {
+  // Show loading while auth is being checked
+  if (!authCheckComplete || isLoadingStory) {
     return (
       <div className="flex min-h-screen flex-col bg-parchment">
         <Header />
         <main className="flex flex-1 items-center justify-center">
           <div className="text-center">
             <div className="h-6 w-6 mx-auto animate-spin rounded-full border-2 border-granite border-t-transparent" />
-            {isLoadingStory && <p className="mt-4 text-stone">Loading your story...</p>}
+            <p className="mt-4 text-stone">
+              {isLoadingStory ? "Loading your story..." : "Checking authentication..."}
+            </p>
           </div>
         </main>
       </div>
     );
   }
 
+  // Redirect will happen via useEffect if not logged in
   if (!user) {
-    return null;
+    return (
+      <div className="flex min-h-screen flex-col bg-parchment">
+        <Header />
+        <main className="flex flex-1 items-center justify-center">
+          <div className="text-center">
+            <div className="h-6 w-6 mx-auto animate-spin rounded-full border-2 border-granite border-t-transparent" />
+            <p className="mt-4 text-stone">Redirecting to login...</p>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   return (

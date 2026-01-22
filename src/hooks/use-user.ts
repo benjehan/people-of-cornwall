@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useSyncExternalStore } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { User } from "@supabase/supabase-js";
+import type { User, Session } from "@supabase/supabase-js";
 import type { Tables } from "@/types/supabase";
 
 type Profile = Tables<"users">;
@@ -15,11 +15,9 @@ interface UserState {
   isAdmin: boolean;
 }
 
-// Get the singleton client
-const supabase = typeof window !== "undefined" ? createClient() : null;
-
 /**
  * Hook to get the current authenticated user and their profile
+ * Uses a more reliable approach with immediate session check
  */
 export function useUser() {
   const [state, setState] = useState<UserState>({
@@ -29,6 +27,10 @@ export function useUser() {
     profileChecked: false,
     isAdmin: false,
   });
+
+  const [supabase] = useState(() => 
+    typeof window !== "undefined" ? createClient() : null
+  );
 
   const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
     if (!supabase) return null;
@@ -43,7 +45,7 @@ export function useUser() {
     } catch {
       return null;
     }
-  }, []);
+  }, [supabase]);
 
   useEffect(() => {
     if (!supabase) {
@@ -58,62 +60,40 @@ export function useUser() {
     }
 
     let mounted = true;
+    let timeoutId: NodeJS.Timeout;
 
-    // Safety timeout to prevent infinite loading (8 seconds max)
-    const timeout = setTimeout(() => {
-      if (mounted) {
-        setState(prev => {
-          if (prev.isLoading) {
-            console.warn("Auth loading timeout - falling back to unauthenticated state");
-            return {
-              user: null,
-              profile: null,
-              isLoading: false,
-              profileChecked: true,
-              isAdmin: false,
-            };
-          }
-          return prev;
-        });
-      }
-    }, 8000);
-
-    const getInitialSession = async () => {
+    const checkAuth = async () => {
       try {
-        // Use getSession for faster initial load
+        // Try to get the session - this reads from cookies/storage
         const { data: { session }, error } = await supabase.auth.getSession();
-
-        if (error) {
-          console.error("Session error:", error);
-        }
 
         if (!mounted) return;
 
+        if (error) {
+          console.error("Session error:", error.message);
+        }
+
         if (session?.user) {
-          // Set user immediately, then fetch profile
+          // User is authenticated
           setState(prev => ({
             ...prev,
             user: session.user,
             isLoading: false,
           }));
 
-          // Fetch profile in background (with timeout)
-          const profilePromise = fetchProfile(session.user.id);
-          const profile = await Promise.race([
-            profilePromise,
-            new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000))
-          ]);
-          
-          if (mounted) {
-            setState({
-              user: session.user,
-              profile: profile || null,
-              isLoading: false,
-              profileChecked: true,
-              isAdmin: profile?.role === "admin",
-            });
-          }
+          // Fetch profile (non-blocking)
+          fetchProfile(session.user.id).then(profile => {
+            if (mounted) {
+              setState(prev => ({
+                ...prev,
+                profile: profile || null,
+                profileChecked: true,
+                isAdmin: profile?.role === "admin",
+              }));
+            }
+          });
         } else {
+          // No session found
           setState({
             user: null,
             profile: null,
@@ -123,7 +103,7 @@ export function useUser() {
           });
         }
       } catch (error) {
-        console.error("Error getting session:", error);
+        console.error("Auth check error:", error);
         if (mounted) {
           setState({
             user: null,
@@ -136,7 +116,25 @@ export function useUser() {
       }
     };
 
-    getInitialSession();
+    // Start auth check immediately
+    checkAuth();
+
+    // Safety timeout - but much shorter now (3 seconds)
+    timeoutId = setTimeout(() => {
+      if (mounted) {
+        setState(prev => {
+          if (prev.isLoading) {
+            console.warn("Auth loading timeout");
+            return {
+              ...prev,
+              isLoading: false,
+              profileChecked: true,
+            };
+          }
+          return prev;
+        });
+      }
+    }, 3000);
 
     // Listen for auth changes
     const {
@@ -144,7 +142,9 @@ export function useUser() {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
 
-      if (event === 'SIGNED_OUT') {
+      console.log("Auth state change:", event);
+
+      if (event === 'SIGNED_OUT' || !session) {
         setState({
           user: null,
           profile: null,
@@ -156,7 +156,6 @@ export function useUser() {
       }
 
       if (session?.user) {
-        // Update user immediately
         setState(prev => ({
           ...prev,
           user: session.user,
@@ -166,23 +165,22 @@ export function useUser() {
         // Fetch profile
         const profile = await fetchProfile(session.user.id);
         if (mounted) {
-          setState({
-            user: session.user,
+          setState(prev => ({
+            ...prev,
             profile: profile || null,
-            isLoading: false,
             profileChecked: true,
             isAdmin: profile?.role === "admin",
-          });
+          }));
         }
       }
     });
 
     return () => {
       mounted = false;
-      clearTimeout(timeout);
+      clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
-  }, [fetchProfile]);
+  }, [supabase, fetchProfile]);
 
   const signOut = useCallback(async () => {
     if (!supabase) return;
@@ -195,7 +193,7 @@ export function useUser() {
       profileChecked: true,
       isAdmin: false,
     });
-  }, []);
+  }, [supabase]);
 
   return {
     ...state,
