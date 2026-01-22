@@ -53,26 +53,15 @@ function WritePageContent() {
 
   // Redirect logic - only redirect if auth is done loading AND no user
   useEffect(() => {
-    // If we have a user, never redirect
     if (user) {
       setShouldRedirect(false);
       return;
     }
     
-    // If still loading, wait
-    if (authLoading) {
-      return;
+    if (!authLoading && !user) {
+      setShouldRedirect(true);
+      router.push("/login?redirect=/write");
     }
-    
-    // Auth is done and no user - wait a moment then redirect
-    const timer = setTimeout(() => {
-      if (!user) {
-        setShouldRedirect(true);
-        router.push("/login?redirect=/write");
-      }
-    }, 500);
-    
-    return () => clearTimeout(timer);
   }, [authLoading, user, router]);
 
   // Load existing story if ID provided, or prompt if prompt ID provided
