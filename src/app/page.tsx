@@ -23,7 +23,7 @@ export default async function HomePage() {
     getPublishedStories({ perPage: 6 }),
     getStoryDecades(),
     getCollections(),
-    getRotatingPrompts(12), // Get 12 random prompts for the carousel
+    getRotatingPrompts(), // Get ALL prompts for the carousel
     getFeaturedCollections(3),
   ]);
 
@@ -118,6 +118,11 @@ export default async function HomePage() {
             )}
           </div>
         </section>
+
+        {/* Spark an Idea — Rotating Prompts (right after hero) */}
+        {rotatingPrompts.length > 0 && (
+          <RotatingPrompts prompts={rotatingPrompts} />
+        )}
 
         {/* Recently Shared */}
         <section className="py-16 md:py-20">
@@ -268,11 +273,6 @@ export default async function HomePage() {
             </div>
           </div>
         </section>
-
-        {/* Rotating Prompts Carousel */}
-        {rotatingPrompts.length > 0 && (
-          <RotatingPrompts prompts={rotatingPrompts} />
-        )}
 
         {/* Featured Collections */}
         {featuredCollections.length > 0 && (

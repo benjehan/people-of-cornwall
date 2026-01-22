@@ -622,26 +622,25 @@ export async function getFeaturedPrompt() {
 }
 
 /**
- * Get random prompts for homepage carousel
+ * Get all prompts for homepage carousel (shuffled)
  */
-export async function getRotatingPrompts(limit: number = 10) {
+export async function getRotatingPrompts() {
   const supabase = await createClient();
 
-  // Get all active prompts and shuffle them client-side for randomness
+  // Get all active prompts
   const { data, error } = await (supabase
     .from("prompts") as any)
     .select("id, title, body")
-    .eq("active", true)
-    .order("created_at", { ascending: false });
+    .eq("active", true);
 
   if (error) {
     console.error("Error fetching rotating prompts:", error);
     return [];
   }
 
-  // Shuffle array and return limited results (with default story_count of 0)
+  // Shuffle array for random order (with default story_count of 0)
   const shuffled = (data || []).map((p: any) => ({ ...p, story_count: 0 })).sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, limit) as Prompt[];
+  return shuffled as Prompt[];
 }
 
 /**

@@ -117,44 +117,31 @@ export function RotatingPrompts({ prompts }: RotatingPromptsProps) {
 
           {/* Navigation */}
           {prompts.length > 1 && (
-            <div className="mt-10 flex items-center justify-center gap-4">
+            <div className="mt-10 flex items-center justify-center gap-6">
               {/* Previous button */}
               <button
                 onClick={goToPrev}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-bone bg-parchment text-stone hover:border-granite hover:text-granite transition-colors"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-bone bg-parchment text-stone hover:border-granite hover:text-granite transition-colors"
                 aria-label="Previous prompt"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-5 w-5" />
               </button>
 
-              {/* Dots */}
-              <div className="flex items-center gap-2">
-                {prompts.slice(0, Math.min(prompts.length, 8)).map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => goToIndex(index)}
-                    className={`h-2 rounded-full transition-all duration-300 ${
-                      index === currentIndex
-                        ? "w-6 bg-copper"
-                        : "w-2 bg-bone hover:bg-stone"
-                    }`}
-                    aria-label={`Go to prompt ${index + 1}`}
-                  />
-                ))}
-                {prompts.length > 8 && (
-                  <span className="text-xs text-stone ml-1">
-                    +{prompts.length - 8} more
-                  </span>
-                )}
+              {/* Counter */}
+              <div className="flex items-center gap-2 text-sm">
+                <span className="font-medium text-granite">{currentIndex + 1}</span>
+                <span className="text-stone">/</span>
+                <span className="text-stone">{prompts.length}</span>
+                <span className="text-stone ml-1">prompts</span>
               </div>
 
               {/* Next button */}
               <button
                 onClick={goToNext}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-bone bg-parchment text-stone hover:border-granite hover:text-granite transition-colors"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-bone bg-parchment text-stone hover:border-granite hover:text-granite transition-colors"
                 aria-label="Next prompt"
               >
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-5 w-5" />
               </button>
             </div>
           )}
