@@ -1,12 +1,11 @@
 -- Seed inspiring story prompts for the People of Cornwall community
 -- A comprehensive collection covering all aspects of Cornish life and history
--- Run this after the prompts table is created (migration 006)
 
 -- =============================================================================
 -- FEATURED PROMPT
 -- =============================================================================
 
-INSERT INTO prompts (title, description, active, featured)
+INSERT INTO prompts (title, body, active, featured)
 VALUES 
   (
     'What was market day like in your town?',
@@ -20,7 +19,7 @@ ON CONFLICT DO NOTHING;
 -- EVERYDAY LIFE & MEMORIES
 -- =============================================================================
 
-INSERT INTO prompts (title, description, active, featured)
+INSERT INTO prompts (title, body, active, featured)
 VALUES 
   (
     'Tell us about a storm you remember',
@@ -123,7 +122,7 @@ ON CONFLICT DO NOTHING;
 -- THE LAND, WEATHER & NATURE
 -- =============================================================================
 
-INSERT INTO prompts (title, description, active, featured)
+INSERT INTO prompts (title, body, active, featured)
 VALUES 
   (
     'Tell us about a perfect Cornish day',
@@ -181,7 +180,7 @@ ON CONFLICT DO NOTHING;
 -- MINING HERITAGE
 -- =============================================================================
 
-INSERT INTO prompts (title, description, active, featured)
+INSERT INTO prompts (title, body, active, featured)
 VALUES 
   (
     'Did anyone in your family work in the mines?',
@@ -219,7 +218,7 @@ ON CONFLICT DO NOTHING;
 -- SPORTS & RECREATION
 -- =============================================================================
 
-INSERT INTO prompts (title, description, active, featured)
+INSERT INTO prompts (title, body, active, featured)
 VALUES 
   (
     'Tell us about rugby in Cornwall',
@@ -267,7 +266,7 @@ ON CONFLICT DO NOTHING;
 -- CELTIC SPIRIT & IDENTITY
 -- =============================================================================
 
-INSERT INTO prompts (title, description, active, featured)
+INSERT INTO prompts (title, body, active, featured)
 VALUES 
   (
     'What does being Cornish mean to you?',
@@ -315,7 +314,7 @@ ON CONFLICT DO NOTHING;
 -- THE PEOPLE OF CORNWALL
 -- =============================================================================
 
-INSERT INTO prompts (title, description, active, featured)
+INSERT INTO prompts (title, body, active, featured)
 VALUES 
   (
     'Tell us about a teacher who changed your life',
@@ -363,7 +362,7 @@ ON CONFLICT DO NOTHING;
 -- HISTORICAL EVENTS IN CORNWALL
 -- =============================================================================
 
-INSERT INTO prompts (title, description, active, featured)
+INSERT INTO prompts (title, body, active, featured)
 VALUES 
   (
     'Do you remember the 1962 blizzard?',
@@ -431,7 +430,7 @@ ON CONFLICT DO NOTHING;
 -- FISHING & MARITIME
 -- =============================================================================
 
-INSERT INTO prompts (title, description, active, featured)
+INSERT INTO prompts (title, body, active, featured)
 VALUES 
   (
     'Tell us about a fishing harbour you knew',
@@ -469,7 +468,7 @@ ON CONFLICT DO NOTHING;
 -- ARTS, CULTURE & TOURISM
 -- =============================================================================
 
-INSERT INTO prompts (title, description, active, featured)
+INSERT INTO prompts (title, body, active, featured)
 VALUES 
   (
     'Do you remember the Minack Theatre?',

@@ -61,9 +61,9 @@ export default async function PromptsPage() {
                       "{prompt.title}"
                     </h2>
                     
-                    {prompt.description && (
+                    {prompt.body && (
                       <p className="mb-6 text-stone leading-relaxed">
-                        {prompt.description}
+                        {prompt.body}
                       </p>
                     )}
 

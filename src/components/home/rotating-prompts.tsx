@@ -8,7 +8,7 @@ import { Sparkles, PenLine, ChevronLeft, ChevronRight } from "lucide-react";
 interface Prompt {
   id: string;
   title: string;
-  description: string | null;
+  body: string;
 }
 
 interface RotatingPromptsProps {
@@ -92,9 +92,9 @@ export function RotatingPrompts({ prompts }: RotatingPromptsProps) {
               <h2 className="mb-4 font-serif text-2xl font-bold tracking-tight text-granite sm:text-3xl md:text-4xl">
                 "{current.title}"
               </h2>
-              {current.description && (
+              {current.body && (
                 <p className="text-stone text-base md:text-lg leading-relaxed">
-                  {current.description}
+                  {current.body}
                 </p>
               )}
             </div>

@@ -25,11 +25,11 @@ import { createClient } from "@/lib/supabase/client";
 interface Prompt {
   id: string;
   title: string;
-  description: string | null;
+  body: string;
   active: boolean;
   featured: boolean;
-  story_count: number;
   created_at: string;
+  story_count?: number;
 }
 
 export default function AdminPromptsPage() {
@@ -60,14 +60,19 @@ export default function AdminPromptsPage() {
     const supabase = createClient();
     const { data, error } = await (supabase
       .from("prompts") as any)
-      .select("*")
+      .select("*, stories(count)")
       .order("featured", { ascending: false })
       .order("created_at", { ascending: false });
 
     if (error) {
       console.error("Error fetching prompts:", error);
     } else {
-      setPrompts((data as Prompt[]) || []);
+      // Compute story_count from the stories relationship
+      const promptsWithCount = (data || []).map((p: any) => ({
+        ...p,
+        story_count: Array.isArray(p.stories) ? p.stories[0]?.count || 0 : 0,
+      }));
+      setPrompts(promptsWithCount as Prompt[]);
     }
     setLoadingPrompts(false);
   };
@@ -82,7 +87,7 @@ export default function AdminPromptsPage() {
   const openEditDialog = (prompt: Prompt) => {
     setEditingPrompt(prompt);
     setPromptTitle(prompt.title);
-    setPromptDescription(prompt.description || "");
+    setPromptDescription(prompt.body || "");
     setDialogOpen(true);
   };
 
@@ -96,14 +101,14 @@ export default function AdminPromptsPage() {
         await (supabase.from("prompts") as any)
           .update({
             title: promptTitle.trim(),
-            description: promptDescription.trim() || null,
+            body: promptDescription.trim(),
           })
           .eq("id", editingPrompt.id);
       } else {
         await (supabase.from("prompts") as any)
           .insert({
             title: promptTitle.trim(),
-            description: promptDescription.trim() || null,
+            body: promptDescription.trim(),
             active: true,
             featured: false,
           });
@@ -224,14 +229,14 @@ export default function AdminPromptsPage() {
                           "{prompt.title}"
                         </h3>
 
-                        {prompt.description && (
+                        {prompt.body && (
                           <p className="text-sm text-stone mb-2">
-                            {prompt.description}
+                            {prompt.body}
                           </p>
                         )}
 
                         <p className="text-xs text-silver">
-                          {prompt.story_count} {prompt.story_count === 1 ? "story" : "stories"}
+                          {prompt.story_count || 0} {(prompt.story_count || 0) === 1 ? "story" : "stories"}
                         </p>
                       </div>
 

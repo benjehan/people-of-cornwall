@@ -561,7 +561,7 @@ export async function getCollections() {
 export interface Prompt {
   id: string;
   title: string;
-  description: string | null;
+  body: string;
   active: boolean;
   featured: boolean;
   created_at: string;
@@ -577,7 +577,7 @@ export async function getActivePrompts() {
 
   const { data, error } = await (supabase
     .from("prompts") as any)
-    .select("*")
+    .select("*, stories(count)")
     .eq("active", true)
     .order("featured", { ascending: false })
     .order("created_at", { ascending: false });
@@ -587,7 +587,11 @@ export async function getActivePrompts() {
     return [];
   }
 
-  return (data || []) as Prompt[];
+  // Compute story_count from the stories relationship
+  return (data || []).map((prompt: any) => ({
+    ...prompt,
+    story_count: Array.isArray(prompt.stories) ? prompt.stories[0]?.count || 0 : 0,
+  })) as Prompt[];
 }
 
 /**
@@ -598,7 +602,7 @@ export async function getFeaturedPrompt() {
 
   const { data, error } = await (supabase
     .from("prompts") as any)
-    .select("*")
+    .select("*, stories(count)")
     .eq("active", true)
     .eq("featured", true)
     .limit(1)
@@ -609,7 +613,12 @@ export async function getFeaturedPrompt() {
     return null;
   }
 
-  return data as Prompt | null;
+  if (!data) return null;
+
+  return {
+    ...data,
+    story_count: Array.isArray(data.stories) ? data.stories[0]?.count || 0 : 0,
+  } as Prompt;
 }
 
 /**
@@ -621,7 +630,7 @@ export async function getRotatingPrompts(limit: number = 10) {
   // Get all active prompts and shuffle them client-side for randomness
   const { data, error } = await (supabase
     .from("prompts") as any)
-    .select("id, title, description")
+    .select("id, title, body")
     .eq("active", true)
     .order("created_at", { ascending: false });
 
@@ -630,8 +639,8 @@ export async function getRotatingPrompts(limit: number = 10) {
     return [];
   }
 
-  // Shuffle array and return limited results
-  const shuffled = (data || []).sort(() => Math.random() - 0.5);
+  // Shuffle array and return limited results (with default story_count of 0)
+  const shuffled = (data || []).map((p: any) => ({ ...p, story_count: 0 })).sort(() => Math.random() - 0.5);
   return shuffled.slice(0, limit) as Prompt[];
 }
 

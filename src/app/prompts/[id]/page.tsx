@@ -78,9 +78,9 @@ export default async function PromptPage({ params }: PageProps) {
               "{prompt.title}"
             </h1>
 
-            {prompt.description && (
+            {prompt.body && (
               <p className="mb-8 max-w-2xl text-lg text-stone">
-                {prompt.description}
+                {prompt.body}
               </p>
             )}
 
