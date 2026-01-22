@@ -5,10 +5,10 @@ import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import Image from "@tiptap/extension-image";
 import { Button } from "@/components/ui/button";
-import { Bold, Italic, List, ListOrdered, Undo, Redo, ImagePlus, Loader2 } from "lucide-react";
+import { Bold, Italic, List, ListOrdered, Undo, Redo, ImagePlus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState, useRef, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useState, useEffect } from "react";
+import { ImageUploadDialog } from "./image-upload-dialog";
 
 interface StoryEditorProps {
   content: string;
@@ -23,8 +23,7 @@ export function StoryEditor({
   placeholder = "Start writing your story...",
   storyId,
 }: StoryEditorProps) {
-  const [isUploading, setIsUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [imageDialogOpen, setImageDialogOpen] = useState(false);
   const [initialContent, setInitialContent] = useState(content);
 
   const editor = useEditor({
@@ -65,60 +64,19 @@ export function StoryEditor({
     }
   }, [content, editor, initialContent]);
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !editor) return;
+  const handleImageInsert = (url: string, attribution?: string) => {
+    if (!editor) return;
 
-    if (!file.type.startsWith("image/")) {
-      alert("Please select an image file");
-      return;
-    }
+    // Insert the image
+    editor.chain().focus().setImage({ src: url }).run();
 
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Image must be less than 5MB");
-      return;
-    }
-
-    setIsUploading(true);
-
-    try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        alert("You must be logged in to upload images");
-        return;
-      }
-
-      const ext = file.name.split(".").pop();
-      const fileName = `${user.id}/${storyId || "drafts"}/${Date.now()}.${ext}`;
-
-      const { data, error: uploadError } = await supabase.storage
-        .from("story-media")
-        .upload(fileName, file, {
-          cacheControl: "3600",
-          upsert: false,
-        });
-
-      if (uploadError) {
-        console.error("Upload error:", uploadError);
-        alert("Failed to upload image. Make sure the storage bucket exists.");
-        return;
-      }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from("story-media")
-        .getPublicUrl(data.path);
-
-      editor.chain().focus().setImage({ src: publicUrl }).run();
-    } catch (err) {
-      console.error("Upload error:", err);
-      alert("Failed to upload image");
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
+    // If there's attribution, add a caption below the image
+    if (attribution) {
+      editor
+        .chain()
+        .focus()
+        .insertContent(`<p><em>Photo: ${attribution}</em></p>`)
+        .run();
     }
   };
 
@@ -130,13 +88,12 @@ export function StoryEditor({
 
   return (
     <div className="rounded-lg border border-chalk-white-dark bg-chalk-white">
-      {/* Hidden file input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        onChange={handleImageUpload}
-        className="hidden"
+      {/* Image Upload Dialog */}
+      <ImageUploadDialog
+        open={imageDialogOpen}
+        onOpenChange={setImageDialogOpen}
+        onUpload={handleImageInsert}
+        storyId={storyId}
       />
 
       {/* Toolbar */}
@@ -195,15 +152,10 @@ export function StoryEditor({
           type="button"
           variant="ghost"
           size="sm"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isUploading}
+          onClick={() => setImageDialogOpen(true)}
           className="h-8 px-2 gap-1"
         >
-          {isUploading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <ImagePlus className="h-4 w-4" />
-          )}
+          <ImagePlus className="h-4 w-4" />
           <span className="hidden sm:inline text-xs">Image</span>
         </Button>
         <div className="flex-1" />

@@ -43,6 +43,43 @@ export default function TermsPage() {
             </ul>
 
             <h2 className="mt-8 font-serif text-2xl font-bold text-granite">
+              Photographs and Images
+            </h2>
+            <p className="text-stone">
+              When uploading photographs or images to People of Cornwall:
+            </p>
+            <ul className="list-disc pl-6 text-stone space-y-2">
+              <li>
+                <strong>Ownership:</strong> You confirm that you own the image, have explicit permission 
+                from the photographer/copyright holder, or the image is in the public domain
+              </li>
+              <li>
+                <strong>People in photos:</strong> If identifiable individuals appear in your photos, 
+                you should have their permission to share the image publicly
+              </li>
+              <li>
+                <strong>Attribution:</strong> Where possible, please credit the photographer or source 
+                of historical images using the attribution field provided
+              </li>
+              <li>
+                <strong>Family archives:</strong> We welcome historical family photographs — these help 
+                preserve Cornwall's living memory
+              </li>
+              <li>
+                <strong>License granted:</strong> By uploading images, you grant People of Cornwall a 
+                non-exclusive, royalty-free license to display the images as part of your story
+              </li>
+              <li>
+                <strong>Removal:</strong> You may request removal of your images at any time by 
+                contacting us or deleting your story
+              </li>
+            </ul>
+            <p className="text-stone mt-4">
+              <strong>Please note:</strong> We do not claim ownership of your photographs. Your images 
+              remain your property, and we only display them in connection with your story.
+            </p>
+
+            <h2 className="mt-8 font-serif text-2xl font-bold text-granite">
               Community Guidelines
             </h2>
             <p className="text-stone">
