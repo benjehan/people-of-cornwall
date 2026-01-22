@@ -1,164 +1,149 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useSyncExternalStore } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import type { Tables } from "@/types/supabase";
 
 type Profile = Tables<"users">;
 
-interface UserState {
+// ============================================
+// GLOBAL AUTH STORE
+// ============================================
+interface AuthState {
   user: User | null;
   profile: Profile | null;
   isLoading: boolean;
   isAdmin: boolean;
 }
 
-// Global state to share across all hook instances
-let globalUser: User | null = null;
-let globalProfile: Profile | null = null;
-let globalIsAdmin = false;
-let globalInitialized = false;
-let globalLoading = true;
+let state: AuthState = {
+  user: null,
+  profile: null,
+  isLoading: true,
+  isAdmin: false,
+};
 
-// Subscribers to notify when state changes
-const subscribers = new Set<() => void>();
+let listeners: Set<() => void> = new Set();
+let initialized = false;
 
-function notifySubscribers() {
-  subscribers.forEach(fn => fn());
+function getState() {
+  return state;
 }
 
-/**
- * Auth hook - uses global singleton state
- */
-export function useUser() {
-  const [, forceUpdate] = useState(0);
-  
-  // Subscribe to global state changes
-  useEffect(() => {
-    const update = () => forceUpdate(n => n + 1);
-    subscribers.add(update);
-    return () => { subscribers.delete(update); };
-  }, []);
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
 
-  // Initialize auth only once globally
-  useEffect(() => {
-    if (globalInitialized) {
-      console.log('[USE-USER] Already initialized, user:', globalUser?.email || 'none');
+function setState(newState: Partial<AuthState>) {
+  state = { ...state, ...newState };
+  listeners.forEach(l => l());
+}
+
+// Initialize auth once
+function initAuth() {
+  if (initialized || typeof window === 'undefined') return;
+  initialized = true;
+  
+  console.log('[AUTH] Initializing...');
+  const supabase = createClient();
+  
+  // Set up auth listener FIRST
+  supabase.auth.onAuthStateChange(async (event, session) => {
+    console.log('[AUTH] Event:', event, session?.user?.email || 'no user');
+    
+    if (event === 'SIGNED_OUT') {
+      setState({ user: null, profile: null, isAdmin: false, isLoading: false });
       return;
     }
-    globalInitialized = true;
     
-    console.log('[USE-USER] ====== GLOBAL INIT ======');
-    
-    const supabase = createClient();
-    
-    // Listen for auth changes FIRST - this is the source of truth
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('[USE-USER] Auth event:', event, session?.user?.email || 'no user');
+    if (session?.user) {
+      setState({ user: session.user, isLoading: false });
+      
+      // Fetch profile
+      try {
+        const { data: profile } = await (supabase.from("users") as any)
+          .select("*")
+          .eq("id", session.user.id)
+          .single();
         
-        if (event === 'SIGNED_OUT') {
-          globalUser = null;
-          globalProfile = null;
-          globalIsAdmin = false;
-          globalLoading = false;
-          notifySubscribers();
-          return;
+        if (profile) {
+          setState({ profile, isAdmin: profile.role === "admin" });
         }
-        
-        if (session?.user) {
-          console.log('[USE-USER] Setting user from auth event:', session.user.email);
-          globalUser = session.user;
-          globalLoading = false;
-          notifySubscribers();
-          
-          // Fetch profile in background
-          const { data: profile } = await (supabase.from("users") as any)
-            .select("*")
-            .eq("id", session.user.id)
-            .single();
-          
-          if (profile) {
-            globalProfile = profile;
-            globalIsAdmin = profile.role === "admin";
-            notifySubscribers();
-          }
-        }
+      } catch (e) {
+        console.log('[AUTH] Profile fetch error:', e);
       }
-    );
+    }
+  });
+  
+  // Also check current session
+  supabase.auth.getSession().then(async ({ data: { session } }) => {
+    console.log('[AUTH] Initial session:', session?.user?.email || 'none');
     
-    // Also try getSession as backup, but DON'T overwrite if auth event already fired
-    const initAuth = async () => {
-      console.log('[USE-USER] Checking session...');
+    if (session?.user) {
+      setState({ user: session.user, isLoading: false });
       
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: profile } = await (supabase.from("users") as any)
+          .select("*")
+          .eq("id", session.user.id)
+          .single();
         
-        // ONLY set user if we don't already have one from auth event
-        if (session?.user && !globalUser) {
-          console.log('[USE-USER] Session found (backup):', session.user.email);
-          globalUser = session.user;
-          globalLoading = false;
-          notifySubscribers();
-          
-          const { data: profile } = await (supabase.from("users") as any)
-            .select("*")
-            .eq("id", session.user.id)
-            .single();
-          
-          if (profile) {
-            globalProfile = profile;
-            globalIsAdmin = profile.role === "admin";
-            notifySubscribers();
-          }
-        } else if (!session && !globalUser) {
-          // No session AND no user from auth event = truly not logged in
-          console.log('[USE-USER] No session, no auth event user');
-          globalLoading = false;
-          notifySubscribers();
-        } else {
-          console.log('[USE-USER] Session check complete, user already set from auth event');
-          globalLoading = false;
-          notifySubscribers();
+        if (profile) {
+          setState({ profile, isAdmin: profile.role === "admin" });
         }
-      } catch (err) {
-        console.log('[USE-USER] getSession error:', err);
-        // Don't clear user on error - might already be set from auth event
-        if (!globalUser) {
-          globalLoading = false;
-          notifySubscribers();
-        }
+      } catch (e) {
+        console.log('[AUTH] Profile fetch error:', e);
       }
-    };
-    
-    // Small delay to let auth event fire first
-    setTimeout(initAuth, 100);
-    
-    return () => {
-      // Don't cleanup - keep global state
-    };
-  }, []);
+    } else {
+      setState({ isLoading: false });
+    }
+  }).catch(e => {
+    console.log('[AUTH] getSession error:', e);
+    setState({ isLoading: false });
+  });
+  
+  // Fallback timeout - if still loading after 5s, assume no session
+  setTimeout(() => {
+    if (state.isLoading) {
+      console.log('[AUTH] Timeout - assuming no session');
+      setState({ isLoading: false });
+    }
+  }, 5000);
+}
 
+// ============================================
+// HOOK
+// ============================================
+export function useUser() {
+  // Initialize on first use
+  useEffect(() => {
+    initAuth();
+  }, []);
+  
+  // Subscribe to state changes using useSyncExternalStore for proper React 18 support
+  const currentState = useSyncExternalStore(subscribe, getState, getState);
+  
   const signOut = useCallback(async () => {
-    console.log('[USE-USER] Sign out');
+    console.log('[AUTH] Signing out...');
     const supabase = createClient();
     await supabase.auth.signOut();
-    globalUser = null;
-    globalProfile = null;
-    globalIsAdmin = false;
-    notifySubscribers();
+    setState({ user: null, profile: null, isAdmin: false });
   }, []);
-
+  
   return {
-    user: globalUser,
-    profile: globalProfile,
-    isLoading: globalLoading,
-    isAdmin: globalIsAdmin,
+    user: currentState.user,
+    profile: currentState.profile,
+    isLoading: currentState.isLoading,
+    isAdmin: currentState.isAdmin,
     signOut,
   };
 }
 
+// ============================================
+// HELPERS
+// ============================================
 export function getDisplayName(user: User | null, profile: Profile | null): string {
   if (profile?.display_name) return profile.display_name;
   if (user?.user_metadata?.full_name) return user.user_metadata.full_name;
