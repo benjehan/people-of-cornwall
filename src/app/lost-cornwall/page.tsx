@@ -25,6 +25,10 @@ import {
   Send,
   Info,
   Star,
+  Heart,
+  SortAsc,
+  TrendingUp,
+  ArrowDownAZ,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -39,8 +43,13 @@ interface LostCornwallPhoto {
   location_name: string | null;
   source_credit: string | null;
   view_count: number;
+  like_count: number;
+  created_at: string;
   memories: Memory[];
+  user_has_liked?: boolean;
 }
+
+type SortOption = "popular" | "recent" | "views";
 
 interface Memory {
   id: string;
@@ -61,6 +70,8 @@ export default function LostCornwallPage() {
   const [memoryText, setMemoryText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [sortBy, setSortBy] = useState<SortOption>("popular");
+  const [isLiking, setIsLiking] = useState<string | null>(null);
 
   const loadPhotos = useCallback(async () => {
     setIsLoading(true);
@@ -81,16 +92,39 @@ export default function LostCornwallPage() {
           )
         )
       `)
-      .eq("is_published", true)
-      .order("created_at", { ascending: false });
+      .eq("is_published", true);
 
     if (error) {
       console.error("Error loading photos:", error);
-    } else {
-      setPhotos(data || []);
+      setIsLoading(false);
+      return;
     }
+
+    // Check if user has liked each photo
+    const photosWithLikes = await Promise.all(
+      (data || []).map(async (photo: any) => {
+        let userHasLiked = false;
+        if (user) {
+          const { data: like } = await (supabase
+            .from("likes") as any)
+            .select("id")
+            .eq("content_type", "lost_cornwall")
+            .eq("content_id", photo.id)
+            .eq("user_id", user.id)
+            .single();
+          userHasLiked = !!like;
+        }
+        return {
+          ...photo,
+          like_count: photo.like_count || 0,
+          user_has_liked: userHasLiked,
+        };
+      })
+    );
+
+    setPhotos(photosWithLikes);
     setIsLoading(false);
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     loadPhotos();
@@ -139,12 +173,73 @@ export default function LostCornwallPage() {
 
   const navigatePhoto = (direction: "prev" | "next") => {
     if (!selectedPhoto) return;
-    const currentIndex = photos.findIndex(p => p.id === selectedPhoto.id);
+    const currentIndex = sortedPhotos.findIndex(p => p.id === selectedPhoto.id);
     const newIndex = direction === "prev" 
-      ? (currentIndex - 1 + photos.length) % photos.length
-      : (currentIndex + 1) % photos.length;
-    setSelectedPhoto(photos[newIndex]);
+      ? (currentIndex - 1 + sortedPhotos.length) % sortedPhotos.length
+      : (currentIndex + 1) % sortedPhotos.length;
+    setSelectedPhoto(sortedPhotos[newIndex]);
   };
+
+  const handleLike = async (photoId: string, hasLiked: boolean, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!user) return;
+    
+    setIsLiking(photoId);
+    const supabase = createClient();
+
+    if (hasLiked) {
+      await (supabase
+        .from("likes") as any)
+        .delete()
+        .eq("content_type", "lost_cornwall")
+        .eq("content_id", photoId)
+        .eq("user_id", user.id);
+    } else {
+      await (supabase
+        .from("likes") as any)
+        .insert({
+          content_type: "lost_cornwall",
+          content_id: photoId,
+          user_id: user.id,
+        });
+    }
+
+    // Update local state
+    setPhotos(prev => prev.map(p => {
+      if (p.id === photoId) {
+        return {
+          ...p,
+          like_count: hasLiked ? p.like_count - 1 : p.like_count + 1,
+          user_has_liked: !hasLiked,
+        };
+      }
+      return p;
+    }));
+
+    // Update selected photo if viewing
+    if (selectedPhoto?.id === photoId) {
+      setSelectedPhoto(prev => prev ? {
+        ...prev,
+        like_count: hasLiked ? prev.like_count - 1 : prev.like_count + 1,
+        user_has_liked: !hasLiked,
+      } : null);
+    }
+
+    setIsLiking(null);
+  };
+
+  // Sort photos based on selected option
+  const sortedPhotos = [...photos].sort((a, b) => {
+    switch (sortBy) {
+      case "popular":
+        return (b.like_count || 0) - (a.like_count || 0);
+      case "views":
+        return (b.view_count || 0) - (a.view_count || 0);
+      case "recent":
+      default:
+        return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+    }
+  });
 
   return (
     <div className="min-h-screen bg-parchment">
@@ -166,6 +261,39 @@ export default function LostCornwallPage() {
           </p>
         </div>
 
+        {/* Sort Controls */}
+        {photos.length > 0 && (
+          <div className="flex justify-center gap-2 mb-8">
+            <Button
+              variant={sortBy === "popular" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSortBy("popular")}
+              className={sortBy === "popular" ? "bg-sepia text-parchment" : "border-bone"}
+            >
+              <TrendingUp className="h-4 w-4 mr-1" />
+              Most Loved
+            </Button>
+            <Button
+              variant={sortBy === "views" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSortBy("views")}
+              className={sortBy === "views" ? "bg-sepia text-parchment" : "border-bone"}
+            >
+              <Eye className="h-4 w-4 mr-1" />
+              Most Viewed
+            </Button>
+            <Button
+              variant={sortBy === "recent" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSortBy("recent")}
+              className={sortBy === "recent" ? "bg-sepia text-parchment" : "border-bone"}
+            >
+              <Clock className="h-4 w-4 mr-1" />
+              Recent
+            </Button>
+          </div>
+        )}
+
         {/* Photo Grid */}
         {isLoading ? (
           <div className="flex justify-center py-12">
@@ -183,7 +311,7 @@ export default function LostCornwallPage() {
           </Card>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {photos.map((photo) => (
+            {sortedPhotos.map((photo) => (
               <Card 
                 key={photo.id} 
                 className="border-bone bg-cream overflow-hidden cursor-pointer group hover:shadow-lg transition-all"
@@ -223,13 +351,25 @@ export default function LostCornwallPage() {
 
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between text-sm text-stone">
+                    <button
+                      onClick={(e) => handleLike(photo.id, photo.user_has_liked || false, e)}
+                      disabled={!user || isLiking === photo.id}
+                      className={`flex items-center gap-1 transition-colors ${
+                        photo.user_has_liked 
+                          ? "text-red-500" 
+                          : "text-stone hover:text-red-500"
+                      } disabled:opacity-50`}
+                    >
+                      <Heart className={`h-4 w-4 ${photo.user_has_liked ? "fill-current" : ""}`} />
+                      {photo.like_count || 0}
+                    </button>
                     <span className="flex items-center gap-1">
                       <MessageCircle className="h-4 w-4" />
-                      {photo.memories?.length || 0} memories
+                      {photo.memories?.length || 0}
                     </span>
                     <span className="flex items-center gap-1">
                       <Eye className="h-4 w-4" />
-                      {photo.view_count || 0} views
+                      {photo.view_count || 0}
                     </span>
                   </div>
                 </CardContent>
@@ -330,6 +470,26 @@ export default function LostCornwallPage() {
                     {selectedPhoto.source_credit}
                   </p>
                 )}
+
+                {/* Like & Stats */}
+                <div className="flex items-center gap-4 mt-4 pt-4 border-t border-bone">
+                  <button
+                    onClick={() => handleLike(selectedPhoto.id, selectedPhoto.user_has_liked || false)}
+                    disabled={!user || isLiking === selectedPhoto.id}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                      selectedPhoto.user_has_liked 
+                        ? "bg-red-50 text-red-500 border border-red-200" 
+                        : "bg-cream text-stone border border-bone hover:bg-red-50 hover:text-red-500 hover:border-red-200"
+                    } disabled:opacity-50`}
+                  >
+                    <Heart className={`h-5 w-5 ${selectedPhoto.user_has_liked ? "fill-current" : ""}`} />
+                    <span className="font-medium">{selectedPhoto.like_count || 0}</span>
+                  </button>
+                  <div className="flex items-center gap-1 text-stone text-sm">
+                    <Eye className="h-4 w-4" />
+                    {selectedPhoto.view_count || 0} views
+                  </div>
+                </div>
 
                 {/* Memories */}
                 <div className="mt-6 flex-1 overflow-hidden flex flex-col">

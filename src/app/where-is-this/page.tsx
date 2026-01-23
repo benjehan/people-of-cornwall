@@ -34,6 +34,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import Image from "next/image";
 import Link from "next/link";
+import { CommentSection } from "@/components/comments/comment-section";
 
 interface Challenge {
   id: string;
@@ -94,6 +95,7 @@ export default function WhereIsThisPage() {
   const [allGuesses, setAllGuesses] = useState<Guess[]>([]);
   const [showGuesses, setShowGuesses] = useState(false);
   const [guessError, setGuessError] = useState<string | null>(null);
+  const [selectedPastChallenge, setSelectedPastChallenge] = useState<Challenge | null>(null);
 
   const loadChallenges = useCallback(async () => {
     setIsLoading(true);
@@ -350,6 +352,15 @@ export default function WhereIsThisPage() {
                     </Link>
                   </div>
                 )}
+
+                {/* Comments Section for Active Challenge */}
+                <div className="mt-6 pt-6 border-t border-bone">
+                  <CommentSection
+                    contentType="where_is_this"
+                    contentId={activeChallenge.id}
+                    title="Discussion"
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -367,7 +378,8 @@ export default function WhereIsThisPage() {
               {pastChallenges.map((challenge) => (
                 <Card 
                   key={challenge.id} 
-                  className="border-bone bg-cream overflow-hidden hover:shadow-md transition-shadow"
+                  className="border-bone bg-cream overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => setSelectedPastChallenge(challenge)}
                 >
                   <div className="relative aspect-video bg-stone/10">
                     <Image
@@ -402,7 +414,10 @@ export default function WhereIsThisPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => loadGuesses(challenge.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          loadGuesses(challenge.id);
+                        }}
                         className="text-atlantic"
                       >
                         View Guesses
@@ -499,6 +514,81 @@ export default function WhereIsThisPage() {
               </div>
             ))}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Past Challenge Detail Dialog */}
+      <Dialog open={!!selectedPastChallenge} onOpenChange={(open) => !open && setSelectedPastChallenge(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          {selectedPastChallenge && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-atlantic" />
+                  {selectedPastChallenge.answer_location_name}
+                </DialogTitle>
+                <DialogDescription>
+                  Challenge revealed • {selectedPastChallenge.correct_guesses} of {selectedPastChallenge.total_guesses} guessed correctly
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-4">
+                {/* Image */}
+                <div className="relative aspect-video rounded-lg overflow-hidden bg-stone/10">
+                  <Image
+                    src={selectedPastChallenge.image_url}
+                    alt={selectedPastChallenge.answer_location_name || "Challenge location"}
+                    fill
+                    className="object-cover"
+                  />
+                  <Badge className={`absolute top-2 right-2 ${DIFFICULTY_COLORS[selectedPastChallenge.difficulty]} border`}>
+                    {DIFFICULTY_LABELS[selectedPastChallenge.difficulty]}
+                  </Badge>
+                </div>
+
+                {/* Description */}
+                {selectedPastChallenge.answer_description && (
+                  <p className="text-stone">{selectedPastChallenge.answer_description}</p>
+                )}
+
+                {/* Stats */}
+                <div className="flex gap-4 text-sm">
+                  <div className="flex items-center gap-2 text-stone">
+                    <Eye className="h-4 w-4" />
+                    {selectedPastChallenge.total_guesses} total guesses
+                  </div>
+                  <div className="flex items-center gap-2 text-green-600">
+                    <CheckCircle className="h-4 w-4" />
+                    {selectedPastChallenge.correct_guesses} correct
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      loadGuesses(selectedPastChallenge.id);
+                    }}
+                    className="border-bone"
+                  >
+                    <Trophy className="h-4 w-4 mr-2 text-yellow-500" />
+                    View All Guesses
+                  </Button>
+                </div>
+
+                {/* Comments Section */}
+                <div className="pt-4 border-t border-bone">
+                  <CommentSection
+                    contentType="where_is_this"
+                    contentId={selectedPastChallenge.id}
+                    title="Discussion"
+                  />
+                </div>
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 
