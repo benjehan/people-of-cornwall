@@ -3,29 +3,38 @@
 -- ============================================
 
 -- ============================================
--- 1. GENERIC COMMENTS TABLE
+-- 1. UPDATE EXISTING COMMENTS TABLE OR CREATE NEW
 -- ============================================
 
-CREATE TABLE IF NOT EXISTS comments (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  
-  -- Polymorphic association (can comment on different content types)
-  content_type TEXT NOT NULL CHECK (content_type IN ('story', 'event', 'lost_cornwall', 'where_is_this')),
-  content_id UUID NOT NULL,
-  
-  -- Comment data
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  text TEXT NOT NULL,
-  
-  -- Moderation
-  is_approved BOOLEAN DEFAULT TRUE,  -- Auto-approved unless flagged
-  is_flagged BOOLEAN DEFAULT FALSE,
-  flag_reason TEXT,
-  moderation_score DECIMAL(3, 2),  -- AI confidence score 0-1
-  
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
+-- First, add columns to existing comments table if it exists
+DO $$ 
+BEGIN
+  -- Check if comments table exists
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'comments') THEN
+    -- Add columns that might be missing
+    ALTER TABLE comments ADD COLUMN IF NOT EXISTS content_type TEXT;
+    ALTER TABLE comments ADD COLUMN IF NOT EXISTS content_id UUID;
+    ALTER TABLE comments ADD COLUMN IF NOT EXISTS is_approved BOOLEAN DEFAULT TRUE;
+    ALTER TABLE comments ADD COLUMN IF NOT EXISTS is_flagged BOOLEAN DEFAULT FALSE;
+    ALTER TABLE comments ADD COLUMN IF NOT EXISTS flag_reason TEXT;
+    ALTER TABLE comments ADD COLUMN IF NOT EXISTS moderation_score DECIMAL(3, 2);
+  ELSE
+    -- Create new comments table
+    CREATE TABLE comments (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      content_type TEXT,
+      content_id UUID,
+      user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      text TEXT NOT NULL,
+      is_approved BOOLEAN DEFAULT TRUE,
+      is_flagged BOOLEAN DEFAULT FALSE,
+      flag_reason TEXT,
+      moderation_score DECIMAL(3, 2),
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  END IF;
+END $$;
 
 -- ============================================
 -- 2. GENERIC LIKES TABLE
@@ -33,30 +42,34 @@ CREATE TABLE IF NOT EXISTS comments (
 
 CREATE TABLE IF NOT EXISTS likes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  
-  -- Polymorphic association
-  content_type TEXT NOT NULL CHECK (content_type IN ('story', 'event', 'lost_cornwall', 'where_is_this', 'comment')),
+  content_type TEXT NOT NULL,
   content_id UUID NOT NULL,
-  
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  
-  -- One like per user per content
-  UNIQUE(content_type, content_id, user_id)
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Add unique constraint if not exists
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'likes_content_type_content_id_user_id_key'
+  ) THEN
+    ALTER TABLE likes ADD CONSTRAINT likes_content_type_content_id_user_id_key 
+      UNIQUE(content_type, content_id, user_id);
+  END IF;
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
 
 -- ============================================
 -- 3. UPDATE WHERE IS THIS (if exists)
 -- ============================================
 
--- Add challenge duration and better tracking
 DO $$ BEGIN
   ALTER TABLE where_is_this ADD COLUMN IF NOT EXISTS duration_days INTEGER DEFAULT 3;
   ALTER TABLE where_is_this ADD COLUMN IF NOT EXISTS ends_at TIMESTAMPTZ;
 EXCEPTION WHEN undefined_table THEN null;
 END $$;
 
--- Add location to guesses for proximity calculation  
 DO $$ BEGIN
   ALTER TABLE where_is_this_guesses ADD COLUMN IF NOT EXISTS is_winner BOOLEAN DEFAULT FALSE;
 EXCEPTION WHEN undefined_table THEN null;
@@ -66,18 +79,20 @@ END $$;
 -- 4. UPDATE LOST CORNWALL FOR LIKES (if exists)
 -- ============================================
 
--- Add like_count for sorting (denormalized for performance)
 DO $$ BEGIN
   ALTER TABLE lost_cornwall ADD COLUMN IF NOT EXISTS like_count INTEGER DEFAULT 0;
 EXCEPTION WHEN undefined_table THEN null;
 END $$;
 
 -- ============================================
--- 5. UPDATE EVENTS
+-- 5. UPDATE EVENTS (if exists)
 -- ============================================
 
-ALTER TABLE events ADD COLUMN IF NOT EXISTS like_count INTEGER DEFAULT 0;
-ALTER TABLE events ADD COLUMN IF NOT EXISTS comment_count INTEGER DEFAULT 0;
+DO $$ BEGIN
+  ALTER TABLE events ADD COLUMN IF NOT EXISTS like_count INTEGER DEFAULT 0;
+  ALTER TABLE events ADD COLUMN IF NOT EXISTS comment_count INTEGER DEFAULT 0;
+EXCEPTION WHEN undefined_table THEN null;
+END $$;
 
 -- ============================================
 -- 6. MODERATION LOG
@@ -85,21 +100,14 @@ ALTER TABLE events ADD COLUMN IF NOT EXISTS comment_count INTEGER DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS moderation_log (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  
   content_type TEXT NOT NULL,
   content_id UUID NOT NULL,
-  
-  action TEXT NOT NULL CHECK (action IN ('flagged', 'approved', 'rejected', 'deleted', 'user_warned', 'user_banned')),
+  action TEXT NOT NULL,
   reason TEXT,
-  
-  -- Who took the action
-  moderator_id UUID REFERENCES users(id),  -- NULL if AI
+  moderator_id UUID REFERENCES users(id),
   is_automated BOOLEAN DEFAULT FALSE,
-  
-  -- AI moderation details
   ai_flags TEXT[],
   ai_confidence DECIMAL(3, 2),
-  
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -113,23 +121,7 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS banned_at TIMESTAMPTZ;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS ban_reason TEXT;
 
 -- ============================================
--- 8. BADGES FOR WHERE IS THIS WINNERS
--- ============================================
-
--- Add badge type if type exists and value doesn't
-DO $$ 
-BEGIN
-  -- Only try to add if badge_type exists
-  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'badge_type') THEN
-    ALTER TYPE badge_type ADD VALUE IF NOT EXISTS 'location_expert';
-  END IF;
-EXCEPTION
-  WHEN duplicate_object THEN null;
-  WHEN undefined_object THEN null;
-END $$;
-
--- ============================================
--- 9. RLS POLICIES
+-- 8. RLS POLICIES
 -- ============================================
 
 -- Comments RLS
@@ -196,7 +188,7 @@ CREATE POLICY "System can insert moderation log"
   WITH CHECK (TRUE);
 
 -- ============================================
--- 10. INDEXES
+-- 9. INDEXES
 -- ============================================
 
 CREATE INDEX IF NOT EXISTS idx_comments_content ON comments(content_type, content_id);
@@ -209,75 +201,88 @@ CREATE INDEX IF NOT EXISTS idx_likes_user ON likes(user_id);
 CREATE INDEX IF NOT EXISTS idx_moderation_log_content ON moderation_log(content_type, content_id);
 CREATE INDEX IF NOT EXISTS idx_moderation_log_action ON moderation_log(action, created_at);
 
-CREATE INDEX IF NOT EXISTS idx_lost_cornwall_likes ON lost_cornwall(like_count DESC);
-CREATE INDEX IF NOT EXISTS idx_events_likes ON events(like_count DESC);
+-- Indexes on tables that may or may not exist
+DO $$ BEGIN
+  CREATE INDEX IF NOT EXISTS idx_lost_cornwall_likes ON lost_cornwall(like_count DESC);
+EXCEPTION WHEN undefined_table THEN null;
+END $$;
+
+DO $$ BEGIN
+  CREATE INDEX IF NOT EXISTS idx_events_likes ON events(like_count DESC);
+EXCEPTION WHEN undefined_table THEN null;
+END $$;
 
 -- ============================================
--- 11. FUNCTIONS
+-- 10. TRIGGER FUNCTIONS (only if tables exist)
 -- ============================================
 
 -- Function to update like count on lost_cornwall
 CREATE OR REPLACE FUNCTION update_lost_cornwall_like_count()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF TG_OP = 'INSERT' THEN
-    UPDATE lost_cornwall SET like_count = like_count + 1 
-    WHERE id = NEW.content_id AND NEW.content_type = 'lost_cornwall';
-  ELSIF TG_OP = 'DELETE' THEN
-    UPDATE lost_cornwall SET like_count = like_count - 1 
-    WHERE id = OLD.content_id AND OLD.content_type = 'lost_cornwall';
+  IF TG_OP = 'INSERT' AND NEW.content_type = 'lost_cornwall' THEN
+    UPDATE lost_cornwall SET like_count = COALESCE(like_count, 0) + 1 
+    WHERE id = NEW.content_id;
+  ELSIF TG_OP = 'DELETE' AND OLD.content_type = 'lost_cornwall' THEN
+    UPDATE lost_cornwall SET like_count = GREATEST(COALESCE(like_count, 0) - 1, 0)
+    WHERE id = OLD.content_id;
   END IF;
+  RETURN NULL;
+EXCEPTION WHEN undefined_table THEN
   RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
-
-DROP TRIGGER IF EXISTS trigger_lost_cornwall_likes ON likes;
-CREATE TRIGGER trigger_lost_cornwall_likes
-  AFTER INSERT OR DELETE ON likes
-  FOR EACH ROW
-  WHEN (NEW.content_type = 'lost_cornwall' OR OLD.content_type = 'lost_cornwall')
-  EXECUTE FUNCTION update_lost_cornwall_like_count();
 
 -- Function to update like count on events
 CREATE OR REPLACE FUNCTION update_event_like_count()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF TG_OP = 'INSERT' THEN
-    UPDATE events SET like_count = like_count + 1 
-    WHERE id = NEW.content_id AND NEW.content_type = 'event';
-  ELSIF TG_OP = 'DELETE' THEN
-    UPDATE events SET like_count = like_count - 1 
-    WHERE id = OLD.content_id AND OLD.content_type = 'event';
+  IF TG_OP = 'INSERT' AND NEW.content_type = 'event' THEN
+    UPDATE events SET like_count = COALESCE(like_count, 0) + 1 
+    WHERE id = NEW.content_id;
+  ELSIF TG_OP = 'DELETE' AND OLD.content_type = 'event' THEN
+    UPDATE events SET like_count = GREATEST(COALESCE(like_count, 0) - 1, 0)
+    WHERE id = OLD.content_id;
   END IF;
+  RETURN NULL;
+EXCEPTION WHEN undefined_table THEN
   RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
-
-DROP TRIGGER IF EXISTS trigger_event_likes ON likes;
-CREATE TRIGGER trigger_event_likes
-  AFTER INSERT OR DELETE ON likes
-  FOR EACH ROW
-  WHEN (NEW.content_type = 'event' OR OLD.content_type = 'event')
-  EXECUTE FUNCTION update_event_like_count();
 
 -- Function to update comment count on events
 CREATE OR REPLACE FUNCTION update_event_comment_count()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF TG_OP = 'INSERT' THEN
-    UPDATE events SET comment_count = comment_count + 1 
-    WHERE id = NEW.content_id AND NEW.content_type = 'event';
-  ELSIF TG_OP = 'DELETE' THEN
-    UPDATE events SET comment_count = comment_count - 1 
-    WHERE id = OLD.content_id AND OLD.content_type = 'event';
+  IF TG_OP = 'INSERT' AND NEW.content_type = 'event' THEN
+    UPDATE events SET comment_count = COALESCE(comment_count, 0) + 1 
+    WHERE id = NEW.content_id;
+  ELSIF TG_OP = 'DELETE' AND OLD.content_type = 'event' THEN
+    UPDATE events SET comment_count = GREATEST(COALESCE(comment_count, 0) - 1, 0)
+    WHERE id = OLD.content_id;
   END IF;
+  RETURN NULL;
+EXCEPTION WHEN undefined_table THEN
   RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
 
+-- Create triggers (drop first to avoid duplicates)
+DROP TRIGGER IF EXISTS trigger_lost_cornwall_likes ON likes;
+DROP TRIGGER IF EXISTS trigger_event_likes ON likes;
 DROP TRIGGER IF EXISTS trigger_event_comments ON comments;
+
+CREATE TRIGGER trigger_lost_cornwall_likes
+  AFTER INSERT OR DELETE ON likes
+  FOR EACH ROW
+  EXECUTE FUNCTION update_lost_cornwall_like_count();
+
+CREATE TRIGGER trigger_event_likes
+  AFTER INSERT OR DELETE ON likes
+  FOR EACH ROW
+  EXECUTE FUNCTION update_event_like_count();
+
 CREATE TRIGGER trigger_event_comments
   AFTER INSERT OR DELETE ON comments
   FOR EACH ROW
-  WHEN (NEW.content_type = 'event' OR OLD.content_type = 'event')
   EXECUTE FUNCTION update_event_comment_count();
