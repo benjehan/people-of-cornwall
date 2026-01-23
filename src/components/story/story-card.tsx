@@ -106,8 +106,7 @@ export function StoryCard({ story, featured = false, showImage = true }: StoryCa
                 By {authorLink ? (
                   <Link 
                     href={authorLink} 
-                    className="hover:text-granite hover:underline"
-                    onClick={(e) => e.stopPropagation()}
+                    className="hover:text-granite hover:underline relative z-10"
                   >
                     {authorName}
                   </Link>
@@ -190,8 +189,7 @@ export function StoryCard({ story, featured = false, showImage = true }: StoryCa
                 {authorLink ? (
                   <Link 
                     href={authorLink} 
-                    className="hover:text-granite hover:underline"
-                    onClick={(e) => e.stopPropagation()}
+                    className="hover:text-granite hover:underline relative z-10"
                   >
                     {authorName}
                   </Link>
@@ -249,8 +247,7 @@ export function StoryCard({ story, featured = false, showImage = true }: StoryCa
               {authorLink ? (
                 <Link 
                   href={authorLink} 
-                  className="hover:text-granite hover:underline"
-                  onClick={(e) => e.stopPropagation()}
+                  className="hover:text-granite hover:underline relative z-10"
                 >
                   {authorName}
                 </Link>
