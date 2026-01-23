@@ -52,8 +52,9 @@ const addDays = (date: Date, days: number): Date => {
 const endOfWeek = (date: Date): Date => {
   const result = new Date(date);
   const day = result.getDay();
-  const diff = 7 - day; // Days until Sunday
-  result.setDate(result.getDate() + diff);
+  // Monday = 1, so we go to Sunday (end of week starting Monday)
+  const daysUntilSunday = day === 0 ? 0 : (7 - day);
+  result.setDate(result.getDate() + daysUntilSunday);
   result.setHours(23, 59, 59, 999);
   return result;
 };
@@ -160,7 +161,7 @@ export default function EventsPage() {
       case "today":
         return { start: now, end: addDays(now, 1) };
       case "this_week":
-        return { start: now, end: endOfWeek(now, { weekStartsOn: 1 }) };
+        return { start: now, end: endOfWeek(now) };
       case "next_weekend": {
         const saturday = nextSaturday(now);
         const sunday = nextSunday(now);

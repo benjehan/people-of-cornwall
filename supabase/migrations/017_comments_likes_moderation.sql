@@ -3,59 +3,50 @@
 -- ============================================
 
 -- ============================================
--- 1. UPDATE EXISTING COMMENTS TABLE OR CREATE NEW
+-- 1. UPDATE EXISTING COMMENTS TABLE
 -- ============================================
 
--- First, add columns to existing comments table if it exists
-DO $$ 
-BEGIN
-  -- Check if comments table exists
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'comments') THEN
-    -- Add columns that might be missing
-    ALTER TABLE comments ADD COLUMN IF NOT EXISTS content_type TEXT;
-    ALTER TABLE comments ADD COLUMN IF NOT EXISTS content_id UUID;
-    ALTER TABLE comments ADD COLUMN IF NOT EXISTS is_approved BOOLEAN DEFAULT TRUE;
-    ALTER TABLE comments ADD COLUMN IF NOT EXISTS is_flagged BOOLEAN DEFAULT FALSE;
-    ALTER TABLE comments ADD COLUMN IF NOT EXISTS flag_reason TEXT;
-    ALTER TABLE comments ADD COLUMN IF NOT EXISTS moderation_score DECIMAL(3, 2);
-  ELSE
-    -- Create new comments table
-    CREATE TABLE comments (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      content_type TEXT,
-      content_id UUID,
-      user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      text TEXT NOT NULL,
-      is_approved BOOLEAN DEFAULT TRUE,
-      is_flagged BOOLEAN DEFAULT FALSE,
-      flag_reason TEXT,
-      moderation_score DECIMAL(3, 2),
-      created_at TIMESTAMPTZ DEFAULT NOW(),
-      updated_at TIMESTAMPTZ DEFAULT NOW()
-    );
-  END IF;
-END $$;
+-- Add columns to existing comments table
+ALTER TABLE comments ADD COLUMN IF NOT EXISTS content_type TEXT;
+ALTER TABLE comments ADD COLUMN IF NOT EXISTS content_id UUID;
+ALTER TABLE comments ADD COLUMN IF NOT EXISTS is_approved BOOLEAN DEFAULT TRUE;
+ALTER TABLE comments ADD COLUMN IF NOT EXISTS is_flagged BOOLEAN DEFAULT FALSE;
+ALTER TABLE comments ADD COLUMN IF NOT EXISTS flag_reason TEXT;
+ALTER TABLE comments ADD COLUMN IF NOT EXISTS moderation_score DECIMAL(3, 2);
 
 -- ============================================
--- 2. GENERIC LIKES TABLE
+-- 2. LIKES TABLE - ADD COLUMNS OR CREATE
 -- ============================================
 
+-- Create likes table if it doesn't exist
 CREATE TABLE IF NOT EXISTS likes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  content_type TEXT NOT NULL,
-  content_id UUID NOT NULL,
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  content_type TEXT,
+  content_id UUID,
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Add unique constraint if not exists
+-- Add columns if table exists but columns don't
+ALTER TABLE likes ADD COLUMN IF NOT EXISTS content_type TEXT;
+ALTER TABLE likes ADD COLUMN IF NOT EXISTS content_id UUID;
+ALTER TABLE likes ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users(id) ON DELETE CASCADE;
+
+-- Add unique constraint if not exists (only if columns exist)
 DO $$
 BEGIN
+  -- Check if constraint already exists
   IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'likes_content_type_content_id_user_id_key'
+    SELECT 1 FROM pg_constraint WHERE conname = 'likes_unique_per_user'
   ) THEN
-    ALTER TABLE likes ADD CONSTRAINT likes_content_type_content_id_user_id_key 
-      UNIQUE(content_type, content_id, user_id);
+    -- Only add if all columns exist
+    IF EXISTS (
+      SELECT 1 FROM information_schema.columns 
+      WHERE table_name = 'likes' AND column_name = 'content_type'
+    ) THEN
+      ALTER TABLE likes ADD CONSTRAINT likes_unique_per_user 
+        UNIQUE(content_type, content_id, user_id);
+    END IF;
   END IF;
 EXCEPTION WHEN duplicate_object THEN null;
 END $$;
@@ -128,26 +119,27 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS ban_reason TEXT;
 ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Anyone can view approved comments" ON comments;
+DROP POLICY IF EXISTS "Users can create comments" ON comments;
+DROP POLICY IF EXISTS "Users can edit own comments" ON comments;
+DROP POLICY IF EXISTS "Users can delete own comments" ON comments;
+DROP POLICY IF EXISTS "Admins can manage comments" ON comments;
+
 CREATE POLICY "Anyone can view approved comments"
   ON comments FOR SELECT
-  USING (is_approved = TRUE AND is_flagged = FALSE);
+  USING (COALESCE(is_approved, TRUE) = TRUE AND COALESCE(is_flagged, FALSE) = FALSE);
 
-DROP POLICY IF EXISTS "Users can create comments" ON comments;
 CREATE POLICY "Users can create comments"
   ON comments FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
-DROP POLICY IF EXISTS "Users can edit own comments" ON comments;
 CREATE POLICY "Users can edit own comments"
   ON comments FOR UPDATE
   USING (auth.uid() = user_id);
 
-DROP POLICY IF EXISTS "Users can delete own comments" ON comments;
 CREATE POLICY "Users can delete own comments"
   ON comments FOR DELETE
   USING (auth.uid() = user_id);
 
-DROP POLICY IF EXISTS "Admins can manage comments" ON comments;
 CREATE POLICY "Admins can manage comments"
   ON comments FOR ALL
   USING (
@@ -158,16 +150,17 @@ CREATE POLICY "Admins can manage comments"
 ALTER TABLE likes ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Anyone can view likes" ON likes;
+DROP POLICY IF EXISTS "Users can like" ON likes;
+DROP POLICY IF EXISTS "Users can unlike" ON likes;
+
 CREATE POLICY "Anyone can view likes"
   ON likes FOR SELECT
   USING (TRUE);
 
-DROP POLICY IF EXISTS "Users can like" ON likes;
 CREATE POLICY "Users can like"
   ON likes FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
-DROP POLICY IF EXISTS "Users can unlike" ON likes;
 CREATE POLICY "Users can unlike"
   ON likes FOR DELETE
   USING (auth.uid() = user_id);
@@ -176,13 +169,14 @@ CREATE POLICY "Users can unlike"
 ALTER TABLE moderation_log ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Only admins can view moderation log" ON moderation_log;
+DROP POLICY IF EXISTS "System can insert moderation log" ON moderation_log;
+
 CREATE POLICY "Only admins can view moderation log"
   ON moderation_log FOR SELECT
   USING (
     EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.role = 'admin')
   );
 
-DROP POLICY IF EXISTS "System can insert moderation log" ON moderation_log;
 CREATE POLICY "System can insert moderation log"
   ON moderation_log FOR INSERT
   WITH CHECK (TRUE);
@@ -193,27 +187,14 @@ CREATE POLICY "System can insert moderation log"
 
 CREATE INDEX IF NOT EXISTS idx_comments_content ON comments(content_type, content_id);
 CREATE INDEX IF NOT EXISTS idx_comments_user ON comments(user_id);
-CREATE INDEX IF NOT EXISTS idx_comments_approved ON comments(is_approved, is_flagged);
 
 CREATE INDEX IF NOT EXISTS idx_likes_content ON likes(content_type, content_id);
 CREATE INDEX IF NOT EXISTS idx_likes_user ON likes(user_id);
 
 CREATE INDEX IF NOT EXISTS idx_moderation_log_content ON moderation_log(content_type, content_id);
-CREATE INDEX IF NOT EXISTS idx_moderation_log_action ON moderation_log(action, created_at);
-
--- Indexes on tables that may or may not exist
-DO $$ BEGIN
-  CREATE INDEX IF NOT EXISTS idx_lost_cornwall_likes ON lost_cornwall(like_count DESC);
-EXCEPTION WHEN undefined_table THEN null;
-END $$;
-
-DO $$ BEGIN
-  CREATE INDEX IF NOT EXISTS idx_events_likes ON events(like_count DESC);
-EXCEPTION WHEN undefined_table THEN null;
-END $$;
 
 -- ============================================
--- 10. TRIGGER FUNCTIONS (only if tables exist)
+-- 10. TRIGGER FUNCTIONS
 -- ============================================
 
 -- Function to update like count on lost_cornwall
@@ -267,7 +248,7 @@ EXCEPTION WHEN undefined_table THEN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create triggers (drop first to avoid duplicates)
+-- Create triggers
 DROP TRIGGER IF EXISTS trigger_lost_cornwall_likes ON likes;
 DROP TRIGGER IF EXISTS trigger_event_likes ON likes;
 DROP TRIGGER IF EXISTS trigger_event_comments ON comments;
