@@ -4,9 +4,26 @@ import { Footer } from "@/components/layout/footer";
 import { StoryCard } from "@/components/story/story-card";
 import { RotatingPrompts } from "@/components/home/rotating-prompts";
 import { Button } from "@/components/ui/button";
-import { MapPin, Clock, Folder, ArrowRight } from "lucide-react";
+import { MapPin, Clock, Folder, ArrowRight, Archive, Mail } from "lucide-react";
 import { getFeaturedStory, getPublishedStories, getStoryDecades, getCollections, getRotatingPrompts, getFeaturedCollections } from "@/lib/supabase/queries";
 import type { StoryWithDetails } from "@/types";
+
+/**
+ * Extract first image URL from story body HTML
+ */
+function extractImageFromBody(body: string | null): string | null {
+  if (!body) return null;
+  const imgMatch = body.match(/<img[^>]+src="([^">]+)"/);
+  if (imgMatch) return imgMatch[1];
+  
+  // Check for YouTube video thumbnail
+  const youtubeMatch = body.match(/data-video-id="([a-zA-Z0-9_-]+)"[^>]*data-platform="youtube"/);
+  const youtubeMatch2 = body.match(/data-platform="youtube"[^>]*data-video-id="([a-zA-Z0-9_-]+)"/);
+  const youtubeId = youtubeMatch?.[1] || youtubeMatch2?.[1];
+  if (youtubeId) return `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`;
+  
+  return null;
+}
 
 interface FeaturedCollection {
   id: string;
@@ -55,11 +72,21 @@ export default async function HomePage() {
             {featured ? (
               <article className="grid gap-8 lg:grid-cols-2 lg:gap-12">
                 {/* Featured Image */}
-                <div className="aspect-[4/3] overflow-hidden rounded-lg bg-cream">
-                  {/* Placeholder for featured image - could be story media */}
-                  <div className="flex h-full items-center justify-center bg-gradient-to-br from-granite/5 to-granite/10">
-                    <span className="text-4xl">📖</span>
-                  </div>
+                <div className="aspect-[4/3] overflow-hidden rounded-lg bg-granite">
+                  {extractImageFromBody(featured.body) || featured.first_image_url ? (
+                    <img
+                      src={extractImageFromBody(featured.body) || featured.first_image_url || ""}
+                      alt={featured.title}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center bg-gradient-to-br from-granite/80 to-slate/90">
+                      <div className="text-center text-parchment/80">
+                        <span className="text-6xl">📖</span>
+                        <p className="mt-2 text-sm font-medium">Featured Story</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 
                 {/* Featured Content */}
@@ -323,6 +350,43 @@ export default async function HomePage() {
             </div>
           </section>
         )}
+
+        {/* Heritage Donations CTA */}
+        <section className="border-t border-bone bg-cream py-16 md:py-20">
+          <div className="mx-auto max-w-[1320px] px-4 sm:px-6">
+            <div className="rounded-2xl border border-bone bg-parchment p-8 md:p-12">
+              <div className="mx-auto max-w-3xl text-center">
+                <div className="mb-6 inline-flex items-center justify-center rounded-full bg-copper/10 p-4">
+                  <Archive className="h-8 w-8 text-copper" />
+                </div>
+                <h2 className="mb-4 font-serif text-2xl font-bold tracking-tight text-granite md:text-3xl">
+                  Do you have a treasure trove of Cornish memories?
+                </h2>
+                <p className="mb-6 text-stone leading-relaxed md:text-lg">
+                  If you hold precious <strong>stories, photograph collections, films, audio recordings, 
+                  or historical documents</strong> that deserve to be preserved and shared with the community, 
+                  we'd love to hear from you. Let's work together to build a special digital collection 
+                  as part of our heritage museum.
+                </p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                  <a
+                    href="mailto:hello@peopleofcornwall.com?subject=Heritage%20Collection%20Contribution"
+                    className="inline-flex items-center gap-2 rounded-lg bg-granite px-6 py-3 font-medium text-parchment transition-colors hover:bg-slate"
+                  >
+                    <Mail className="h-5 w-5" />
+                    Contact Us
+                  </a>
+                  <span className="text-sm text-stone">
+                    hello@peopleofcornwall.com
+                  </span>
+                </div>
+                <p className="mt-6 text-sm text-silver">
+                  We'll help you digitise, organise, and share your collection with generations to come.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
 
         {/* Call to Action — Full Width */}
         <section className="border-t border-bone bg-granite py-20 text-parchment dark:bg-bone dark:text-granite">

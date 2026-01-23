@@ -30,6 +30,14 @@ import { useUser } from "@/hooks/use-user";
 import { createClient } from "@/lib/supabase/client";
 import { adminDeleteStoryAction } from "@/app/actions/stories";
 
+interface StoryCollection {
+  collection_id: string;
+  collections: {
+    id: string;
+    title: string;
+  };
+}
+
 interface Story {
   id: string;
   title: string;
@@ -39,6 +47,7 @@ interface Story {
   created_at: string;
   published_at: string | null;
   deletion_requested?: boolean;
+  story_collections?: StoryCollection[];
 }
 
 interface Collection {
@@ -84,7 +93,10 @@ export default function AdminStoriesPage() {
     const supabase = createClient();
     let query = (supabase
       .from("stories") as any)
-      .select("id, title, author_display_name, status, featured, created_at, published_at, deletion_requested")
+      .select(`
+        id, title, author_display_name, status, featured, created_at, published_at, deletion_requested,
+        story_collections(collection_id, collections(id, title))
+      `)
       .eq("soft_deleted", false)
       .order("created_at", { ascending: false });
 
@@ -217,6 +229,12 @@ export default function AdminStoriesPage() {
                             Deletion
                           </Badge>
                         )}
+                        {story.story_collections && story.story_collections.length > 0 && (
+                          <Badge className="bg-green-100 text-green-700 border-0">
+                            <Folder className="mr-1 h-3 w-3" />
+                            {story.story_collections.map(sc => sc.collections?.title).filter(Boolean).join(", ")}
+                          </Badge>
+                        )}
                       </div>
                       <p className="text-sm text-stone">
                         by {story.author_display_name || "Anonymous"} •{" "}
@@ -249,13 +267,23 @@ export default function AdminStoriesPage() {
                             )}
                           </Button>
 
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openCollectionDialog(story.id)}
-                        >
-                          <FolderPlus className="h-4 w-4" />
-                        </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openCollectionDialog(story.id)}
+                            className={story.story_collections && story.story_collections.length > 0 
+                              ? "text-green-600 hover:text-green-700" 
+                              : "text-stone hover:text-slate"}
+                            title={story.story_collections && story.story_collections.length > 0
+                              ? `In: ${story.story_collections.map(sc => sc.collections?.title).filter(Boolean).join(", ")}`
+                              : "Add to collection"}
+                          >
+                            {story.story_collections && story.story_collections.length > 0 ? (
+                              <Folder className="h-4 w-4 fill-current" />
+                            ) : (
+                              <FolderPlus className="h-4 w-4" />
+                            )}
+                          </Button>
                         </>
                       )}
 
