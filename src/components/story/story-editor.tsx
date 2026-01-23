@@ -220,7 +220,19 @@ export function StoryEditor({
       {/* Voice Input Section (collapsible) */}
       {showVoiceInput && (
         <div className="border-b border-chalk-white-dark bg-cream/50 p-4">
-          <SpeechToText onTranscript={handleSpeechTranscript} />
+          <SpeechToText 
+            onTranscript={handleSpeechTranscript}
+            storyId={storyId}
+            onAudioRecorded={(url, duration) => {
+              // Insert a note about the voice recording
+              if (editor) {
+                editor.chain().focus().insertContent(
+                  `<p><em>🎙️ Original voice recording available (${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, "0")})</em></p>`
+                ).run();
+              }
+              console.log("Voice recording saved:", url, duration);
+            }}
+          />
         </div>
       )}
 

@@ -2,12 +2,15 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Mic, MicOff, AlertCircle } from "lucide-react";
+import { Mic, MicOff, AlertCircle, Save, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
 
 interface SpeechToTextProps {
   onTranscript: (text: string) => void;
   onInterimTranscript?: (text: string) => void;
+  onAudioRecorded?: (url: string, duration: number) => void;
+  storyId?: string;
   className?: string;
 }
 
@@ -60,13 +63,26 @@ declare global {
   }
 }
 
-export function SpeechToText({ onTranscript, onInterimTranscript, className }: SpeechToTextProps) {
+export function SpeechToText({ 
+  onTranscript, 
+  onInterimTranscript, 
+  onAudioRecorded,
+  storyId,
+  className 
+}: SpeechToTextProps) {
   const [isListening, setIsListening] = useState(false);
   const [isSupported, setIsSupported] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [interimText, setInterimText] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [hasRecording, setHasRecording] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const finalTranscriptRef = useRef("");
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingStartRef = useRef<number>(0);
+  const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Check browser support
   useEffect(() => {
@@ -78,8 +94,43 @@ export function SpeechToText({ onTranscript, onInterimTranscript, className }: S
     }
   }, []);
 
-  const startListening = useCallback(() => {
+  const startListening = useCallback(async () => {
     if (!isSupported) return;
+
+    try {
+      // Start audio recording
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4",
+      });
+      
+      audioChunksRef.current = [];
+      
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+      
+      mediaRecorder.onstop = () => {
+        // Stop all tracks
+        stream.getTracks().forEach(track => track.stop());
+        setHasRecording(audioChunksRef.current.length > 0);
+      };
+      
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.start(1000); // Collect data every second
+      
+      // Track duration
+      recordingStartRef.current = Date.now();
+      durationIntervalRef.current = setInterval(() => {
+        setRecordingDuration(Math.floor((Date.now() - recordingStartRef.current) / 1000));
+      }, 1000);
+      
+    } catch (err) {
+      console.error("Error starting audio recording:", err);
+      // Continue with speech recognition even if recording fails
+    }
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
@@ -150,9 +201,75 @@ export function SpeechToText({ onTranscript, onInterimTranscript, className }: S
       recognitionRef.current.stop();
       recognitionRef.current = null;
     }
+    
+    // Stop audio recording
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
+    }
+    
+    // Stop duration tracking
+    if (durationIntervalRef.current) {
+      clearInterval(durationIntervalRef.current);
+      durationIntervalRef.current = null;
+    }
+    
     setIsListening(false);
     setInterimText("");
   }, []);
+
+  // Upload the recorded audio
+  const uploadRecording = useCallback(async () => {
+    if (audioChunksRef.current.length === 0 || !storyId) {
+      setError("No recording to save or story not saved yet");
+      return;
+    }
+
+    setIsUploading(true);
+    setError(null);
+
+    try {
+      const supabase = createClient();
+      
+      // Create blob from chunks
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4";
+      const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+      const extension = mimeType === "audio/webm" ? "webm" : "mp4";
+      
+      // Generate filename
+      const filename = `voice-recordings/${storyId}/${Date.now()}.${extension}`;
+      
+      // Upload to Supabase Storage
+      const { data, error: uploadError } = await supabase.storage
+        .from("story-media")
+        .upload(filename, audioBlob, {
+          contentType: mimeType,
+          upsert: false,
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from("story-media")
+        .getPublicUrl(filename);
+
+      // Notify parent component
+      if (onAudioRecorded) {
+        onAudioRecorded(publicUrl, recordingDuration);
+      }
+
+      // Clear the recording
+      audioChunksRef.current = [];
+      setHasRecording(false);
+      setRecordingDuration(0);
+
+    } catch (err) {
+      console.error("Error uploading recording:", err);
+      setError("Failed to save recording. Please try again.");
+    } finally {
+      setIsUploading(false);
+    }
+  }, [storyId, recordingDuration, onAudioRecorded]);
 
   const toggleListening = () => {
     if (isListening) {
@@ -168,8 +285,21 @@ export function SpeechToText({ onTranscript, onInterimTranscript, className }: S
       if (recognitionRef.current) {
         recognitionRef.current.abort();
       }
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+        mediaRecorderRef.current.stop();
+      }
+      if (durationIntervalRef.current) {
+        clearInterval(durationIntervalRef.current);
+      }
     };
   }, []);
+
+  // Format duration as MM:SS
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
 
   if (!isSupported) {
     return (
@@ -212,8 +342,32 @@ export function SpeechToText({ onTranscript, onInterimTranscript, className }: S
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
               <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500"></span>
             </span>
-            <span className="text-sm text-stone">Listening...</span>
+            <span className="text-sm text-stone">Listening... {formatDuration(recordingDuration)}</span>
           </div>
+        )}
+
+        {/* Save recording button */}
+        {hasRecording && !isListening && storyId && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={uploadRecording}
+            disabled={isUploading}
+            className="gap-2 border-copper text-copper hover:bg-copper hover:text-parchment"
+          >
+            {isUploading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Saving Voice...
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4" />
+                Save Original Voice ({formatDuration(recordingDuration)})
+              </>
+            )}
+          </Button>
         )}
       </div>
 
@@ -234,10 +388,17 @@ export function SpeechToText({ onTranscript, onInterimTranscript, className }: S
       )}
 
       {/* Usage hint */}
-      {!isListening && !error && (
+      {!isListening && !error && !hasRecording && (
         <p className="text-xs text-silver">
           💡 Tip: Click to start speaking. Your words will appear in the editor as you talk.
-          Perfect for sharing memories without typing.
+          {storyId && " Your voice is also recorded — save it so readers can hear your actual voice!"}
+        </p>
+      )}
+
+      {/* Recording saved hint */}
+      {hasRecording && !isListening && !storyId && (
+        <p className="text-xs text-amber-600">
+          ⚠️ Save your story draft first to keep your voice recording.
         </p>
       )}
     </div>
