@@ -33,7 +33,6 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import Image from "next/image";
-import { toast } from "sonner";
 import Link from "next/link";
 
 interface Challenge {
