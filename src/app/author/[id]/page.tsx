@@ -37,6 +37,11 @@ interface Story {
 async function getAuthorProfile(id: string): Promise<Author | null> {
   // Use admin client to bypass RLS for public profile viewing
   const supabase = createAdminClient();
+  if (!supabase) {
+    console.error("[Author] Admin client not available");
+    return null;
+  }
+  
   const { data, error } = await supabase
     .from("users")
     .select("id, display_name, avatar_url, bio, created_at")
@@ -53,6 +58,11 @@ async function getAuthorProfile(id: string): Promise<Author | null> {
 async function getAuthorStories(authorId: string): Promise<Story[]> {
   // Use admin client to bypass RLS for public stories
   const supabase = createAdminClient();
+  if (!supabase) {
+    console.error("[Author] Admin client not available");
+    return [];
+  }
+  
   const { data, error } = await supabase
     .from("stories")
     .select("*, likes(count), comments(count)")
