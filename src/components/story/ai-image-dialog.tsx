@@ -42,7 +42,6 @@ export function AIImageDialog({
   const [suggestedPrompt, setSuggestedPrompt] = useState<string | null>(null);
   const [imageStyle, setImageStyle] = useState<ImageStyle>("heritage");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [creditsRemaining, setCreditsRemaining] = useState<number | null>(null);
@@ -103,51 +102,13 @@ export function AIImageDialog({
     }
   };
 
-  const handleSaveAndInsert = async () => {
+  const handleSaveAndInsert = () => {
     if (!generatedImage) return;
 
-    setIsSaving(true);
-    setError(null);
-
-    try {
-      // Download the image and re-upload to Supabase Storage
-      // (DALL-E URLs expire, so we need to save it permanently)
-      const imageResponse = await fetch(generatedImage);
-      const imageBlob = await imageResponse.blob();
-
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        throw new Error("Not authenticated");
-      }
-
-      // Upload to Supabase Storage
-      const fileName = `${user.id}/${storyId || "drafts"}/ai-${Date.now()}.png`;
-      const { data, error: uploadError } = await supabase.storage
-        .from("story-media")
-        .upload(fileName, imageBlob, {
-          cacheControl: "3600",
-          contentType: "image/png",
-        });
-
-      if (uploadError) {
-        throw new Error(uploadError.message);
-      }
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from("story-media")
-        .getPublicUrl(data.path);
-
-      // Insert into story with attribution
-      onInsert(publicUrl, "AI-generated illustration");
-      handleClose();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save image");
-    } finally {
-      setIsSaving(false);
-    }
+    // Image is already uploaded to Supabase Storage by the API
+    // Just insert it directly into the story
+    onInsert(generatedImage, "AI-generated illustration");
+    handleClose();
   };
 
   const handleClose = () => {
@@ -380,20 +341,10 @@ export function AIImageDialog({
                   </Button>
                   <Button
                     onClick={handleSaveAndInsert}
-                    disabled={isSaving}
                     className="flex-1 bg-granite text-parchment hover:bg-slate gap-1"
                   >
-                    {isSaving ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Download className="h-4 w-4" />
-                        Use This Image
-                      </>
-                    )}
+                    <Download className="h-4 w-4" />
+                    Use This Image
                   </Button>
                 </div>
               </div>

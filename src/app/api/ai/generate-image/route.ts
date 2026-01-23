@@ -159,15 +159,50 @@ Do NOT include any style instructions - just describe WHAT should be in the imag
     }
 
     const data = await response.json();
-    const imageUrl = data.data?.[0]?.url;
+    const tempImageUrl = data.data?.[0]?.url;
     const revisedPrompt = data.data?.[0]?.revised_prompt;
 
-    if (!imageUrl) {
+    if (!tempImageUrl) {
       return NextResponse.json(
         { error: "Failed to generate image" },
         { status: 500 }
       );
     }
+
+    // Download the image from DALL-E (server-side avoids CORS issues)
+    const imageResponse = await fetch(tempImageUrl);
+    if (!imageResponse.ok) {
+      console.error("Failed to download DALL-E image");
+      return NextResponse.json(
+        { error: "Failed to download generated image" },
+        { status: 500 }
+      );
+    }
+
+    const imageBuffer = await imageResponse.arrayBuffer();
+    
+    // Upload to Supabase Storage (using admin client to bypass RLS)
+    const fileName = `${user.id}/ai-generated/ai-${Date.now()}.png`;
+    const { data: uploadData, error: uploadError } = await adminClient.storage
+      .from("story-media")
+      .upload(fileName, imageBuffer, {
+        cacheControl: "3600",
+        contentType: "image/png",
+        upsert: false,
+      });
+
+    if (uploadError) {
+      console.error("Supabase upload error:", uploadError);
+      return NextResponse.json(
+        { error: "Failed to save generated image" },
+        { status: 500 }
+      );
+    }
+
+    // Get permanent public URL
+    const { data: { publicUrl } } = adminClient.storage
+      .from("story-media")
+      .getPublicUrl(uploadData.path);
 
     // Decrement credits and increment total generated (only for non-admins)
     if (!isAdmin) {
@@ -191,7 +226,7 @@ Do NOT include any style instructions - just describe WHAT should be in the imag
     const creditsRemaining = isAdmin ? -1 : credits - 1; // -1 means unlimited
 
     return NextResponse.json({
-      imageUrl,
+      imageUrl: publicUrl, // Now returns permanent Supabase URL
       revisedPrompt,
       suggestedPrompt: userPrompt,
       creditsRemaining,
