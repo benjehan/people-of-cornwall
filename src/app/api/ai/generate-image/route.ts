@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 // Master style prompt for Cornish heritage aesthetic
 const STYLE_PROMPT = `Style: Cornish heritage illustration, reminiscent of works found in a digital museum archive. 
@@ -7,6 +8,8 @@ The image should have a painterly quality with subtle grain texture, like a cher
 Color palette: muted earth tones, sea greens, slate grays, and warm copper accents reflecting Cornwall's landscape.
 NOT photorealistic, NOT cartoon, NOT anime. Think: British heritage illustration, museum archive quality, nostalgic and timeless.
 The image should evoke the feeling of Kernow (Cornwall) - the rugged coastline, fishing villages, mining heritage, and community spirit.`;
+
+const FREE_CREDITS = 5; // Free AI image generations per user
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,6 +21,36 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
+      );
+    }
+
+    // Check user's credits and admin status using admin client (bypasses RLS)
+    const adminClient = createAdminClient();
+    
+    if (!adminClient) {
+      return NextResponse.json(
+        { error: "Server configuration error" },
+        { status: 500 }
+      );
+    }
+
+    const { data: userProfile } = await adminClient
+      .from("users")
+      .select("role, ai_image_credits, ai_images_generated")
+      .eq("id", user.id)
+      .single();
+
+    const isAdmin = userProfile?.role === "admin";
+    const credits = userProfile?.ai_image_credits ?? FREE_CREDITS;
+
+    // Check if user has credits (admins have unlimited)
+    if (!isAdmin && credits <= 0) {
+      return NextResponse.json(
+        { 
+          error: "You've used all your free AI image credits! Contact us if you'd like more.",
+          creditsRemaining: 0,
+        },
+        { status: 403 }
       );
     }
 
@@ -136,10 +169,32 @@ Do NOT include any style instructions - just describe WHAT should be in the imag
       );
     }
 
+    // Decrement credits and increment total generated (only for non-admins)
+    if (!isAdmin) {
+      await adminClient
+        .from("users")
+        .update({ 
+          ai_image_credits: credits - 1,
+          ai_images_generated: (userProfile?.ai_images_generated || 0) + 1,
+        })
+        .eq("id", user.id);
+    } else {
+      // Still track admin generations for analytics
+      await adminClient
+        .from("users")
+        .update({ 
+          ai_images_generated: (userProfile?.ai_images_generated || 0) + 1,
+        })
+        .eq("id", user.id);
+    }
+
+    const creditsRemaining = isAdmin ? -1 : credits - 1; // -1 means unlimited
+
     return NextResponse.json({
       imageUrl,
       revisedPrompt,
       suggestedPrompt: userPrompt,
+      creditsRemaining,
     });
 
   } catch (error) {

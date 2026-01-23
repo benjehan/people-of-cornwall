@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Sparkles, Loader2, Wand2, Image as ImageIcon, Download, RefreshCw, Palette } from "lucide-react";
+import { Sparkles, Loader2, Wand2, Image as ImageIcon, Download, RefreshCw, Palette, AlertCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useUser } from "@/hooks/use-user";
 
 interface AIImageDialogProps {
   open: boolean;
@@ -35,6 +36,7 @@ export function AIImageDialog({
   storyTitle,
   storyId,
 }: AIImageDialogProps) {
+  const { user, isAdmin } = useUser();
   const [mode, setMode] = useState<"suggest" | "custom">("suggest");
   const [customPrompt, setCustomPrompt] = useState("");
   const [suggestedPrompt, setSuggestedPrompt] = useState<string | null>(null);
@@ -43,6 +45,26 @@ export function AIImageDialog({
   const [isSaving, setIsSaving] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [creditsRemaining, setCreditsRemaining] = useState<number | null>(null);
+
+  // Fetch initial credits when dialog opens
+  useEffect(() => {
+    if (open && user && !isAdmin) {
+      const fetchCredits = async () => {
+        const supabase = createClient();
+        const { data } = await (supabase
+          .from("users") as any)
+          .select("ai_image_credits")
+          .eq("id", user.id)
+          .single();
+        
+        if (data) {
+          setCreditsRemaining(data.ai_image_credits ?? 5);
+        }
+      };
+      fetchCredits();
+    }
+  }, [open, user, isAdmin]);
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -69,6 +91,11 @@ export function AIImageDialog({
       const data = await response.json();
       setGeneratedImage(data.imageUrl);
       setSuggestedPrompt(data.suggestedPrompt);
+      
+      // Update credits remaining
+      if (data.creditsRemaining !== undefined && data.creditsRemaining >= 0) {
+        setCreditsRemaining(data.creditsRemaining);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -146,6 +173,37 @@ export function AIImageDialog({
             Create a unique Cornish-style illustration for your story
           </DialogDescription>
         </DialogHeader>
+
+        {/* Credits Display */}
+        {!isAdmin && creditsRemaining !== null && (
+          <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
+            creditsRemaining === 0 
+              ? "bg-red-50 border border-red-200 text-red-700"
+              : creditsRemaining <= 2
+                ? "bg-amber-50 border border-amber-200 text-amber-700"
+                : "bg-green-50 border border-green-200 text-green-700"
+          }`}>
+            {creditsRemaining === 0 ? (
+              <>
+                <AlertCircle className="h-4 w-4" />
+                <span>No credits remaining — contact us for more!</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4" />
+                <span>
+                  <strong>{creditsRemaining}</strong> free {creditsRemaining === 1 ? "image" : "images"} remaining
+                </span>
+              </>
+            )}
+          </div>
+        )}
+        {isAdmin && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-purple-50 border border-purple-200 text-purple-700">
+            <Sparkles className="h-4 w-4" />
+            <span>Admin — <strong>unlimited</strong> AI images</span>
+          </div>
+        )}
 
         <div className="space-y-4 py-4">
           {!generatedImage ? (
@@ -253,7 +311,12 @@ export function AIImageDialog({
               {/* Generate Button */}
               <Button
                 onClick={handleGenerate}
-                disabled={isGenerating || (mode === "suggest" && !hasEnoughContent) || (mode === "custom" && !customPrompt.trim())}
+                disabled={
+                  isGenerating || 
+                  (mode === "suggest" && !hasEnoughContent) || 
+                  (mode === "custom" && !customPrompt.trim()) ||
+                  (!isAdmin && creditsRemaining !== null && creditsRemaining <= 0)
+                }
                 className="w-full bg-granite text-parchment hover:bg-slate gap-2"
               >
                 {isGenerating ? (
@@ -270,7 +333,11 @@ export function AIImageDialog({
               </Button>
 
               <p className="text-xs text-center text-silver">
-                Image generation uses AI credits. Generated images are unique to your story.
+                {isAdmin 
+                  ? "As admin, you have unlimited AI image generations."
+                  : creditsRemaining !== null && creditsRemaining > 0
+                    ? `This will use 1 of your ${creditsRemaining} remaining credits.`
+                    : "You've used all your free credits."}
               </p>
             </>
           ) : (
