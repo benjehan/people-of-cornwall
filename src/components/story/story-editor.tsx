@@ -5,11 +5,12 @@ import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import Image from "@tiptap/extension-image";
 import { Button } from "@/components/ui/button";
-import { Bold, Italic, List, ListOrdered, Undo, Redo, ImagePlus, Youtube, Mic, Wand2, Sparkles } from "lucide-react";
+import { Bold, Italic, List, ListOrdered, Undo, Redo, ImagePlus, Youtube, Mic, Wand2, Sparkles, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useCallback } from "react";
 import { ImageUploadDialog } from "./image-upload-dialog";
 import { VideoEmbedDialog } from "./video-embed-dialog";
+import { LinkEmbedDialog } from "./link-embed-dialog";
 import { SpeechToText } from "./speech-to-text";
 import { AIEnhanceDialog } from "./ai-enhance-dialog";
 import { AIImageDialog } from "./ai-image-dialog";
@@ -32,6 +33,7 @@ export function StoryEditor({
 }: StoryEditorProps) {
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
   const [videoDialogOpen, setVideoDialogOpen] = useState(false);
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const [aiImageDialogOpen, setAiImageDialogOpen] = useState(false);
   const [showVoiceInput, setShowVoiceInput] = useState(false);
@@ -132,6 +134,11 @@ export function StoryEditor({
     onChange(enhancedContent);
   };
 
+  const handleLinkInsert = (linkHtml: string) => {
+    if (!editor) return;
+    editor.chain().focus().insertContent(linkHtml).run();
+  };
+
   if (!editor) {
     return (
       <div className="min-h-[400px] animate-pulse rounded-lg bg-chalk-white-dark/50" />
@@ -151,6 +158,11 @@ export function StoryEditor({
         open={videoDialogOpen}
         onOpenChange={setVideoDialogOpen}
         onEmbed={handleVideoEmbed}
+      />
+      <LinkEmbedDialog
+        open={linkDialogOpen}
+        onOpenChange={setLinkDialogOpen}
+        onInsert={handleLinkInsert}
       />
       <AIEnhanceDialog
         open={aiDialogOpen}
@@ -268,6 +280,17 @@ export function StoryEditor({
         >
           <Youtube className="h-4 w-4" />
           <span className="hidden sm:inline text-xs">Video</span>
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setLinkDialogOpen(true)}
+          className="h-8 px-2 gap-1"
+          title="Add external link with preview"
+        >
+          <Link2 className="h-4 w-4" />
+          <span className="hidden sm:inline text-xs">Link</span>
         </Button>
         <div className="mx-2 h-6 w-px bg-chalk-white-dark" />
         
