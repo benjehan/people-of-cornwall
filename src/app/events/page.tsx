@@ -47,7 +47,50 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/use-user";
-import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, nextSaturday, nextSunday, isSameDay } from "date-fns";
+
+// Date helper functions (replacing date-fns)
+const addDays = (date: Date, days: number): Date => {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
+};
+
+const endOfWeek = (date: Date): Date => {
+  const result = new Date(date);
+  const day = result.getDay();
+  const diff = 7 - day; // Days until Sunday
+  result.setDate(result.getDate() + diff);
+  result.setHours(23, 59, 59, 999);
+  return result;
+};
+
+const endOfMonth = (date: Date): Date => {
+  const result = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+  result.setHours(23, 59, 59, 999);
+  return result;
+};
+
+const nextSaturday = (date: Date): Date => {
+  const result = new Date(date);
+  const day = result.getDay();
+  const daysUntilSat = day === 6 ? 7 : (6 - day);
+  result.setDate(result.getDate() + daysUntilSat);
+  result.setHours(0, 0, 0, 0);
+  return result;
+};
+
+const nextSunday = (date: Date): Date => {
+  const result = new Date(date);
+  const day = result.getDay();
+  const daysUntilSun = day === 0 ? 7 : (7 - day);
+  result.setDate(result.getDate() + daysUntilSun);
+  result.setHours(0, 0, 0, 0);
+  return result;
+};
+
+const formatDateShort = (date: Date): string => {
+  return date.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+};
 
 // Dynamic import for map to avoid SSR issues
 const EventsMap = dynamic(() => import("@/components/events/events-map"), {
@@ -424,7 +467,7 @@ export default function EventsPage() {
                       }
                     >
                       <CalendarDays className="h-4 w-4 mr-1" />
-                      {customDate ? format(customDate, "d MMM") : "Pick Date"}
+                      {customDate ? formatDateShort(customDate) : "Pick Date"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
