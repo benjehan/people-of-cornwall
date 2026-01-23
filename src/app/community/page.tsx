@@ -227,7 +227,7 @@ export default function CommunityPage() {
     setIsNominating(true);
     const supabase = createClient();
 
-    const { error } = await (supabase
+    const { data: nomData, error } = await (supabase
       .from("poll_nominations") as any)
       .insert({
         poll_id: nominatePollId,
@@ -236,11 +236,34 @@ export default function CommunityPage() {
         description: nominationDescription.trim() || null,
         location_name: nominationLocation.trim() || null,
         is_approved: false, // Requires admin approval
-      });
+      })
+      .select()
+      .single();
 
     if (error) {
       console.error("Nomination error:", error);
     } else {
+      // Run moderation check and notify admin
+      const poll = polls.find(p => p.id === nominatePollId);
+      try {
+        await fetch("/api/moderation/check", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "poll_nomination",
+            content: {
+              title: nominationTitle.trim(),
+              description: nominationDescription.trim(),
+            },
+            submitterId: user.id,
+            submitterEmail: user.email,
+            itemId: nomData?.id,
+          }),
+        });
+      } catch (err) {
+        console.error("Moderation check failed:", err);
+      }
+
       setNominationSuccess(true);
       setTimeout(() => {
         setNominateDialogOpen(false);

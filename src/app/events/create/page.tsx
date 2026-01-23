@@ -208,23 +208,26 @@ export default function CreateEventPage() {
         throw insertError;
       }
 
-      // Notify admin via API
+      // Run moderation check and notify admin
       try {
-        await fetch("/api/admin/notify", {
+        await fetch("/api/moderation/check", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            type: "new_event",
-            eventId: eventData.id,
-            eventTitle: title.trim(),
-            eventLocation: locationName,
-            eventDate: startsAt,
+            type: "event",
+            content: {
+              title: title.trim(),
+              description: description.trim(),
+              imageUrl: finalImageUrl,
+            },
+            submitterId: user.id,
             submitterEmail: user.email,
+            itemId: eventData.id,
           }),
         });
       } catch (notifyError) {
-        console.error("Failed to notify admin:", notifyError);
-        // Don't fail the submission if notification fails
+        console.error("Failed to run moderation:", notifyError);
+        // Don't fail the submission if moderation fails
       }
 
       setIsSuccess(true);
