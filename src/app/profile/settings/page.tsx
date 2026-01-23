@@ -11,7 +11,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Save, CheckCircle, AlertCircle } from "lucide-react";
+import { ArrowLeft, Save, CheckCircle, AlertCircle, Mail, Loader2 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useUser, getDisplayName, getAvatarUrl } from "@/hooks/use-user";
 import { createClient } from "@/lib/supabase/client";
 
@@ -24,6 +31,9 @@ export default function SettingsPage() {
 
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
+  const [digestFrequency, setDigestFrequency] = useState<"weekly" | "monthly" | "never">("never");
+  const [digestLoading, setDigestLoading] = useState(true);
+  const [digestSaving, setDigestSaving] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -35,8 +45,65 @@ export default function SettingsPage() {
     if (user) {
       setDisplayName(getDisplayName(user, profile));
       setBio((profile as any)?.bio || "");
+      loadDigestPreference();
     }
   }, [user, profile]);
+
+  const loadDigestPreference = async () => {
+    if (!user?.email) return;
+    
+    setDigestLoading(true);
+    const supabase = createClient();
+    
+    const { data } = await (supabase
+      .from("digest_subscriptions") as any)
+      .select("*")
+      .eq("email", user.email)
+      .single();
+    
+    if (data) {
+      setDigestFrequency(data.is_active ? data.frequency : "never");
+    }
+    setDigestLoading(false);
+  };
+
+  const handleDigestChange = async (value: "weekly" | "monthly" | "never") => {
+    if (!user?.email) return;
+    
+    setDigestSaving(true);
+    const supabase = createClient();
+    
+    // Check if subscription exists
+    const { data: existing } = await (supabase
+      .from("digest_subscriptions") as any)
+      .select("id")
+      .eq("email", user.email)
+      .single();
+    
+    if (existing) {
+      // Update existing
+      await (supabase
+        .from("digest_subscriptions") as any)
+        .update({
+          frequency: value === "never" ? "weekly" : value,
+          is_active: value !== "never",
+        })
+        .eq("id", existing.id);
+    } else if (value !== "never") {
+      // Create new subscription
+      await (supabase
+        .from("digest_subscriptions") as any)
+        .insert({
+          email: user.email,
+          user_id: user.id,
+          frequency: value,
+          is_active: true,
+        });
+    }
+    
+    setDigestFrequency(value);
+    setDigestSaving(false);
+  };
 
   const handleSave = () => {
     if (!user) return;
@@ -251,6 +318,61 @@ export default function SettingsPage() {
                   </span>
                 )}
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Email Digest Settings */}
+          <Card className="mb-6 border-bone bg-cream">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-granite">
+                <Mail className="h-5 w-5" />
+                Weekly Story Digest
+              </CardTitle>
+              <CardDescription>
+                Get the top stories of the week delivered to your inbox.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {digestLoading ? (
+                <div className="flex items-center gap-2 text-stone">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading preferences...
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="digestFrequency" className="text-granite">
+                      Email Frequency
+                    </Label>
+                    <Select
+                      value={digestFrequency}
+                      onValueChange={(value: "weekly" | "monthly" | "never") => handleDigestChange(value)}
+                      disabled={digestSaving}
+                    >
+                      <SelectTrigger className="w-full border-bone bg-parchment">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="weekly">📬 Weekly — Every Sunday</SelectItem>
+                        <SelectItem value="monthly">📅 Monthly — First of the month</SelectItem>
+                        <SelectItem value="never">🔕 Never — No digest emails</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {digestSaving && (
+                      <p className="text-xs text-stone flex items-center gap-1">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Saving...
+                      </p>
+                    )}
+                  </div>
+                  <p className="text-xs text-stone">
+                    {digestFrequency === "never" 
+                      ? "You won't receive any digest emails. You can change this anytime."
+                      : `We'll send you the top 3 most-loved stories ${digestFrequency === "weekly" ? "every Sunday" : "on the first of each month"}.`
+                    }
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
