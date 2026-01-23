@@ -19,12 +19,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import {
   Calendar,
   MapPin,
   Clock,
@@ -456,32 +450,23 @@ export default function EventsPage() {
                 ))}
                 
                 {/* Custom date picker */}
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={dateFilter === "custom" ? "default" : "outline"}
-                      size="sm"
-                      className={dateFilter === "custom" 
-                        ? "bg-granite text-parchment" 
-                        : "border-bone text-stone hover:bg-bone"
-                      }
-                    >
-                      <CalendarDays className="h-4 w-4 mr-1" />
-                      {customDate ? formatDateShort(customDate) : "Pick Date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <CalendarComponent
-                      mode="single"
-                      selected={customDate}
-                      onSelect={(date) => {
-                        setCustomDate(date);
+                <div className="relative">
+                  <Input
+                    type="date"
+                    value={customDate ? customDate.toISOString().split("T")[0] : ""}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setCustomDate(new Date(e.target.value));
                         setDateFilter("custom");
-                      }}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+                      }
+                    }}
+                    className={`w-[140px] h-9 text-sm ${
+                      dateFilter === "custom" 
+                        ? "border-granite bg-granite/5" 
+                        : "border-bone"
+                    }`}
+                  />
+                </div>
               </div>
 
               <div className="flex flex-wrap items-end gap-4">

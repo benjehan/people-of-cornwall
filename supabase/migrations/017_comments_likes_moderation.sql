@@ -46,24 +46,31 @@ CREATE TABLE IF NOT EXISTS likes (
 );
 
 -- ============================================
--- 3. UPDATE WHERE IS THIS
+-- 3. UPDATE WHERE IS THIS (if exists)
 -- ============================================
 
 -- Add challenge duration and better tracking
-ALTER TABLE where_is_this ADD COLUMN IF NOT EXISTS duration_days INTEGER DEFAULT 3;
-ALTER TABLE where_is_this ADD COLUMN IF NOT EXISTS ends_at TIMESTAMPTZ;
+DO $$ BEGIN
+  ALTER TABLE where_is_this ADD COLUMN IF NOT EXISTS duration_days INTEGER DEFAULT 3;
+  ALTER TABLE where_is_this ADD COLUMN IF NOT EXISTS ends_at TIMESTAMPTZ;
+EXCEPTION WHEN undefined_table THEN null;
+END $$;
 
--- Add location to guesses for proximity calculation
-ALTER TABLE where_is_this_guesses ADD COLUMN IF NOT EXISTS is_winner BOOLEAN DEFAULT FALSE;
-
--- Add comments ability (uses generic comments table)
+-- Add location to guesses for proximity calculation  
+DO $$ BEGIN
+  ALTER TABLE where_is_this_guesses ADD COLUMN IF NOT EXISTS is_winner BOOLEAN DEFAULT FALSE;
+EXCEPTION WHEN undefined_table THEN null;
+END $$;
 
 -- ============================================
--- 4. UPDATE LOST CORNWALL FOR LIKES
+-- 4. UPDATE LOST CORNWALL FOR LIKES (if exists)
 -- ============================================
 
 -- Add like_count for sorting (denormalized for performance)
-ALTER TABLE lost_cornwall ADD COLUMN IF NOT EXISTS like_count INTEGER DEFAULT 0;
+DO $$ BEGIN
+  ALTER TABLE lost_cornwall ADD COLUMN IF NOT EXISTS like_count INTEGER DEFAULT 0;
+EXCEPTION WHEN undefined_table THEN null;
+END $$;
 
 -- ============================================
 -- 5. UPDATE EVENTS
@@ -109,11 +116,16 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS ban_reason TEXT;
 -- 8. BADGES FOR WHERE IS THIS WINNERS
 -- ============================================
 
--- Add badge type if not exists
-DO $$ BEGIN
-  ALTER TYPE badge_type ADD VALUE IF NOT EXISTS 'location_expert';
+-- Add badge type if type exists and value doesn't
+DO $$ 
+BEGIN
+  -- Only try to add if badge_type exists
+  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'badge_type') THEN
+    ALTER TYPE badge_type ADD VALUE IF NOT EXISTS 'location_expert';
+  END IF;
 EXCEPTION
   WHEN duplicate_object THEN null;
+  WHEN undefined_object THEN null;
 END $$;
 
 -- ============================================
