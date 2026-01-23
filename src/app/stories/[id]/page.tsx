@@ -176,7 +176,8 @@ export default async function StoryPage({
       })
     : null;
 
-  const storyUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/stories/${id}`;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://peopleofcornwall.com";
+  const storyUrl = `${siteUrl}/stories/${id}`;
 
   const statusLabels: Record<string, string> = {
     draft: "Draft",

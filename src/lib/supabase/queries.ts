@@ -16,6 +16,7 @@ export type StoryWithCounts = Tables<"stories"> & {
   comments_count: number;
   first_image_url?: string | null;
   ambient_sound?: string | null;
+  voice_preference?: "male" | "female" | null;
 };
 
 /**

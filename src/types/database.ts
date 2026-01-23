@@ -55,6 +55,7 @@ export interface Story {
   soft_deleted: boolean;
   featured?: boolean;
   ambient_sound?: string | null;
+  voice_preference?: "male" | "female" | null;
 }
 
 export interface Media {
