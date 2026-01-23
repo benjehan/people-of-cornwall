@@ -1,0 +1,257 @@
+# People of Cornwall
+## A Living Digital Archive of Cornish Stories & Heritage
+
+---
+
+## 🎯 Executive Summary
+
+**People of Cornwall** is a community-driven digital platform that preserves and celebrates Cornish culture, memories, and heritage through storytelling. It provides a modern, accessible way for residents—especially elderly community members—to share their personal stories, photographs, and memories of Cornwall's rich history.
+
+The platform combines the warmth of traditional oral history with cutting-edge technology, including AI assistance for those who need help writing, voice narration for accessibility, and an interactive map showing stories pinned to their locations across Cornwall.
+
+**Website:** [peopleofcornwall.com](https://peopleofcornwall.com)
+
+---
+
+## 🌊 Why This Matters for Cornwall
+
+### Preserving Living Memory
+Cornwall has a unique cultural identity—from its Celtic heritage to mining traditions, fishing communities, and distinct local customs. Much of this knowledge exists only in the memories of older generations. **Every year, irreplaceable stories are lost.**
+
+### Bridging Generations
+Young Cornish people often move away and lose connection to their heritage. This platform creates a permanent, searchable archive that future generations can explore—hearing their grandparents' voices and reading their stories forever.
+
+### Community Building
+The platform encourages interaction through comments, allowing families to reconnect over shared memories and strangers to discover they share common heritage.
+
+### Digital Tourism & Education
+A rich archive of authentic Cornish stories becomes a resource for:
+- Schools teaching local history
+- Researchers studying Cornish culture
+- Tourists wanting deeper connection to places they visit
+- The Cornish diaspora worldwide
+
+---
+
+## ✨ Key Features
+
+### For Storytellers
+| Feature | Description |
+|---------|-------------|
+| **Easy Story Writing** | Simple, intuitive editor—no technical skills needed |
+| **Voice Narration** | Speak your story instead of typing (great for elderly users) |
+| **AI Writing Assistant** | Helps polish grammar and style while keeping the authentic voice |
+| **Photo & Video Uploads** | Add images and embed YouTube/Vimeo videos |
+| **AI Image Generation** | Creates heritage-style illustrations for stories without photos |
+| **Location Pinning** | Place your story on the interactive map of Cornwall |
+| **Timeline Tagging** | Tag stories by decade for historical browsing |
+| **Privacy Options** | Choose to publish anonymously if preferred |
+
+### For Readers & Community
+| Feature | Description |
+|---------|-------------|
+| **Interactive Map** | Explore stories by location across Cornwall |
+| **Timeline View** | Browse stories chronologically from 1900s to present |
+| **Search & Discovery** | Find stories by keyword, location, or theme |
+| **Collections** | Curated themed collections (e.g., "Mining Memories", "Fishing Tales") |
+| **Comments & Engagement** | Comment on stories, share memories, like content |
+| **Author Profiles** | Learn about storytellers and read all their contributions |
+| **Dark Mode** | Comfortable reading in any lighting |
+
+### For Administrators
+| Feature | Description |
+|---------|-------------|
+| **Content Moderation** | Review and approve stories before publication |
+| **AI Moderation** | Automatic detection of inappropriate content in comments |
+| **Email Notifications** | Alerts when new stories are submitted |
+| **Featured Stories** | Highlight exceptional content on the homepage |
+| **Collections Management** | Create and curate themed story collections |
+| **Analytics Dashboard** | Track engagement and growth |
+
+### Accessibility & Inclusivity
+- **Voice-to-text** for users who can't type easily
+- **AI writing assistance** for those less confident with writing
+- **Large, readable fonts** and clean design
+- **Mobile-friendly** for use on phones and tablets
+- **GDPR compliant** with clear privacy policies
+
+---
+
+## 🛠 Technology Stack
+
+### Frontend
+| Technology | Purpose |
+|------------|---------|
+| **Next.js 16** | Modern React framework for fast, SEO-friendly web apps |
+| **TypeScript** | Type-safe code for reliability |
+| **Tailwind CSS** | Beautiful, responsive design system |
+| **Tiptap Editor** | Rich text editing with media support |
+
+### Backend & Database
+| Technology | Purpose |
+|------------|---------|
+| **Supabase** | Database, authentication, and file storage |
+| **PostgreSQL** | Robust, scalable database |
+| **Row Level Security** | Data protection at database level |
+
+### AI & Intelligence
+| Technology | Purpose |
+|------------|---------|
+| **OpenAI GPT-4** | Story enhancement, summarization, and tag generation |
+| **OpenAI DALL-E 3** | Heritage-style image generation |
+| **OpenAI Moderation API** | Content safety screening |
+| **Web Speech API** | Voice-to-text narration |
+
+### Infrastructure
+| Technology | Purpose |
+|------------|---------|
+| **Vercel** | Hosting and deployment (UK/EU servers available) |
+| **Mailjet** | Transactional emails (magic link sign-in) |
+| **Resend** | Application notifications |
+| **Google OAuth** | Easy sign-in option |
+
+### Maps & Location
+| Technology | Purpose |
+|------------|---------|
+| **Leaflet / OpenStreetMap** | Interactive mapping (free, open-source) |
+
+---
+
+## 💰 Running Costs (Estimated Monthly)
+
+### Current (MVP / Low Traffic)
+| Service | Cost | Notes |
+|---------|------|-------|
+| **Vercel** | Free | Hobby tier covers initial traffic |
+| **Supabase** | Free | Free tier: 500MB database, 1GB storage |
+| **OpenAI API** | ~£10-30 | Based on usage (AI writing, image generation) |
+| **Mailjet** | Free | 6,000 emails/month free |
+| **Domain** | ~£10/year | peopleofcornwall.com |
+| **Total** | **~£10-40/month** | |
+
+### Scaled (Higher Traffic / More Users)
+| Service | Cost | Notes |
+|---------|------|-------|
+| **Vercel Pro** | ~£16/month | For higher traffic |
+| **Supabase Pro** | ~£20/month | More storage and bandwidth |
+| **OpenAI API** | ~£30-100 | Depends on AI feature usage |
+| **Mailjet** | ~£10/month | If exceeding free tier |
+| **Total** | **~£75-150/month** | |
+
+### Cost Controls Implemented
+- AI image generation limited to **5 free images per user** (prevents abuse)
+- Image compression before upload (reduces storage costs)
+- Efficient caching and static generation (reduces server costs)
+
+---
+
+## 🔒 Data & Privacy
+
+### GDPR Compliance
+- Full privacy policy published
+- Users can request data deletion
+- Minimal data collection (only what's needed)
+- Data stored in EU/UK regions
+- No tracking cookies (only essential session cookies)
+
+### Content Rights
+- Users retain copyright of their stories
+- Clear terms for photo/image consent
+- Option to publish anonymously
+- Admin moderation before publication
+
+### Security
+- Passwordless authentication (magic links)
+- Row-level security on database
+- No passwords stored
+- HTTPS encryption throughout
+
+---
+
+## 📈 Growth Potential
+
+### Phase 1: Launch (Current)
+- Core storytelling features
+- Map and timeline views
+- Basic community features
+
+### Phase 2: Community Growth
+- Story prompts and writing challenges
+- School partnerships
+- Local history society collaborations
+- Featured "Story of the Week"
+
+### Phase 3: Enhanced Features
+- Audio recordings of stories (podcast-style)
+- Video testimonials
+- Family tree connections
+- Multi-language support (Cornish language!)
+
+### Phase 4: Sustainability
+- Optional donations/membership
+- Sponsored collections (heritage organizations)
+- Educational licensing
+- Grant funding for heritage preservation
+
+---
+
+## 🤝 Partnership Opportunities
+
+### Local Council
+- Featured collections for local heritage
+- Integration with tourism initiatives
+- School curriculum resources
+- Community event documentation
+
+### Heritage Organizations
+- Cornwall Heritage Trust
+- Cornish Mining World Heritage
+- Local museums and archives
+- Historical societies
+
+### Educational
+- Schools and colleges
+- University research projects
+- Adult education programs
+- Digital literacy initiatives
+
+---
+
+## 📞 Contact
+
+**Project Lead:** [Your Name]  
+**Email:** hello@peopleofcornwall.com  
+**Website:** [peopleofcornwall.com](https://peopleofcornwall.com)
+
+---
+
+## 📸 Screenshots
+
+*[Add screenshots of the platform here]*
+
+- Homepage with featured stories
+- Interactive map of Cornwall
+- Story writing interface
+- AI image generation
+- Mobile view
+
+---
+
+## 🏆 Summary
+
+**People of Cornwall** is more than a website—it's a **digital time capsule** for Cornish culture. 
+
+By making storytelling accessible to everyone, from tech-savvy youth to elderly residents who prefer to speak their memories, we're ensuring that Cornwall's unique heritage is preserved for generations to come.
+
+The platform is **built, live, and ready to grow**. With support from the local council, we can:
+- Promote the platform to reach more Cornish residents
+- Partner with schools and heritage organizations
+- Ensure long-term sustainability and growth
+- Make Cornwall's stories accessible to the world
+
+**Every story matters. Every memory is a treasure.**
+
+---
+
+*Document prepared: January 2026*  
+*Platform: peopleofcornwall.com*
