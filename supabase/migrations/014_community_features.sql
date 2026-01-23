@@ -35,11 +35,22 @@ CREATE TABLE IF NOT EXISTS polls (
   category poll_category NOT NULL,
   location_name TEXT,  -- Optional: filter by village/town
   is_active BOOLEAN DEFAULT TRUE,
-  starts_at TIMESTAMPTZ DEFAULT NOW(),
-  ends_at TIMESTAMPTZ,
+  nominations_start_at TIMESTAMPTZ DEFAULT NOW(),
+  nominations_end_at TIMESTAMPTZ,  -- Deadline for nominations
+  voting_start_at TIMESTAMPTZ,     -- When voting begins (after nominations)
+  voting_end_at TIMESTAMPTZ,       -- Deadline for voting
   created_at TIMESTAMPTZ DEFAULT NOW(),
   created_by UUID REFERENCES users(id)
 );
+
+-- Add columns if they don't exist (for existing tables)
+DO $$ BEGIN
+  ALTER TABLE polls ADD COLUMN IF NOT EXISTS nominations_start_at TIMESTAMPTZ DEFAULT NOW();
+  ALTER TABLE polls ADD COLUMN IF NOT EXISTS nominations_end_at TIMESTAMPTZ;
+  ALTER TABLE polls ADD COLUMN IF NOT EXISTS voting_start_at TIMESTAMPTZ;
+  ALTER TABLE polls ADD COLUMN IF NOT EXISTS voting_end_at TIMESTAMPTZ;
+EXCEPTION WHEN others THEN null;
+END $$;
 
 -- Poll nominations (users nominate entries)
 CREATE TABLE IF NOT EXISTS poll_nominations (
@@ -143,7 +154,83 @@ ADD COLUMN IF NOT EXISTS story_format VARCHAR(20) DEFAULT 'standard'
 CHECK (story_format IN ('standard', 'mini', 'audio'));
 
 -- ============================================
--- 6. INDEXES FOR PERFORMANCE
+-- 6. LOCAL EVENTS CALENDAR
+-- ============================================
+
+-- Events table (community-driven, admin-approved)
+CREATE TABLE IF NOT EXISTS events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL,
+  description TEXT,
+  location_name TEXT NOT NULL,       -- Village/town
+  location_address TEXT,             -- Full address
+  location_lat DECIMAL(10, 8),
+  location_lng DECIMAL(11, 8),
+  image_url TEXT,
+  
+  -- Dates & times
+  starts_at TIMESTAMPTZ NOT NULL,
+  ends_at TIMESTAMPTZ,
+  all_day BOOLEAN DEFAULT FALSE,
+  
+  -- Contact info
+  contact_name TEXT,
+  contact_email TEXT,
+  contact_phone TEXT,
+  website_url TEXT,
+  
+  -- Details
+  price_info TEXT,                   -- Free, £5, etc.
+  is_free BOOLEAN DEFAULT FALSE,
+  
+  -- Accessibility & amenities (filters)
+  is_accessible BOOLEAN DEFAULT FALSE,
+  is_dog_friendly BOOLEAN DEFAULT FALSE,
+  is_child_friendly BOOLEAN DEFAULT FALSE,
+  is_vegan_friendly BOOLEAN DEFAULT FALSE,
+  
+  -- Status
+  is_approved BOOLEAN DEFAULT FALSE,
+  is_featured BOOLEAN DEFAULT FALSE,
+  
+  -- Metadata
+  created_by UUID REFERENCES users(id),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Event RLS
+ALTER TABLE events ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Anyone can view approved events" ON events;
+CREATE POLICY "Anyone can view approved events"
+  ON events FOR SELECT
+  USING (is_approved = TRUE AND starts_at > NOW() - INTERVAL '1 day');
+
+DROP POLICY IF EXISTS "Users can create events" ON events;
+CREATE POLICY "Users can create events"
+  ON events FOR INSERT
+  WITH CHECK (auth.uid() = created_by);
+
+DROP POLICY IF EXISTS "Users can update own events" ON events;
+CREATE POLICY "Users can update own events"
+  ON events FOR UPDATE
+  USING (auth.uid() = created_by AND is_approved = FALSE);
+
+DROP POLICY IF EXISTS "Admins can manage events" ON events;
+CREATE POLICY "Admins can manage events"
+  ON events FOR ALL
+  USING (
+    EXISTS (SELECT 1 FROM users WHERE users.id = auth.uid() AND users.role = 'admin')
+  );
+
+-- Events indexes
+CREATE INDEX IF NOT EXISTS idx_events_approved ON events(is_approved, starts_at);
+CREATE INDEX IF NOT EXISTS idx_events_location ON events(location_name);
+CREATE INDEX IF NOT EXISTS idx_events_date ON events(starts_at, ends_at);
+
+-- ============================================
+-- 7. INDEXES FOR PERFORMANCE
 -- ============================================
 
 CREATE INDEX IF NOT EXISTS idx_polls_active ON polls(is_active, ends_at);
@@ -153,16 +240,18 @@ CREATE INDEX IF NOT EXISTS idx_user_badges_user ON user_badges(user_id);
 CREATE INDEX IF NOT EXISTS idx_digest_subs_active ON digest_subscriptions(is_active, frequency);
 
 -- ============================================
--- 7. RLS POLICIES
+-- 7. RLS POLICIES (idempotent - drop first)
 -- ============================================
 
 -- Polls RLS
 ALTER TABLE polls ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Anyone can view active polls" ON polls;
 CREATE POLICY "Anyone can view active polls"
   ON polls FOR SELECT
   USING (is_active = TRUE);
 
+DROP POLICY IF EXISTS "Admins can manage polls" ON polls;
 CREATE POLICY "Admins can manage polls"
   ON polls FOR ALL
   USING (
@@ -172,14 +261,17 @@ CREATE POLICY "Admins can manage polls"
 -- Poll Nominations RLS
 ALTER TABLE poll_nominations ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Anyone can view approved nominations" ON poll_nominations;
 CREATE POLICY "Anyone can view approved nominations"
   ON poll_nominations FOR SELECT
   USING (is_approved = TRUE);
 
+DROP POLICY IF EXISTS "Users can create nominations" ON poll_nominations;
 CREATE POLICY "Users can create nominations"
   ON poll_nominations FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Admins can manage nominations" ON poll_nominations;
 CREATE POLICY "Admins can manage nominations"
   ON poll_nominations FOR ALL
   USING (
@@ -189,14 +281,17 @@ CREATE POLICY "Admins can manage nominations"
 -- Poll Votes RLS
 ALTER TABLE poll_votes ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Anyone can view vote counts" ON poll_votes;
 CREATE POLICY "Anyone can view vote counts"
   ON poll_votes FOR SELECT
   USING (TRUE);
 
+DROP POLICY IF EXISTS "Authenticated users can vote" ON poll_votes;
 CREATE POLICY "Authenticated users can vote"
   ON poll_votes FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can remove their vote" ON poll_votes;
 CREATE POLICY "Users can remove their vote"
   ON poll_votes FOR DELETE
   USING (auth.uid() = user_id);
@@ -204,10 +299,12 @@ CREATE POLICY "Users can remove their vote"
 -- User Badges RLS
 ALTER TABLE user_badges ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Anyone can view badges" ON user_badges;
 CREATE POLICY "Anyone can view badges"
   ON user_badges FOR SELECT
   USING (TRUE);
 
+DROP POLICY IF EXISTS "Only system can award badges" ON user_badges;
 CREATE POLICY "Only system can award badges"
   ON user_badges FOR INSERT
   WITH CHECK (
@@ -217,10 +314,12 @@ CREATE POLICY "Only system can award badges"
 -- Digest Subscriptions RLS
 ALTER TABLE digest_subscriptions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own subscription" ON digest_subscriptions;
 CREATE POLICY "Users can view own subscription"
   ON digest_subscriptions FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can manage own subscription" ON digest_subscriptions;
 CREATE POLICY "Users can manage own subscription"
   ON digest_subscriptions FOR ALL
   USING (auth.uid() = user_id OR user_id IS NULL);
