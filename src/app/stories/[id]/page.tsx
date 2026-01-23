@@ -6,6 +6,7 @@ import { ShareButtons } from "@/components/community/share-buttons";
 import { LikeButton } from "@/components/community/like-button";
 import { CommentSection } from "@/components/community/comment-section";
 import { AdminReviewPanel } from "@/components/admin/review-panel";
+import { AmbientPlayer } from "@/components/story/ambient-player";
 import { MapPin, Calendar, ArrowLeft, Eye, AlertTriangle } from "lucide-react";
 import { getStoryById, getStoryComments, hasUserLikedStory, getRelatedStories } from "@/lib/supabase/queries";
 import { StoryCard } from "@/components/story/story-card";
@@ -238,6 +239,11 @@ export default async function StoryPage({
               </span>
             )}
           </div>
+
+          {/* Ambient Sound Player */}
+          {story.ambient_sound && (
+            <AmbientPlayer soundId={story.ambient_sound} />
+          )}
 
           {/* Curator's Note (AI Summary) */}
           {story.ai_summary && (

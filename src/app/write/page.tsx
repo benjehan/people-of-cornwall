@@ -26,6 +26,7 @@ import {
 import { useUser } from "@/hooks/use-user";
 import { saveStoryAction, submitStoryAction } from "@/app/actions/stories";
 import { createClient } from "@/lib/supabase/client";
+import { AmbientSoundSelector } from "@/components/story/ambient-sound-selector";
 
 type StoryStatus = "draft" | "review" | "published" | "rejected" | "unpublished";
 
@@ -50,6 +51,7 @@ function WritePageContent() {
   const [originalStatus, setOriginalStatus] = useState<StoryStatus | null>(null);
   const [promptId, setPromptId] = useState<string | null>(null);
   const [promptTitle, setPromptTitle] = useState<string | null>(null);
+  const [ambientSound, setAmbientSound] = useState<string | null>(null);
 
   // Redirect logic - only redirect if auth is done loading AND no user
   useEffect(() => {
@@ -101,6 +103,7 @@ function WritePageContent() {
           setTimelineYear(story.timeline_year?.toString() || "");
           setAnonymous(story.anonymous || false);
           setPromptId(story.prompt_id || null);
+          setAmbientSound(story.ambient_sound || null);
         }
       }
       
@@ -153,6 +156,7 @@ function WritePageContent() {
         timeline_year: timelineYear ? parseInt(timelineYear) : null,
         anonymous,
         prompt_id: promptId,
+        ambient_sound: ambientSound,
       });
 
       console.log('[WRITE] Save result:', result);
@@ -200,6 +204,7 @@ function WritePageContent() {
         timeline_year: timelineYear ? parseInt(timelineYear) : null,
         anonymous,
         prompt_id: promptId,
+        ambient_sound: ambientSound,
       });
 
       console.log('[WRITE] Save result:', saveResult);
@@ -463,6 +468,16 @@ function WritePageContent() {
                       {anonymous ? "Show name" : "Go anonymous"}
                     </Button>
                   </div>
+                </CardContent>
+              </Card>
+
+              {/* Ambient Sound */}
+              <Card className="border-bone bg-cream">
+                <CardContent className="pt-6">
+                  <AmbientSoundSelector
+                    value={ambientSound}
+                    onChange={setAmbientSound}
+                  />
                 </CardContent>
               </Card>
 

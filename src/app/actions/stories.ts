@@ -14,6 +14,7 @@ interface SaveStoryData {
   timeline_year?: number | null;
   anonymous?: boolean;
   prompt_id?: string | null;
+  ambient_sound?: string | null;
 }
 
 /**
@@ -44,6 +45,7 @@ export async function saveStoryAction(data: SaveStoryData) {
         timeline_year: data.timeline_year,
         anonymous: data.anonymous,
         prompt_id: data.prompt_id,
+        ambient_sound: data.ambient_sound,
       })
       .eq("id", data.id)
       .eq("author_id", user.id) // Security: only update own stories
@@ -71,6 +73,7 @@ export async function saveStoryAction(data: SaveStoryData) {
         timeline_year: data.timeline_year,
         anonymous: data.anonymous,
         prompt_id: data.prompt_id,
+        ambient_sound: data.ambient_sound,
         status: "draft",
       })
       .select()

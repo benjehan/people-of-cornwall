@@ -593,6 +593,114 @@ QUALITY
 
 ---
 
+## Phase 4: Digital Heritage Archive (Future Vision)
+
+**Duration:** Ongoing  
+**Goal:** Transform from community storytelling platform into a comprehensive digital museum for Cornish heritage
+
+> This phase represents a significant expansion in scope, requiring additional infrastructure, partnerships, and potentially funding. It builds upon the community platform to create an institutional-grade heritage archive.
+
+### 4.1 Vision: The Digital Museum
+
+The platform expands beyond individual stories to become a **digital repository** for:
+- **Private collections** - Families with photographs, films, documents on hard drives
+- **Institutional archives** - Heritage societies, museums, libraries
+- **Oral history projects** - Audio/video recordings of interviews
+- **Historical media** - Digitised newspapers, maps, certificates
+- **Multimedia collections** - Curated exhibitions by theme, location, era
+
+### 4.2 Infrastructure Requirements
+
+| Component | Current | Required | Notes |
+|-----------|---------|----------|-------|
+| **Storage** | Supabase 1GB | 100GB+ or S3/R2 | Videos/high-res images need dedicated storage |
+| **Video Hosting** | YouTube embeds | Self-hosted or Bunny.net | For archival video content |
+| **File Size Limit** | 5MB | 100MB+ | Large scans, audio recordings |
+| **CDN** | Vercel | Cloudflare R2 or similar | Cost-effective media delivery |
+
+### 4.3 Feature Roadmap
+
+#### Sprint 4.1: Collection Management (Admin)
+| ID | Task | Priority | Notes |
+|----|------|----------|-------|
+| 4.1.1 | Bulk upload interface for admins | P0 | Drag-drop multiple files |
+| 4.1.2 | Batch metadata editor | P0 | Add titles, dates, tags to multiple items |
+| 4.1.3 | Collection hierarchy (collection > sub-collections) | P1 | Nested organization |
+| 4.1.4 | Import from external sources (CSV, JSON) | P1 | Bulk data migration |
+| 4.1.5 | Video upload and transcoding | P1 | Requires Bunny.net or similar |
+| 4.1.6 | High-resolution image viewer (zoom/pan) | P1 | For detailed documents |
+
+#### Sprint 4.2: Heritage Archive UX
+| ID | Task | Priority | Notes |
+|----|------|----------|-------|
+| 4.2.1 | Museum-style browsing experience | P0 | Gallery views, exhibitions |
+| 4.2.2 | Advanced filtering (date range, media type) | P0 | Powerful search for researchers |
+| 4.2.3 | Citation/reference generator | P1 | For academic use |
+| 4.2.4 | Download permissions system | P1 | Control access to high-res |
+| 4.2.5 | Lightbox gallery for collections | P0 | Immersive viewing |
+| 4.2.6 | Audio tour mode | P2 | Guided narrative through collections |
+
+#### Sprint 4.3: Partnerships & Contributions
+| ID | Task | Priority | Notes |
+|----|------|----------|-------|
+| 4.3.1 | Contribution intake form | P0 | For CTA respondents |
+| 4.3.2 | Digitisation workflow | P1 | Track items being processed |
+| 4.3.3 | Donor/contributor recognition | P1 | Credit and thank contributors |
+| 4.3.4 | Partnership dashboard | P1 | Manage institutional relationships |
+| 4.3.5 | Loan/rights management | P2 | Track ownership and permissions |
+
+### 4.4 Cost Considerations
+
+| Service | Estimated Monthly Cost | Notes |
+|---------|----------------------|-------|
+| Cloudflare R2 | £10-50 | Object storage (first 10GB free) |
+| Bunny.net CDN | £5-20 | Video streaming |
+| Supabase Pro | £25 | Database/auth |
+| Vercel Pro | £20 | Hosting |
+| **Total** | **£60-115/month** | Scale-dependent |
+
+### 4.5 Funding Opportunities
+
+- **Heritage Lottery Fund** - Digital preservation grants
+- **Arts Council England** - Culture recovery fund
+- **Cornwall Council** - Community heritage initiatives
+- **Crowdfunding** - Community-supported archive
+- **Sponsorship** - Local businesses and heritage organisations
+
+### 4.6 Dependencies
+
+Before starting Phase 4:
+- [ ] Phase 1-3 complete and stable
+- [ ] Community of active contributors established
+- [ ] At least one partnership in discussion
+- [ ] Funding or budget secured for infrastructure
+- [ ] Legal framework for contributions (rights, licensing)
+
+---
+
+## Near-Term Enhancements (Ready to Implement)
+
+Quick wins that enhance the current platform without major infrastructure changes:
+
+### Ambient Sounds for Stories ✨
+Let writers add atmospheric background sounds to their stories:
+- **Soundscapes**: Waves, rain, harbour, pub, church bells, wind, seagulls
+- **Player**: Subtle control at top of story for readers
+- **Selection**: Simple dropdown in story editor
+- **Storage**: Use royalty-free sounds hosted on CDN
+
+### Enhanced Audio Stories
+- Allow longer audio recordings (oral history style)
+- Waveform visualization
+- Transcript display alongside audio
+
+### Story Themes/Moods
+- Visual themes for stories (seaside, mining, pastoral)
+- Customizable reading backgrounds
+- Font choices for different eras
+
+---
+
 ## Appendix: Sprint Ceremonies
 
 ### Weekly Rhythm

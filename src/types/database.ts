@@ -54,6 +54,7 @@ export interface Story {
   ai_tags: string[] | null;
   soft_deleted: boolean;
   featured?: boolean;
+  ambient_sound?: string | null;
 }
 
 export interface Media {

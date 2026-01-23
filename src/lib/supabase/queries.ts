@@ -15,6 +15,7 @@ export type StoryWithCounts = Tables<"stories"> & {
   likes_count: number;
   comments_count: number;
   first_image_url?: string | null;
+  ambient_sound?: string | null;
 };
 
 /**
