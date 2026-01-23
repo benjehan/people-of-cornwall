@@ -752,17 +752,56 @@ Quick wins that enhance the current platform without major infrastructure change
 
 Features to implement once the platform has more traction and community:
 
-### Lost Cornwall 📍
+### Lost Cornwall 📍 ✅ IMPLEMENTED
 - Tag locations with historical photos
 - "Before and after" comparisons
 - Community-sourced visual history
-- Map overlay of vanished places
+- Memory sharing on historic photos
+- Map overlay of vanished places (future)
 
-### "Where Is This?" Challenge 🔍
+### "Where Is This?" Challenge 🔍 ✅ IMPLEMENTED
 - Photo-based guessing game
 - Community votes on answers
 - Weekly featured mystery photo
-- Leaderboard for correct guesses
+- Difficulty levels (easy/medium/hard)
+- Leaderboard for correct guesses (future)
+
+### Map Improvements 🗺️
+- **Bigger, full-screen map option**
+- **Nicer basemap** (explore options):
+  - Stamen Watercolor (artistic)
+  - Carto Voyager (clean, modern)
+  - Thunderforest Outdoors (trails/walking)
+  - Ordnance Survey (heritage, requires API key)
+- **Multiple layers**:
+  - Stories layer
+  - Poll winners layer
+  - Events layer
+  - Lost Cornwall photos layer
+  - Heritage trails layer
+  - Businesses/POIs layer (future)
+- **Clustering improvements** for dense areas
+- **Heat map view** for story concentration
+- **Save map state** (zoom, center) for sharing
+
+### Heritage Trails & Walks 🚶
+- Curated story routes on map
+- **Walking/hiking trail data**:
+  - GPX track upload
+  - Distance and elevation
+  - Difficulty rating
+  - Estimated time
+- **Trail media**:
+  - Photos along the route
+  - Videos of scenic spots
+  - Audio guides at waypoints
+- **Community contributions**:
+  - User-submitted trails
+  - Admin approval workflow
+  - Trail ratings and reviews
+- Walking tour integration
+- QR codes at physical locations
+- Tourism board partnerships
 
 ### Cornish Dialect Glossary 📖
 - Community-contributed phrases and words
@@ -781,12 +820,6 @@ Features to implement once the platform has more traction and community:
 - Twitter-like feed format
 - Quick memories and moments
 - Easier barrier to entry
-
-### Heritage Trails 🚶
-- Curated story routes on map
-- Walking tour integration
-- QR codes at physical locations
-- Tourism board partnerships
 
 ---
 

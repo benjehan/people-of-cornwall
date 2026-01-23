@@ -15,6 +15,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -44,6 +51,9 @@ import {
   User,
   Share2,
   Clock,
+  Filter,
+  Medal,
+  Crown,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -119,9 +129,16 @@ interface Nomination {
   user_has_voted: boolean;
 }
 
+// Winner type for ended polls
+interface PollWinner {
+  poll: Poll;
+  top3: Nomination[];
+}
+
 export default function CommunityPage() {
   const { user } = useAuth();
   const [polls, setPolls] = useState<Poll[]>([]);
+  const [winners, setWinners] = useState<PollWinner[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [votingId, setVotingId] = useState<string | null>(null);
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -134,9 +151,14 @@ export default function CommunityPage() {
   const [nominationLocation, setNominationLocation] = useState("");
   const [isNominating, setIsNominating] = useState(false);
   const [nominationSuccess, setNominationSuccess] = useState(false);
+  
+  // Filters
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [locationFilter, setLocationFilter] = useState("");
 
   useEffect(() => {
     loadPolls();
+    loadWinners();
     checkSubscription();
   }, [user]);
 
@@ -293,6 +315,72 @@ export default function CommunityPage() {
     setIsLoading(false);
   };
 
+  // Load ended polls with winners
+  const loadWinners = async () => {
+    const supabase = createClient();
+    const now = new Date().toISOString();
+
+    // Get ended polls (voting_end_at in the past)
+    const { data: endedPolls, error } = await (supabase
+      .from("polls") as any)
+      .select("*")
+      .lt("voting_end_at", now)
+      .order("voting_end_at", { ascending: false })
+      .limit(10);
+
+    if (error || !endedPolls) {
+      console.error("Error loading winners:", error);
+      return;
+    }
+
+    // Get top 3 nominations for each ended poll
+    const winnersData = await Promise.all(
+      endedPolls.map(async (poll: Poll) => {
+        const { data: nominations } = await (supabase
+          .from("poll_nominations") as any)
+          .select("*")
+          .eq("poll_id", poll.id)
+          .eq("is_approved", true);
+
+        // Get vote counts
+        const nominationsWithVotes = await Promise.all(
+          (nominations || []).map(async (nom: Nomination) => {
+            const { count } = await (supabase
+              .from("poll_votes") as any)
+              .select("*", { count: "exact", head: true })
+              .eq("nomination_id", nom.id);
+
+            return {
+              ...nom,
+              vote_count: count || 0,
+              user_has_voted: false,
+            };
+          })
+        );
+
+        // Sort by votes and get top 3
+        const top3 = nominationsWithVotes
+          .sort((a: Nomination, b: Nomination) => b.vote_count - a.vote_count)
+          .slice(0, 3);
+
+        return {
+          poll: { ...poll, nominations: [] },
+          top3,
+        };
+      })
+    );
+
+    setWinners(winnersData.filter(w => w.top3.length > 0));
+  };
+
+  // Filter polls
+  const filteredPolls = polls.filter(poll => {
+    if (categoryFilter !== "all" && poll.category !== categoryFilter) return false;
+    if (locationFilter && poll.location_name && 
+        !poll.location_name.toLowerCase().includes(locationFilter.toLowerCase())) return false;
+    return true;
+  });
+
   const handleVote = async (pollId: string, nominationId: string) => {
     if (!user) return;
     
@@ -374,17 +462,61 @@ export default function CommunityPage() {
 
           {/* Active Polls */}
           <TabsContent value="active" className="space-y-6">
+            {/* Filters */}
+            <div className="flex flex-wrap gap-4 p-4 bg-cream rounded-lg border border-bone">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-stone" />
+                <span className="text-sm font-medium text-granite">Filter:</span>
+              </div>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-[180px] border-bone bg-parchment">
+                  <SelectValue placeholder="All Categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {Object.entries(POLL_CATEGORIES).map(([key, { emoji, label }]) => (
+                    <SelectItem key={key} value={key}>
+                      {emoji} {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="relative flex-1 min-w-[200px]">
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone" />
+                <Input
+                  placeholder="Filter by location..."
+                  value={locationFilter}
+                  onChange={(e) => setLocationFilter(e.target.value)}
+                  className="pl-9 border-bone bg-parchment"
+                />
+              </div>
+              {(categoryFilter !== "all" || locationFilter) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => { setCategoryFilter("all"); setLocationFilter(""); }}
+                  className="text-stone hover:text-granite"
+                >
+                  Clear filters
+                </Button>
+              )}
+            </div>
+
             {isLoading ? (
               <div className="flex justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-granite" />
               </div>
-            ) : polls.length === 0 ? (
+            ) : filteredPolls.length === 0 ? (
               <Card className="border-bone bg-cream text-center py-12">
                 <CardContent>
                   <Vote className="h-12 w-12 text-stone mx-auto mb-4" />
-                  <h3 className="font-serif text-xl text-granite mb-2">No Active Polls</h3>
+                  <h3 className="font-serif text-xl text-granite mb-2">
+                    {polls.length === 0 ? "No Active Polls" : "No Polls Match Your Filters"}
+                  </h3>
                   <p className="text-stone mb-4">
-                    Check back soon for new voting opportunities!
+                    {polls.length === 0 
+                      ? "Check back soon for new voting opportunities!" 
+                      : "Try adjusting your filters to see more polls."}
                   </p>
                   <p className="text-sm text-silver">
                     Want to suggest a poll topic? Email us at hello@peopleofcornwall.com
@@ -392,7 +524,7 @@ export default function CommunityPage() {
                 </CardContent>
               </Card>
             ) : (
-              polls.map((poll) => {
+              filteredPolls.map((poll) => {
                 const category = POLL_CATEGORIES[poll.category];
                 const CategoryIcon = category.icon;
                 const phase = getPollPhase(poll);
@@ -570,17 +702,128 @@ export default function CommunityPage() {
             )}
           </TabsContent>
 
-          {/* Winners */}
-          <TabsContent value="winners">
-            <Card className="border-bone bg-cream text-center py-12">
-              <CardContent>
-                <Trophy className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
-                <h3 className="font-serif text-xl text-granite mb-2">Hall of Fame</h3>
-                <p className="text-stone">
-                  Past poll winners will be displayed here once polls close.
-                </p>
-              </CardContent>
-            </Card>
+          {/* Winners - Hall of Fame */}
+          <TabsContent value="winners" className="space-y-6">
+            {winners.length === 0 ? (
+              <Card className="border-bone bg-cream text-center py-12">
+                <CardContent>
+                  <Trophy className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+                  <h3 className="font-serif text-xl text-granite mb-2">Hall of Fame</h3>
+                  <p className="text-stone">
+                    Past poll winners will be displayed here once polls close.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                <div className="text-center mb-8">
+                  <h2 className="font-serif text-2xl text-granite flex items-center justify-center gap-2">
+                    <Trophy className="h-6 w-6 text-yellow-500" />
+                    Hall of Fame
+                  </h2>
+                  <p className="text-stone">The people's choices across Cornwall</p>
+                </div>
+
+                {winners.map((winner) => {
+                  const category = POLL_CATEGORIES[winner.poll.category] || POLL_CATEGORIES.other;
+                  const CategoryIcon = category.icon;
+                  const [first, second, third] = winner.top3;
+
+                  return (
+                    <Card key={winner.poll.id} className="border-bone bg-cream overflow-hidden">
+                      <CardHeader className="bg-gradient-to-r from-yellow-500/20 via-parchment to-amber-500/20 border-b border-bone">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-yellow-500/20">
+                            <CategoryIcon className="h-5 w-5 text-yellow-700" />
+                          </div>
+                          <div className="flex-1">
+                            <CardTitle className="text-lg text-granite">{winner.poll.title}</CardTitle>
+                            {winner.poll.location_name && (
+                              <div className="flex items-center gap-1 text-sm text-stone">
+                                <MapPin className="h-3 w-3" />
+                                {winner.poll.location_name}
+                              </div>
+                            )}
+                          </div>
+                          <Badge className="bg-yellow-500/20 text-yellow-800 border-0">
+                            {category.emoji} {category.label}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="p-6">
+                        <div className="grid md:grid-cols-3 gap-4">
+                          {/* 🥇 First Place */}
+                          {first && (
+                            <div className="relative bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-6 text-center border-2 border-yellow-400 shadow-lg">
+                              <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                                <div className="bg-yellow-500 text-white rounded-full p-2 shadow-md">
+                                  <Crown className="h-5 w-5" />
+                                </div>
+                              </div>
+                              <div className="text-4xl mt-2 mb-3">🥇</div>
+                              <h4 className="font-serif font-bold text-xl text-granite mb-2">{first.title}</h4>
+                              {first.location_name && (
+                                <p className="text-sm text-stone flex items-center justify-center gap-1 mb-2">
+                                  <MapPin className="h-3 w-3" />
+                                  {first.location_name}
+                                </p>
+                              )}
+                              <p className="text-yellow-700 font-bold text-lg">
+                                {first.vote_count} {first.vote_count === 1 ? "vote" : "votes"}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* 🥈 Second Place */}
+                          {second && (
+                            <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-5 text-center border border-gray-300">
+                              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                                <div className="bg-gray-400 text-white rounded-full p-1.5 shadow">
+                                  <Medal className="h-4 w-4" />
+                                </div>
+                              </div>
+                              <div className="text-3xl mt-1 mb-2">🥈</div>
+                              <h4 className="font-serif font-bold text-lg text-granite mb-1">{second.title}</h4>
+                              {second.location_name && (
+                                <p className="text-xs text-stone flex items-center justify-center gap-1 mb-1">
+                                  <MapPin className="h-3 w-3" />
+                                  {second.location_name}
+                                </p>
+                              )}
+                              <p className="text-gray-600 font-medium">
+                                {second.vote_count} {second.vote_count === 1 ? "vote" : "votes"}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* 🥉 Third Place */}
+                          {third && (
+                            <div className="relative bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl p-5 text-center border border-amber-300">
+                              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                                <div className="bg-amber-600 text-white rounded-full p-1.5 shadow">
+                                  <Medal className="h-4 w-4" />
+                                </div>
+                              </div>
+                              <div className="text-3xl mt-1 mb-2">🥉</div>
+                              <h4 className="font-serif font-bold text-lg text-granite mb-1">{third.title}</h4>
+                              {third.location_name && (
+                                <p className="text-xs text-stone flex items-center justify-center gap-1 mb-1">
+                                  <MapPin className="h-3 w-3" />
+                                  {third.location_name}
+                                </p>
+                              )}
+                              <p className="text-amber-700 font-medium">
+                                {third.vote_count} {third.vote_count === 1 ? "vote" : "votes"}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </>
+            )}
           </TabsContent>
 
           {/* Badges */}
