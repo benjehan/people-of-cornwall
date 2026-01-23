@@ -18,18 +18,17 @@ interface RotatingPromptsProps {
 export function RotatingPrompts({ prompts }: RotatingPromptsProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
 
   // Auto-rotate every 8 seconds
   useEffect(() => {
-    if (prompts.length <= 1 || isPaused) return;
+    if (prompts.length <= 1) return;
 
     const timer = setInterval(() => {
       goToNext();
     }, 8000);
 
     return () => clearInterval(timer);
-  }, [prompts.length, isPaused, currentIndex]);
+  }, [prompts.length, currentIndex]);
 
   const goToNext = () => {
     setIsAnimating(true);
@@ -63,8 +62,6 @@ export function RotatingPrompts({ prompts }: RotatingPromptsProps) {
   return (
     <section 
       className="relative overflow-hidden border-t border-bone bg-gradient-to-b from-cream to-parchment py-16 md:py-24"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
     >
       {/* Decorative background elements */}
       <div className="absolute inset-0 opacity-[0.03]">
@@ -137,13 +134,6 @@ export function RotatingPrompts({ prompts }: RotatingPromptsProps) {
                 <span className="text-stone">{prompts.length}</span>
                 <span className="text-stone ml-1">prompts</span>
               </div>
-            )}
-
-            {/* Pause indicator */}
-            {isPaused && prompts.length > 1 && (
-              <p className="mt-2 text-xs text-silver">
-                Paused — move mouse away to resume
-              </p>
             )}
           </div>
 
