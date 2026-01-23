@@ -144,7 +144,8 @@ export default function EventsPage() {
   // Filters
   const [locationFilter, setLocationFilter] = useState("All Cornwall");
   const [dateFilter, setDateFilter] = useState<DateFilter>("anytime");
-  const [customDate, setCustomDate] = useState<Date | undefined>(undefined);
+  const [customDateFrom, setCustomDateFrom] = useState<Date | undefined>(undefined);
+  const [customDateTo, setCustomDateTo] = useState<Date | undefined>(undefined);
   const [showFreeOnly, setShowFreeOnly] = useState(false);
   const [showAccessible, setShowAccessible] = useState(false);
   const [showDogFriendly, setShowDogFriendly] = useState(false);
@@ -170,14 +171,15 @@ export default function EventsPage() {
       case "this_month":
         return { start: now, end: endOfMonth(now) };
       case "custom":
-        if (customDate) {
-          return { start: customDate, end: addDays(customDate, 1) };
+        if (customDateFrom) {
+          const endDate = customDateTo ? addDays(customDateTo, 1) : null;
+          return { start: customDateFrom, end: endDate };
         }
         return { start: now, end: null };
       default:
         return { start: now, end: null };
     }
-  }, [dateFilter, customDate]);
+  }, [dateFilter, customDateFrom, customDateTo]);
 
   const loadEvents = useCallback(async () => {
     setIsLoading(true);
@@ -284,7 +286,8 @@ export default function EventsPage() {
   const clearFilters = () => {
     setLocationFilter("All Cornwall");
     setDateFilter("anytime");
-    setCustomDate(undefined);
+    setCustomDateFrom(undefined);
+    setCustomDateTo(undefined);
     setShowFreeOnly(false);
     setShowAccessible(false);
     setShowDogFriendly(false);
@@ -440,7 +443,11 @@ export default function EventsPage() {
                     key={option.value}
                     variant={dateFilter === option.value ? "default" : "outline"}
                     size="sm"
-                    onClick={() => { setDateFilter(option.value); setCustomDate(undefined); }}
+                    onClick={() => { 
+                      setDateFilter(option.value); 
+                      setCustomDateFrom(undefined); 
+                      setCustomDateTo(undefined); 
+                    }}
                     className={dateFilter === option.value 
                       ? "bg-granite text-parchment" 
                       : "border-bone text-stone hover:bg-bone"
@@ -450,23 +457,67 @@ export default function EventsPage() {
                   </Button>
                 ))}
                 
-                {/* Custom date picker */}
-                <div className="relative">
-                  <Input
-                    type="date"
-                    value={customDate ? customDate.toISOString().split("T")[0] : ""}
-                    onChange={(e) => {
-                      if (e.target.value) {
-                        setCustomDate(new Date(e.target.value));
-                        setDateFilter("custom");
-                      }
-                    }}
-                    className={`w-[140px] h-9 text-sm ${
-                      dateFilter === "custom" 
-                        ? "border-granite bg-granite/5" 
-                        : "border-bone"
+                {/* Custom date range picker */}
+                <div className="flex items-center gap-2">
+                  <div 
+                    className={`relative cursor-pointer ${
+                      dateFilter === "custom" ? "ring-2 ring-granite ring-offset-1" : ""
                     }`}
-                  />
+                    onClick={(e) => {
+                      const input = e.currentTarget.querySelector('input');
+                      if (input) input.showPicker?.();
+                    }}
+                  >
+                    <Input
+                      type="date"
+                      value={customDateFrom ? customDateFrom.toISOString().split("T")[0] : ""}
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          setCustomDateFrom(new Date(e.target.value));
+                          setDateFilter("custom");
+                        } else {
+                          setCustomDateFrom(undefined);
+                          if (!customDateTo) setDateFilter("anytime");
+                        }
+                      }}
+                      placeholder="From"
+                      className={`w-[130px] h-9 text-sm cursor-pointer ${
+                        dateFilter === "custom" 
+                          ? "border-granite bg-granite/5" 
+                          : "border-bone"
+                      }`}
+                    />
+                  </div>
+                  <span className="text-stone text-sm">to</span>
+                  <div 
+                    className={`relative cursor-pointer ${
+                      dateFilter === "custom" && customDateTo ? "ring-2 ring-granite ring-offset-1" : ""
+                    }`}
+                    onClick={(e) => {
+                      const input = e.currentTarget.querySelector('input');
+                      if (input) input.showPicker?.();
+                    }}
+                  >
+                    <Input
+                      type="date"
+                      value={customDateTo ? customDateTo.toISOString().split("T")[0] : ""}
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          setCustomDateTo(new Date(e.target.value));
+                          setDateFilter("custom");
+                        } else {
+                          setCustomDateTo(undefined);
+                        }
+                      }}
+                      min={customDateFrom ? customDateFrom.toISOString().split("T")[0] : undefined}
+                      placeholder="Until"
+                      className={`w-[130px] h-9 text-sm cursor-pointer ${
+                        dateFilter === "custom" && customDateTo
+                          ? "border-granite bg-granite/5" 
+                          : "border-bone"
+                      }`}
+                    />
+                  </div>
                 </div>
               </div>
 

@@ -43,6 +43,8 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/use-user";
 import Image from "next/image";
+import { LocationAutocomplete } from "@/components/ui/location-autocomplete";
+import { ImageCropDialog } from "@/components/story/image-crop-dialog";
 
 const CORNISH_TOWNS = [
   "Bodmin", "Bude", "Camborne", "Falmouth", "Hayle", "Helston", "Launceston",
@@ -64,12 +66,17 @@ export default function CreateEventPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [locationName, setLocationName] = useState("");
+  const [locationLat, setLocationLat] = useState<number | null>(null);
+  const [locationLng, setLocationLng] = useState<number | null>(null);
   const [locationAddress, setLocationAddress] = useState("");
   const [imageMode, setImageMode] = useState<"url" | "upload">("url");
   const [imageUrl, setImageUrl] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [hasImageRights, setHasImageRights] = useState(false);
+  const [showCropDialog, setShowCropDialog] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   const [startDate, setStartDate] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -102,9 +109,19 @@ export default function CreateEventPage() {
       return;
     }
 
-    setImageFile(file);
-    setImagePreview(URL.createObjectURL(file));
+    // Open crop dialog
+    const objectUrl = URL.createObjectURL(file);
+    setImageToCrop(objectUrl);
+    setShowCropDialog(true);
     setError(null);
+  };
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    const croppedFile = new File([croppedBlob], "event-image.jpg", { type: "image/jpeg" });
+    setImageFile(croppedFile);
+    setImagePreview(URL.createObjectURL(croppedBlob));
+    setShowCropDialog(false);
+    setImageToCrop(null);
   };
 
   const clearImage = () => {
@@ -183,6 +200,8 @@ export default function CreateEventPage() {
           title: title.trim(),
           description: description.trim() || null,
           location_name: locationName,
+          location_lat: locationLat,
+          location_lng: locationLng,
           location_address: locationAddress.trim() || null,
           image_url: finalImageUrl,
           starts_at: startsAt,
@@ -463,19 +482,20 @@ export default function CreateEventPage() {
                   </h3>
 
                   <div>
-                    <Label htmlFor="location">Town/Village *</Label>
-                    <Select value={locationName} onValueChange={setLocationName} required>
-                      <SelectTrigger className="border-bone">
-                        <SelectValue placeholder="Select a location" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {CORNISH_TOWNS.map((town) => (
-                          <SelectItem key={town} value={town}>
-                            {town}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="location">Location *</Label>
+                    <LocationAutocomplete
+                      value={locationName}
+                      onChange={(location) => {
+                        setLocationName(location.name);
+                        setLocationLat(location.lat);
+                        setLocationLng(location.lng);
+                      }}
+                      placeholder="Search for a location in Cornwall..."
+                      className="mt-1"
+                    />
+                    <p className="text-xs text-stone mt-1">
+                      Start typing to search for places in Cornwall
+                    </p>
                   </div>
 
                   <div>
@@ -662,10 +682,32 @@ export default function CreateEventPage() {
                   </div>
                 </div>
 
+                {/* Image Rights Agreement */}
+                {(imageFile || imageUrl) && (
+                  <div className="p-4 rounded-lg border border-amber-200 bg-amber-50">
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <Checkbox
+                        checked={hasImageRights}
+                        onCheckedChange={(c) => setHasImageRights(c === true)}
+                        className="mt-0.5"
+                      />
+                      <div>
+                        <p className="text-sm font-medium text-amber-900">
+                          Image Rights Confirmation *
+                        </p>
+                        <p className="text-xs text-amber-800 mt-1">
+                          I confirm that I own the rights to this image or have permission to use it, 
+                          and I grant People of Cornwall permission to display it on the website.
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                )}
+
                 {/* Submit */}
                 <Button
                   type="submit"
-                  disabled={isSubmitting || isUploadingImage}
+                  disabled={isSubmitting || isUploadingImage || !!(imageFile || imageUrl) && !hasImageRights}
                   className="w-full bg-granite text-parchment hover:bg-slate gap-2"
                 >
                   {isSubmitting || isUploadingImage ? (
@@ -689,6 +731,23 @@ export default function CreateEventPage() {
           </Card>
         </div>
       </main>
+
+      {/* Image Crop Dialog */}
+      <ImageCropDialog
+        open={showCropDialog && !!imageToCrop}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowCropDialog(false);
+            setImageToCrop(null);
+            if (fileInputRef.current) {
+              fileInputRef.current.value = "";
+            }
+          }
+        }}
+        imageSrc={imageToCrop || ""}
+        onCropComplete={handleCropComplete}
+        aspectRatio={16 / 9}
+      />
 
       <Footer />
     </div>
