@@ -56,13 +56,14 @@ async function generateWithOpenAI(title: string, body: string): Promise<AIRespon
       "Authorization": `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: "gpt-3.5-turbo",
+      model: "gpt-4o-mini",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: `Title: ${title}\n\nStory:\n${truncatedText}` },
       ],
       temperature: 0.7,
-      max_tokens: 300,
+      max_tokens: 500,
+      response_format: { type: "json_object" },
     }),
   });
 

@@ -1,20 +1,6 @@
 -- Seed Stories: 20 TRUE Cornish Stories from Public Sources
 -- All stories are based on historical fact from public domain/Creative Commons sources
--- Created for initial content population - can be removed once community content grows
-
--- First, create the "Kernow" contributor user
-INSERT INTO users (id, email, display_name, avatar_url, role, bio, created_at)
-VALUES (
-  '00000000-0000-0000-0000-000000000001',
-  'kernow@peopleofcornwall.com',
-  'Kernow Heritage',
-  NULL,
-  'user',
-  'Sharing the stories of Cornwall''s rich heritage. These tales come from public historical records, archives, and community memory. Sources provided for each story.',
-  NOW()
-) ON CONFLICT (id) DO UPDATE SET
-  display_name = EXCLUDED.display_name,
-  bio = EXCLUDED.bio;
+-- Published from admin account with "Kernow Heritage" as display name
 
 -- Story 1: The Great Blizzard of 1891
 INSERT INTO stories (
@@ -22,7 +8,7 @@ INSERT INTO stories (
   timeline_year, author_display_name, anonymous, created_at, updated_at
 ) VALUES (
   uuid_generate_v4(),
-  '00000000-0000-0000-0000-000000000001',
+  '674c2980-e1ee-4b5f-8084-752fd2267584',
   'The Great Blizzard of 1891',
   '<p>In March 1891, Cornwall experienced one of the most devastating blizzards in its recorded history. For four days, from the 9th to the 13th of March, snow fell relentlessly across the county, driven by fierce easterly winds that created drifts up to 15 feet deep.</p>
   <p>The railways were brought to a complete standstill. Near Truro, a train became buried so deeply in snow that passengers had to be rescued by local farmers who dug through the drifts with shovels. Many spent days trapped in isolated farmhouses and cottages.</p>
@@ -47,7 +33,7 @@ INSERT INTO stories (
   timeline_year, author_display_name, anonymous, created_at, updated_at
 ) VALUES (
   uuid_generate_v4(),
-  '00000000-0000-0000-0000-000000000001',
+  '674c2980-e1ee-4b5f-8084-752fd2267584',
   'Dolcoath Mine: The Queen of Cornish Mines',
   '<p>For over 400 years, Dolcoath Mine near Camborne was the deepest, richest, and most famous tin and copper mine in Cornwall — and arguably the world. The Cornish called her "The Queen of Cornish Mines," and she earned that title many times over.</p>
   <p>By 1910, Dolcoath had reached a depth of 3,300 feet — nearly two-thirds of a mile straight down into the earth. Miners would descend in cage lifts that took over ten minutes to reach the deepest levels. The temperature at the bottom could exceed 100°F, and men worked in nothing but boots and hard hats.</p>
@@ -72,7 +58,7 @@ INSERT INTO stories (
   timeline_year, author_display_name, anonymous, created_at, updated_at
 ) VALUES (
   uuid_generate_v4(),
-  '00000000-0000-0000-0000-000000000001',
+  '674c2980-e1ee-4b5f-8084-752fd2267584',
   'The Mousehole Christmas Lights: A Village''s Gift to the World',
   '<p>Every December, the tiny fishing village of Mousehole transforms into something magical. Thousands of lights illuminate the harbour, telling stories in light — fishing boats, mermaids, the Mousehole Cat, and scenes from Cornish life dance across the ancient granite walls.</p>
   <p>It all began in 1963, when a local artist named Joan Gillchrest had a simple idea: what if the village created a Christmas display that told the story of Cornwall? She convinced the fishermen and shopkeepers to help, and that first year, a modest display of lights appeared around the harbour.</p>
@@ -97,7 +83,7 @@ INSERT INTO stories (
   timeline_year, author_display_name, anonymous, created_at, updated_at
 ) VALUES (
   uuid_generate_v4(),
-  '00000000-0000-0000-0000-000000000001',
+  '674c2980-e1ee-4b5f-8084-752fd2267584',
   'The Penlee Lifeboat Disaster: Eight Men Who Never Came Home',
   '<p>On the night of December 19th, 1981, the worst storm in living memory battered the Cornish coast. Hurricane-force winds drove mountainous seas against the cliffs, and into this maelstrom sailed the coaster MV Union Star, her engines failed, her crew helpless.</p>
   <p>The Penlee lifeboat Solomon Browne launched from Mousehole at 8:12 PM. Her coxswain was Trevelyan Richards, a fisherman who knew these waters like his own hands. With him were seven other men from the village — all volunteers, all fathers and husbands and sons.</p>
@@ -123,7 +109,7 @@ INSERT INTO stories (
   timeline_year, author_display_name, anonymous, created_at, updated_at
 ) VALUES (
   uuid_generate_v4(),
-  '00000000-0000-0000-0000-000000000001',
+  '674c2980-e1ee-4b5f-8084-752fd2267584',
   'Richard Trevithick: The Cornishman Who Invented the Steam Age',
   '<p>On Christmas Eve, 1801, a crowd gathered on the road above Camborne to witness something that had never been seen before in all of human history: a machine that moved by its own power, without horse or wind or water.</p>
   <p>Richard Trevithick, the giant of a man from Illogan who stood six foot two and could lift a half-ton mine pump single-handed, had built the world''s first self-propelled passenger-carrying vehicle. He called it the "Puffing Devil."</p>
@@ -149,7 +135,7 @@ INSERT INTO stories (
   timeline_year, author_display_name, anonymous, created_at, updated_at
 ) VALUES (
   uuid_generate_v4(),
-  '00000000-0000-0000-0000-000000000001',
+  '674c2980-e1ee-4b5f-8084-752fd2267584',
   'Tom Bawcock''s Eve: The Fisherman Who Saved a Village',
   '<p>Every December 23rd, the village of Mousehole celebrates Tom Bawcock''s Eve with a peculiar dish called Stargazy Pie — a fish pie with whole pilchards poking their heads through the crust, gazing up at the stars.</p>
   <p>The tradition commemorates a legendary fisherman named Tom Bawcock who, according to village lore, saved Mousehole from starvation during a particularly harsh winter many centuries ago.</p>
@@ -176,7 +162,7 @@ INSERT INTO stories (
   timeline_year, author_display_name, anonymous, created_at, updated_at
 ) VALUES (
   uuid_generate_v4(),
-  '00000000-0000-0000-0000-000000000001',
+  '674c2980-e1ee-4b5f-8084-752fd2267584',
   'The Lost Gardens of Heligan: Sleeping Beauty Awakened',
   '<p>In 1990, Tim Smit was exploring the overgrown grounds of a derelict Cornish estate when he found something extraordinary: a door hidden beneath brambles, and beyond it, a secret garden that had been sleeping for seventy years.</p>
   <p>The Heligan estate had been one of the finest gardens in England, cultivated by the Tremayne family for over 400 years. But in 1914, war came, and the young gardeners who tended Heligan marched away to the trenches of France. Most never returned.</p>
@@ -202,7 +188,7 @@ INSERT INTO stories (
   timeline_year, author_display_name, anonymous, created_at, updated_at
 ) VALUES (
   uuid_generate_v4(),
-  '00000000-0000-0000-0000-000000000001',
+  '674c2980-e1ee-4b5f-8084-752fd2267584',
   'The Beast of Bodmin Moor: Cornwall''s Mysterious Big Cat',
   '<p>Since the 1970s, hundreds of people have reported seeing a large black cat roaming the wild expanses of Bodmin Moor. Farmers have found livestock killed with wounds consistent with a big cat attack. Walkers have described a panther-like creature watching them from the granite tors.</p>
   <p>In 1995, the matter became serious enough that the Ministry of Agriculture conducted an official investigation. They examined sheep carcasses, analysed photographic evidence, and interviewed witnesses across Cornwall.</p>
@@ -228,7 +214,7 @@ INSERT INTO stories (
   timeline_year, author_display_name, anonymous, created_at, updated_at
 ) VALUES (
   uuid_generate_v4(),
-  '00000000-0000-0000-0000-000000000001',
+  '674c2980-e1ee-4b5f-8084-752fd2267584',
   'An Gof and the Cornish Rebellion of 1497',
   '<p>In the summer of 1497, 15,000 Cornishmen marched on London. They were led by a blacksmith from St Keverne named Michael An Gof (which means "The Smith" in Cornish) and a lawyer from Bodmin named Thomas Flamank.</p>
   <p>Their grievance was simple: King Henry VII had imposed a tax to fund a war against Scotland — a conflict that had nothing to do with Cornwall. The Cornish refused to pay for a distant war that was not their concern.</p>
@@ -254,7 +240,7 @@ INSERT INTO stories (
   timeline_year, author_display_name, anonymous, created_at, updated_at
 ) VALUES (
   uuid_generate_v4(),
-  '00000000-0000-0000-0000-000000000001',
+  '674c2980-e1ee-4b5f-8084-752fd2267584',
   'The Wreckers: Truth Behind Cornwall''s Darkest Legend',
   '<p>The image of Cornish villagers luring ships onto the rocks with false lights is one of the most persistent legends of the county. But how much of it is true?</p>
   <p>The reality is more complex than the legend. While there is no proven case of Cornish people deliberately causing a shipwreck, there is abundant evidence that coastal communities enthusiastically salvaged the cargo of ships that ran aground naturally.</p>
@@ -281,7 +267,7 @@ INSERT INTO stories (
   timeline_year, author_display_name, anonymous, created_at, updated_at
 ) VALUES (
   uuid_generate_v4(),
-  '00000000-0000-0000-0000-000000000001',
+  '674c2980-e1ee-4b5f-8084-752fd2267584',
   'The Great Eclipse of 1999: When Cornwall Went Dark',
   '<p>On August 11th, 1999, Cornwall experienced the first total solar eclipse visible from mainland Britain since 1927. For two minutes and four seconds, day became night, and a million people crammed into the county to witness it.</p>
   <p>The A30 ground to a halt. Every campsite, B&B, and spare room in Cornwall was booked months in advance. People slept in their cars, in fields, on beaches. The population of Cornwall doubled overnight.</p>
@@ -308,7 +294,7 @@ INSERT INTO stories (
   timeline_year, author_display_name, anonymous, created_at, updated_at
 ) VALUES (
   uuid_generate_v4(),
-  '00000000-0000-0000-0000-000000000001',
+  '674c2980-e1ee-4b5f-8084-752fd2267584',
   'The Cornish Pasty: A Miner''s Portable Feast',
   '<p>The Cornish pasty is more than food — it''s a piece of engineering designed for the most dangerous workplace in the world: the tin mine.</p>
   <p>The crimped crust that runs along one side of a traditional pasty isn''t just decorative. It was a handle. Miners'' hands were covered in arsenic — a deadly byproduct of tin extraction. By holding the pasty by its thick crust and discarding it after eating, they could enjoy their meal without poisoning themselves.</p>
@@ -335,7 +321,7 @@ INSERT INTO stories (
   timeline_year, author_display_name, anonymous, created_at, updated_at
 ) VALUES (
   uuid_generate_v4(),
-  '00000000-0000-0000-0000-000000000001',
+  '674c2980-e1ee-4b5f-8084-752fd2267584',
   'Daphne du Maurier: The Writer Who Made Cornwall Famous',
   '<p>When Daphne du Maurier first saw the ruins of Menabilly House near Fowey in 1927, she was twenty years old and instantly bewitched. "I stood there like someone who had been turned to stone," she wrote. The abandoned mansion would become Manderley in her most famous novel, "Rebecca."</p>
   <p>Du Maurier was not Cornish by birth — she was a Londoner, daughter of the famous actor Gerald du Maurier. But from her first visit to Cornwall at age nineteen, she knew she had found her spiritual home.</p>
@@ -361,7 +347,7 @@ INSERT INTO stories (
   timeline_year, author_display_name, anonymous, created_at, updated_at
 ) VALUES (
   uuid_generate_v4(),
-  '00000000-0000-0000-0000-000000000001',
+  '674c2980-e1ee-4b5f-8084-752fd2267584',
   'The Hurling of St Columb: The Wildest Game in Britain',
   '<p>Every Shrove Tuesday and the following Saturday, the town of St Columb Major transforms into a battleground for one of the oldest and most violent sports in Britain: Cornish hurling.</p>
   <p>The game is simple: two teams — the Townsmen and the Countrymen — compete to carry a small silver ball to goals that are two miles apart. There are no rules about how you carry it. There are no rules about how you stop someone carrying it. There are barely any rules at all.</p>
@@ -387,7 +373,7 @@ INSERT INTO stories (
   timeline_year, author_display_name, anonymous, created_at, updated_at
 ) VALUES (
   uuid_generate_v4(),
-  '00000000-0000-0000-0000-000000000001',
+  '674c2980-e1ee-4b5f-8084-752fd2267584',
   'The Death and Resurrection of the Cornish Language',
   '<p>In 1777, Dolly Pentreath of Mousehole died. She is traditionally remembered as the last native speaker of Cornish — the ancient Celtic language that had been spoken in Cornwall for over a thousand years.</p>
   <p>The language didn''t die suddenly. It faded gradually as English became the language of commerce, education, and power. By the 18th century, Cornish was spoken only by a few elderly fishermen and farmers in the far west. When they died, the language died with them.</p>
@@ -415,7 +401,7 @@ INSERT INTO stories (
   timeline_year, author_display_name, anonymous, created_at, updated_at
 ) VALUES (
   uuid_generate_v4(),
-  '00000000-0000-0000-0000-000000000001',
+  '674c2980-e1ee-4b5f-8084-752fd2267584',
   'The Torrey Canyon: The Day the Sea Turned Black',
   '<p>On the morning of March 18th, 1967, the supertanker Torrey Canyon struck Pollard''s Rock on the Seven Stones reef between Land''s End and the Isles of Scilly. She was carrying 119,000 tons of crude oil — the largest cargo ever to be wrecked on the British coast.</p>
   <p>What followed was an environmental catastrophe and a governmental panic. Oil poured from the stricken ship''s ruptured tanks at a rate of 6,000 tons per day. A slick 35 miles long spread across the sea toward the Cornish coast.</p>
@@ -441,7 +427,7 @@ INSERT INTO stories (
   timeline_year, author_display_name, anonymous, created_at, updated_at
 ) VALUES (
   uuid_generate_v4(),
-  '00000000-0000-0000-0000-000000000001',
+  '674c2980-e1ee-4b5f-8084-752fd2267584',
   'The Obby Oss: Padstow''s Ancient May Day Ritual',
   '<p>Every year on May 1st, the fishing town of Padstow erupts into one of the oldest and strangest celebrations in Britain. The Obby Oss — the "Hobby Horse" — dances through the streets from midnight until the following midnight, and the whole town dances with it.</p>
   <p>There are two Osses: the Old Oss (also called the "Original" or "Red") and the Blue Ribbon Oss (the "Peace" Oss). Each is a great circular frame covered in black tarpaulin, with a snapping wooden head and a terrifying mask. Inside, a dancer whirls and lunges, making the Oss seem to have a life of its own.</p>
@@ -462,13 +448,13 @@ INSERT INTO stories (
   NOW()
 );
 
--- Story 18: Kelly Bray and Cornish Rugby
+-- Story 18: Cornish Rugby
 INSERT INTO stories (
   id, author_id, title, body, status, location_name, location_lat, location_lng, 
   timeline_year, author_display_name, anonymous, created_at, updated_at
 ) VALUES (
   uuid_generate_v4(),
-  '00000000-0000-0000-0000-000000000001',
+  '674c2980-e1ee-4b5f-8084-752fd2267584',
   'Cornish Rugby: Where the Whole County Is a Team',
   '<p>Cornwall has never had a professional rugby team. It doesn''t need one. When the county team plays, the whole of Cornwall turns out.</p>
   <p>The County Championship has been contested since 1889, and Cornwall has won it nine times — more than any other county except Lancashire. For a county with a population smaller than most English cities, this is remarkable.</p>
@@ -489,13 +475,13 @@ INSERT INTO stories (
   NOW()
 );
 
--- Story 19: The St Piran Story
+-- Story 19: St Piran
 INSERT INTO stories (
   id, author_id, title, body, status, location_name, location_lat, location_lng, 
   timeline_year, author_display_name, anonymous, created_at, updated_at
 ) VALUES (
   uuid_generate_v4(),
-  '00000000-0000-0000-0000-000000000001',
+  '674c2980-e1ee-4b5f-8084-752fd2267584',
   'St Piran: Cornwall''s Patron Saint and His Magical Discovery',
   '<p>Cornwall''s patron saint arrived, legend says, floating across the Irish Sea on a millstone. St Piran had been thrown from a cliff by Irish pagans who objected to his Christian preaching. When he survived by clinging to the stone, they decided this was one miracle too many and cast him out to sea.</p>
   <p>The millstone didn''t sink. Instead, it carried Piran safely to the Cornish coast near Perranporth, where he stepped ashore on the beach that now bears his name: Perran Sands.</p>
@@ -516,13 +502,13 @@ INSERT INTO stories (
   NOW()
 );
 
--- Story 20: The Fishing Industry of Newlyn
+-- Story 20: Newlyn Fishing
 INSERT INTO stories (
   id, author_id, title, body, status, location_name, location_lat, location_lng, 
   timeline_year, author_display_name, anonymous, created_at, updated_at
 ) VALUES (
   uuid_generate_v4(),
-  '00000000-0000-0000-0000-000000000001',
+  '674c2980-e1ee-4b5f-8084-752fd2267584',
   'Newlyn: Where Cornwall Still Goes to Sea',
   '<p>Before dawn, when most of Cornwall is still sleeping, the fish auction at Newlyn is already in full swing. Buyers crowd around boxes of gleaming fish, the auctioneer''s chant fills the hall, and another day begins at England''s largest fishing port by value.</p>
   <p>Newlyn has been a fishing village since before records began. The harbour that shelters today''s modern trawlers once held fleets of pilchard seines that made Cornwall rich in the 18th century. The pilchards are mostly gone now, but the fishing continues.</p>
@@ -541,6 +527,3 @@ INSERT INTO stories (
   NOW(),
   NOW()
 );
-
--- Add a comment to note these are seed stories
-COMMENT ON TABLE stories IS 'Stories table - includes seed content from Kernow Heritage (user ID 00000000-0000-0000-0000-000000000001) based on public historical sources';
