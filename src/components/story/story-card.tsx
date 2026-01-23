@@ -248,9 +248,35 @@ export function StoryCard({ story, featured = false, showImage = true }: StoryCa
 
 /**
  * Extract first image URL from story body HTML
+ * Also checks for video embeds and returns their thumbnail
  */
 function extractImageFromBody(body: string | null): string | null {
   if (!body) return null;
+  
+  // First check for regular images
   const imgMatch = body.match(/<img[^>]+src="([^">]+)"/);
-  return imgMatch ? imgMatch[1] : null;
+  if (imgMatch) return imgMatch[1];
+  
+  // Check for YouTube video embeds and get thumbnail
+  const youtubeMatch = body.match(/data-video-id="([a-zA-Z0-9_-]+)"[^>]*data-platform="youtube"/);
+  const youtubeMatch2 = body.match(/data-platform="youtube"[^>]*data-video-id="([a-zA-Z0-9_-]+)"/);
+  const youtubeIdMatch = youtubeMatch?.[1] || youtubeMatch2?.[1];
+  
+  if (youtubeIdMatch) {
+    // Return YouTube thumbnail (maxresdefault for best quality, falls back gracefully)
+    return `https://img.youtube.com/vi/${youtubeIdMatch}/maxresdefault.jpg`;
+  }
+  
+  // Check for Vimeo video embeds
+  const vimeoMatch = body.match(/data-video-id="(\d+)"[^>]*data-platform="vimeo"/);
+  const vimeoMatch2 = body.match(/data-platform="vimeo"[^>]*data-video-id="(\d+)"/);
+  const vimeoIdMatch = vimeoMatch?.[1] || vimeoMatch2?.[1];
+  
+  if (vimeoIdMatch) {
+    // For Vimeo, we'd need an API call. Use a placeholder for now.
+    // The actual thumbnail would require Vimeo's oEmbed API
+    return null;
+  }
+  
+  return null;
 }

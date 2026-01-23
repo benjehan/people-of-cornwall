@@ -12,6 +12,7 @@ import { ImageUploadDialog } from "./image-upload-dialog";
 import { VideoEmbedDialog } from "./video-embed-dialog";
 import { SpeechToText } from "./speech-to-text";
 import { AIEnhanceDialog } from "./ai-enhance-dialog";
+import { VideoEmbed } from "./video-node-extension";
 
 interface StoryEditorProps {
   content: string;
@@ -48,6 +49,11 @@ export function StoryEditor({
       Image.configure({
         HTMLAttributes: {
           class: "rounded-lg max-w-full mx-auto my-4",
+        },
+      }),
+      VideoEmbed.configure({
+        HTMLAttributes: {
+          class: "video-embed",
         },
       }),
     ],
@@ -88,9 +94,26 @@ export function StoryEditor({
     }
   };
 
-  const handleVideoEmbed = (embedHtml: string) => {
+  const handleVideoEmbed = (embedHtml: string, videoUrl: string) => {
     if (!editor) return;
-    editor.chain().focus().insertContent(embedHtml).run();
+    
+    // Extract platform and video ID from the embed HTML
+    const platformMatch = embedHtml.match(/data-platform="([^"]+)"/);
+    const videoIdMatch = embedHtml.match(/data-video-id="([^"]+)"/);
+    
+    const platform = platformMatch?.[1] || "youtube";
+    const videoId = videoIdMatch?.[1] || "";
+    
+    if (videoId) {
+      // Use the custom video extension command
+      editor.chain().focus().setVideo({
+        src: platform === "youtube" 
+          ? `https://www.youtube.com/embed/${videoId}`
+          : `https://player.vimeo.com/video/${videoId}`,
+        platform,
+        videoId,
+      }).run();
+    }
   };
 
   const handleSpeechTranscript = useCallback((text: string) => {
