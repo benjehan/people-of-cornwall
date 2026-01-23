@@ -3,6 +3,7 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { StoryCard } from "@/components/story/story-card";
 import { RotatingPrompts } from "@/components/home/rotating-prompts";
+import { DigestSubscribe } from "@/components/home/digest-subscribe";
 import { Button } from "@/components/ui/button";
 import { MapPin, Clock, Folder, ArrowRight, Archive, Mail } from "lucide-react";
 import { getFeaturedStory, getPublishedStories, getStoryDecades, getCollections, getRotatingPrompts, getFeaturedCollections } from "@/lib/supabase/queries";
@@ -200,6 +201,9 @@ export default async function HomePage() {
             </div>
           </div>
         </section>
+
+        {/* Weekly Digest Subscribe */}
+        <DigestSubscribe />
 
         {/* Discovery Section — Three Ways to Explore */}
         <section className="border-t border-bone bg-cream py-16 md:py-20">
