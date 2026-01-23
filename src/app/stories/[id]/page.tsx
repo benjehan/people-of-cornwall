@@ -11,6 +11,7 @@ import { StoryReader } from "@/components/story/story-reader";
 import { MapPin, Calendar, ArrowLeft, Eye, AlertTriangle } from "lucide-react";
 import { getStoryById, getStoryComments, hasUserLikedStory, getRelatedStories } from "@/lib/supabase/queries";
 import { StoryCard } from "@/components/story/story-card";
+import { ViewTracker } from "@/components/story/view-tracker";
 import type { StoryWithDetails } from "@/types";
 import { createClient } from "@/lib/supabase/server";
 import type { Metadata } from "next";
@@ -190,6 +191,9 @@ export default async function StoryPage({
     <div className="flex min-h-screen flex-col bg-parchment">
       <Header />
 
+      {/* Track view for published stories */}
+      {story.status === "published" && <ViewTracker storyId={story.id} />}
+
       <main className="flex-1">
         {/* Preview Banner */}
         {isPreview && (
@@ -362,6 +366,11 @@ export default async function StoryPage({
                   <span className="text-sm text-stone">
                     {story.comments_count} {story.comments_count === 1 ? "comment" : "comments"}
                   </span>
+                  {(story as any).view_count > 0 && (
+                    <span className="text-sm text-stone flex items-center gap-1">
+                      👁️ {(story as any).view_count} {(story as any).view_count === 1 ? "view" : "views"}
+                    </span>
+                  )}
                 </div>
                 <ShareButtons
                   url={storyUrl}

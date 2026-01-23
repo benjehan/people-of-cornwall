@@ -41,12 +41,18 @@ import Link from "next/link";
 
 const POLL_CATEGORIES = [
   { value: "best_joke", label: "🤣 Best Cornish Joke" },
-  { value: "best_business", label: "🏪 Best Local Business" },
   { value: "best_pub", label: "🍺 Best Pub" },
+  { value: "best_cafe", label: "☕ Best Café" },
+  { value: "best_restaurant", label: "🍽️ Best Restaurant" },
+  { value: "best_walk", label: "🥾 Best Walk" },
+  { value: "best_beach", label: "🏖️ Best Beach" },
+  { value: "best_business", label: "🏪 Best Local Business" },
+  { value: "best_shop", label: "🛍️ Best Local Shop" },
   { value: "best_kindness", label: "💖 Best Act of Kindness" },
   { value: "best_event", label: "🎉 Best Event" },
   { value: "best_memory", label: "✨ Best Memory" },
   { value: "best_site", label: "🏔️ Most Iconic Site" },
+  { value: "best_character", label: "👤 Most Memorable Character" },
   { value: "other", label: "⭐ Other" },
 ];
 

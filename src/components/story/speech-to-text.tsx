@@ -77,6 +77,9 @@ export function SpeechToText({
   const [isUploading, setIsUploading] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [hasRecording, setHasRecording] = useState(false);
+  const [savedClips, setSavedClips] = useState<{url: string, duration: number}[]>([]);
+  
+  const MAX_RECORDING_SECONDS = 600; // 10 minutes
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const finalTranscriptRef = useRef("");
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -121,10 +124,17 @@ export function SpeechToText({
       mediaRecorderRef.current = mediaRecorder;
       mediaRecorder.start(1000); // Collect data every second
       
-      // Track duration
+      // Track duration with auto-stop at limit
       recordingStartRef.current = Date.now();
       durationIntervalRef.current = setInterval(() => {
-        setRecordingDuration(Math.floor((Date.now() - recordingStartRef.current) / 1000));
+        const elapsed = Math.floor((Date.now() - recordingStartRef.current) / 1000);
+        setRecordingDuration(elapsed);
+        
+        // Auto-stop at 10 minutes
+        if (elapsed >= MAX_RECORDING_SECONDS) {
+          stopListening();
+          setError(`Recording limit reached (${MAX_RECORDING_SECONDS / 60} minutes). Save your clip and record another if needed.`);
+        }
       }, 1000);
       
     } catch (err) {
@@ -253,15 +263,19 @@ export function SpeechToText({
         .from("story-media")
         .getPublicUrl(filename);
 
+      // Add to saved clips list
+      setSavedClips(prev => [...prev, { url: publicUrl, duration: recordingDuration }]);
+
       // Notify parent component
       if (onAudioRecorded) {
         onAudioRecorded(publicUrl, recordingDuration);
       }
 
-      // Clear the recording
+      // Clear the recording for next one
       audioChunksRef.current = [];
       setHasRecording(false);
       setRecordingDuration(0);
+      setError(null);
 
     } catch (err) {
       console.error("Error uploading recording:", err);
@@ -342,7 +356,12 @@ export function SpeechToText({
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
               <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500"></span>
             </span>
-            <span className="text-sm text-stone">Listening... {formatDuration(recordingDuration)}</span>
+            <span className="text-sm text-stone">
+              {formatDuration(recordingDuration)} / {formatDuration(MAX_RECORDING_SECONDS)}
+            </span>
+            {recordingDuration > MAX_RECORDING_SECONDS - 60 && (
+              <span className="text-xs text-amber-600">⚠️ Approaching limit</span>
+            )}
           </div>
         )}
 
@@ -400,6 +419,33 @@ export function SpeechToText({
         <p className="text-xs text-amber-600">
           ⚠️ Save your story draft first to keep your voice recording.
         </p>
+      )}
+
+      {/* Saved clips list */}
+      {savedClips.length > 0 && (
+        <div className="mt-3 space-y-2">
+          <p className="text-xs font-medium text-granite">
+            🎙️ Saved Voice Clips ({savedClips.length})
+          </p>
+          {savedClips.map((clip, index) => (
+            <div 
+              key={index}
+              className="flex items-center gap-3 p-2 rounded-md bg-cream border border-bone"
+            >
+              <span className="text-xs text-stone">Clip {index + 1}</span>
+              <audio 
+                controls 
+                src={clip.url} 
+                className="h-8 flex-1"
+                preload="metadata"
+              />
+              <span className="text-xs text-silver">{formatDuration(clip.duration)}</span>
+            </div>
+          ))}
+          <p className="text-xs text-stone">
+            ✨ These clips are saved. Record more if needed (max 10 min each).
+          </p>
+        </div>
       )}
     </div>
   );

@@ -100,6 +100,23 @@ export function Footer() {
         {/* Divider */}
         <div className="my-12 h-px bg-bone" />
 
+        {/* Business Collaboration CTA */}
+        <div className="mb-12 rounded-lg border border-copper/30 bg-gradient-to-r from-copper/5 to-atlantic/5 p-6 text-center">
+          <h4 className="font-serif text-lg font-semibold text-granite mb-2">
+            🤝 Partner With Us
+          </h4>
+          <p className="text-sm text-stone max-w-xl mx-auto mb-4">
+            Are you a local business, museum, or heritage organization? We'd love to explore 
+            collaboration opportunities to promote Cornish culture together.
+          </p>
+          <a 
+            href="mailto:hello@peopleofcornwall.com?subject=Partnership Inquiry"
+            className="inline-flex items-center gap-2 rounded-md bg-granite px-4 py-2 text-sm font-medium text-parchment transition-colors hover:bg-slate"
+          >
+            📧 Get in Touch
+          </a>
+        </div>
+
         {/* Bottom */}
         <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
           <p className="text-xs text-silver">

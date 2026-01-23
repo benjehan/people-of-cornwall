@@ -4,7 +4,8 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { StoryCard } from "@/components/story/story-card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowLeft, MapPin, Calendar, BookOpen } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, BookOpen, Award } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { Metadata } from "next";
@@ -33,6 +34,27 @@ interface Story {
   likes_count: number;
   comments_count: number;
 }
+
+interface UserBadge {
+  badge_type: string;
+  awarded_at: string;
+}
+
+// Badge display info
+const BADGE_INFO: Record<string, { emoji: string; name: string; color: string }> = {
+  first_story: { emoji: "📝", name: "First Story", color: "bg-blue-100 text-blue-700" },
+  storyteller_5: { emoji: "✍️", name: "Storyteller", color: "bg-green-100 text-green-700" },
+  storyteller_10: { emoji: "📚", name: "Prolific Writer", color: "bg-purple-100 text-purple-700" },
+  storyteller_25: { emoji: "🏆", name: "Master Storyteller", color: "bg-yellow-100 text-yellow-700" },
+  voice_keeper: { emoji: "🎙️", name: "Voice Keeper", color: "bg-red-100 text-red-700" },
+  memory_keeper: { emoji: "⏳", name: "Memory Keeper", color: "bg-amber-100 text-amber-700" },
+  local_legend: { emoji: "🗺️", name: "Local Legend", color: "bg-teal-100 text-teal-700" },
+  community_star: { emoji: "⭐", name: "Community Star", color: "bg-orange-100 text-orange-700" },
+  ambassador: { emoji: "🎖️", name: "Ambassador", color: "bg-indigo-100 text-indigo-700" },
+  founding_member: { emoji: "🌟", name: "Founding Member", color: "bg-pink-100 text-pink-700" },
+  helpful_voice: { emoji: "💬", name: "Helpful Voice", color: "bg-cyan-100 text-cyan-700" },
+  popular_story: { emoji: "❤️", name: "Popular Story", color: "bg-rose-100 text-rose-700" },
+};
 
 async function getAuthorProfile(id: string): Promise<Author | null> {
   // Use admin client to bypass RLS for public profile viewing
@@ -84,6 +106,23 @@ async function getAuthorStories(authorId: string): Promise<Story[]> {
   }));
 }
 
+async function getAuthorBadges(authorId: string): Promise<UserBadge[]> {
+  const supabase = createAdminClient();
+  if (!supabase) return [];
+  
+  const { data, error } = await (supabase
+    .from("user_badges") as any)
+    .select("badge_type, awarded_at")
+    .eq("user_id", authorId)
+    .order("awarded_at", { ascending: false });
+
+  if (error) {
+    console.error("[Author] Error fetching badges:", error);
+    return [];
+  }
+  return data || [];
+}
+
 export async function generateMetadata({ 
   params 
 }: { 
@@ -115,9 +154,10 @@ export default async function AuthorPage({
   params: Promise<{ id: string }> 
 }) {
   const { id } = await params;
-  const [author, stories] = await Promise.all([
+  const [author, stories, badges] = await Promise.all([
     getAuthorProfile(id),
     getAuthorStories(id),
+    getAuthorBadges(id),
   ]);
 
   if (!author) {
@@ -189,6 +229,25 @@ export default async function AuthorPage({
                 <p className="max-w-2xl text-stone leading-relaxed">
                   {author.bio}
                 </p>
+              )}
+
+              {/* Badges */}
+              {badges.length > 0 && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {badges.map((badge) => {
+                    const info = BADGE_INFO[badge.badge_type];
+                    if (!info) return null;
+                    return (
+                      <Badge 
+                        key={badge.badge_type}
+                        className={`${info.color} gap-1`}
+                      >
+                        <span>{info.emoji}</span>
+                        {info.name}
+                      </Badge>
+                    );
+                  })}
+                </div>
               )}
             </div>
           </div>

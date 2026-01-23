@@ -10,10 +10,16 @@ CREATE TYPE poll_category AS ENUM (
   'best_joke',
   'best_business',
   'best_pub',
+  'best_cafe',
+  'best_restaurant',
+  'best_walk',
+  'best_beach',
   'best_kindness',
   'best_event',
   'best_memory',
   'best_site',
+  'best_shop',
+  'best_character',
   'other'
 );
 

@@ -7,6 +7,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { 
   Trophy, 
   Vote, 
@@ -25,6 +36,12 @@ import {
   Mountain,
   PartyPopper,
   CheckCircle,
+  Coffee,
+  UtensilsCrossed,
+  Footprints,
+  Waves,
+  ShoppingBag,
+  User,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -35,10 +52,16 @@ const POLL_CATEGORIES = {
   best_joke: { icon: Laugh, label: "Best Cornish Joke", emoji: "😂" },
   best_business: { icon: Store, label: "Best Local Business", emoji: "🏪" },
   best_pub: { icon: Beer, label: "Best Pub", emoji: "🍺" },
+  best_cafe: { icon: Coffee, label: "Best Café", emoji: "☕" },
+  best_restaurant: { icon: UtensilsCrossed, label: "Best Restaurant", emoji: "🍽️" },
+  best_walk: { icon: Footprints, label: "Best Walk", emoji: "🥾" },
+  best_beach: { icon: Waves, label: "Best Beach", emoji: "🏖️" },
   best_kindness: { icon: Heart, label: "Best Act of Kindness", emoji: "💖" },
   best_event: { icon: PartyPopper, label: "Best Event", emoji: "🎉" },
   best_memory: { icon: Sparkles, label: "Best Memory", emoji: "✨" },
   best_site: { icon: Mountain, label: "Most Iconic Site", emoji: "🏔️" },
+  best_shop: { icon: ShoppingBag, label: "Best Local Shop", emoji: "🛍️" },
+  best_character: { icon: User, label: "Most Memorable Character", emoji: "👤" },
   other: { icon: Star, label: "Other", emoji: "⭐" },
 };
 
@@ -70,6 +93,13 @@ export default function CommunityPage() {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isSubscribing, setIsSubscribing] = useState(false);
   const [subscribeMessage, setSubscribeMessage] = useState<string | null>(null);
+  const [nominateDialogOpen, setNominateDialogOpen] = useState(false);
+  const [nominatePollId, setNominatePollId] = useState<string | null>(null);
+  const [nominationTitle, setNominationTitle] = useState("");
+  const [nominationDescription, setNominationDescription] = useState("");
+  const [nominationLocation, setNominationLocation] = useState("");
+  const [isNominating, setIsNominating] = useState(false);
+  const [nominationSuccess, setNominationSuccess] = useState(false);
 
   useEffect(() => {
     loadPolls();
@@ -124,6 +154,44 @@ export default function CommunityPage() {
     setIsSubscribing(false);
     setSubscribeMessage("You're subscribed! Check your inbox every Sunday.");
     setTimeout(() => setSubscribeMessage(null), 5000);
+  };
+
+  const openNominateDialog = (pollId: string) => {
+    setNominatePollId(pollId);
+    setNominationTitle("");
+    setNominationDescription("");
+    setNominationLocation("");
+    setNominationSuccess(false);
+    setNominateDialogOpen(true);
+  };
+
+  const handleNominate = async () => {
+    if (!user || !nominatePollId || !nominationTitle.trim()) return;
+    
+    setIsNominating(true);
+    const supabase = createClient();
+
+    const { error } = await (supabase
+      .from("poll_nominations") as any)
+      .insert({
+        poll_id: nominatePollId,
+        user_id: user.id,
+        title: nominationTitle.trim(),
+        description: nominationDescription.trim() || null,
+        location_name: nominationLocation.trim() || null,
+        is_approved: false, // Requires admin approval
+      });
+
+    if (error) {
+      console.error("Nomination error:", error);
+    } else {
+      setNominationSuccess(true);
+      setTimeout(() => {
+        setNominateDialogOpen(false);
+        loadPolls();
+      }, 2000);
+    }
+    setIsNominating(false);
   };
 
   const loadPolls = async () => {
@@ -403,7 +471,11 @@ export default function CommunityPage() {
                       {/* Nominate button */}
                       {user && (
                         <div className="mt-6 pt-4 border-t border-bone text-center">
-                          <Button variant="ghost" className="gap-2 text-granite">
+                          <Button 
+                            variant="ghost" 
+                            className="gap-2 text-granite hover:bg-granite hover:text-parchment"
+                            onClick={() => openNominateDialog(poll.id)}
+                          >
                             <Plus className="h-4 w-4" />
                             Nominate Something
                           </Button>
@@ -515,6 +587,93 @@ export default function CommunityPage() {
             </CardContent>
           </Card>
         </div>
+        {/* Nomination Dialog */}
+        <Dialog open={nominateDialogOpen} onOpenChange={setNominateDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Nominate Something</DialogTitle>
+              <DialogDescription>
+                Suggest something for this poll. Your nomination will be reviewed before appearing in voting.
+              </DialogDescription>
+            </DialogHeader>
+
+            {nominationSuccess ? (
+              <div className="py-8 text-center">
+                <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-4" />
+                <h3 className="font-medium text-granite mb-2">Nomination Submitted!</h3>
+                <p className="text-sm text-stone">
+                  Thank you! Your nomination will appear once reviewed.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="nom-title">Name *</Label>
+                    <Input
+                      id="nom-title"
+                      value={nominationTitle}
+                      onChange={(e) => setNominationTitle(e.target.value)}
+                      placeholder="e.g., The Fisherman's Arms"
+                      className="border-bone"
+                      maxLength={100}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="nom-location">Location</Label>
+                    <Input
+                      id="nom-location"
+                      value={nominationLocation}
+                      onChange={(e) => setNominationLocation(e.target.value)}
+                      placeholder="e.g., Newlyn, Penzance"
+                      className="border-bone"
+                      maxLength={100}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="nom-desc">Why? (optional, max 500 chars)</Label>
+                    <Textarea
+                      id="nom-desc"
+                      value={nominationDescription}
+                      onChange={(e) => setNominationDescription(e.target.value.slice(0, 500))}
+                      placeholder="What makes this special?"
+                      className="border-bone"
+                      rows={3}
+                    />
+                    <p className="text-xs text-silver text-right">
+                      {nominationDescription.length}/500
+                    </p>
+                  </div>
+                </div>
+
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setNominateDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleNominate}
+                    disabled={!nominationTitle.trim() || isNominating}
+                    className="bg-granite text-parchment hover:bg-slate"
+                  >
+                    {isNominating ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Submitting...
+                      </>
+                    ) : (
+                      "Submit Nomination"
+                    )}
+                  </Button>
+                </DialogFooter>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
       </main>
 
       <Footer />
