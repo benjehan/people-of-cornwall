@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { MapPin, Heart, MessageCircle, Clock } from "lucide-react";
+import { MapPin, Heart, MessageCircle, Clock, Music } from "lucide-react";
 import { calculateReadingTime, formatReadingTime } from "@/lib/utils/reading-time";
 import type { StoryWithDetails } from "@/types";
 
@@ -36,6 +36,9 @@ export function StoryCard({ story, featured = false, showImage = true }: StoryCa
 
   // Get image URL - check for first_image_url or extract from body
   const imageUrl = story.first_image_url || extractImageFromBody(story.body);
+  
+  // Check if story has audio content
+  const hasAudio = hasAudioContent(story.body);
 
   // Calculate reading time
   const readingTime = calculateReadingTime(story.body);
@@ -144,18 +147,34 @@ export function StoryCard({ story, featured = false, showImage = true }: StoryCa
     );
   }
 
-  // Regular card - horizontal layout with image thumbnail
-  if (showImage && imageUrl) {
+  // Regular card - horizontal layout with image thumbnail or audio indicator
+  if (showImage && (imageUrl || hasAudio)) {
     return (
       <Link href={`/stories/${story.id}`} className="group block h-full">
         <article className="flex h-full flex-col overflow-hidden rounded-lg border border-transparent bg-parchment transition-all hover:border-bone hover:bg-cream hover:shadow-sm">
-          {/* Image thumbnail - 16:9 aspect ratio for consistent display */}
+          {/* Image thumbnail or audio indicator - 16:9 aspect ratio for consistent display */}
           <div className="relative aspect-[16/9] w-full overflow-hidden bg-granite">
-            <img
-              src={imageUrl}
-              alt={story.title}
-              className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
-            />
+            {imageUrl ? (
+              <img
+                src={imageUrl}
+                alt={story.title}
+                className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
+              />
+            ) : hasAudio ? (
+              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-granite to-slate">
+                <div className="text-center text-parchment">
+                  <Music className="h-12 w-12 mx-auto mb-2 opacity-80" />
+                  <span className="text-xs font-medium uppercase tracking-wider opacity-70">Audio Story</span>
+                </div>
+              </div>
+            ) : null}
+            {/* Audio badge overlay if story has audio AND image */}
+            {imageUrl && hasAudio && (
+              <div className="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-granite/80 px-2 py-1 text-xs text-parchment">
+                <Music className="h-3 w-3" />
+                <span>Audio</span>
+              </div>
+            )}
           </div>
           
           <div className="flex flex-1 flex-col p-5">
@@ -303,4 +322,12 @@ function extractImageFromBody(body: string | null): string | null {
   }
   
   return null;
+}
+
+/**
+ * Check if story has audio content
+ */
+function hasAudioContent(body: string | null): boolean {
+  if (!body) return false;
+  return body.includes('class="audio-player"') || body.includes('<audio');
 }

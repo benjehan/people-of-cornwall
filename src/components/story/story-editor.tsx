@@ -5,12 +5,13 @@ import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import Image from "@tiptap/extension-image";
 import { Button } from "@/components/ui/button";
-import { Bold, Italic, List, ListOrdered, Undo, Redo, ImagePlus, Youtube, Mic, Wand2, Sparkles, Link2 } from "lucide-react";
+import { Bold, Italic, List, ListOrdered, Undo, Redo, ImagePlus, Youtube, Mic, Wand2, Sparkles, Link2, Music } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useCallback } from "react";
 import { ImageUploadDialog } from "./image-upload-dialog";
 import { VideoEmbedDialog } from "./video-embed-dialog";
 import { LinkEmbedDialog } from "./link-embed-dialog";
+import { AudioUploadDialog } from "./audio-upload-dialog";
 import { SpeechToText } from "./speech-to-text";
 import { AIEnhanceDialog } from "./ai-enhance-dialog";
 import { AIImageDialog } from "./ai-image-dialog";
@@ -34,6 +35,7 @@ export function StoryEditor({
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
   const [videoDialogOpen, setVideoDialogOpen] = useState(false);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [audioDialogOpen, setAudioDialogOpen] = useState(false);
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const [aiImageDialogOpen, setAiImageDialogOpen] = useState(false);
   const [showVoiceInput, setShowVoiceInput] = useState(false);
@@ -139,6 +141,22 @@ export function StoryEditor({
     editor.chain().focus().insertContent(linkHtml).run();
   };
 
+  const handleAudioInsert = (url: string, title?: string) => {
+    if (!editor) return;
+    // Insert audio player HTML
+    const audioHtml = `
+      <div class="audio-player" data-audio-url="${url}">
+        <div class="audio-player-inner">
+          <span class="audio-title">${title || "Audio Recording"}</span>
+          <audio controls src="${url}" preload="metadata">
+            Your browser does not support the audio element.
+          </audio>
+        </div>
+      </div>
+    `;
+    editor.chain().focus().insertContent(audioHtml).run();
+  };
+
   if (!editor) {
     return (
       <div className="min-h-[400px] animate-pulse rounded-lg bg-chalk-white-dark/50" />
@@ -177,6 +195,12 @@ export function StoryEditor({
         onInsert={handleImageInsert}
         storyContent={content}
         storyTitle={title}
+        storyId={storyId}
+      />
+      <AudioUploadDialog
+        open={audioDialogOpen}
+        onOpenChange={setAudioDialogOpen}
+        onUpload={handleAudioInsert}
         storyId={storyId}
       />
 
@@ -291,6 +315,17 @@ export function StoryEditor({
         >
           <Link2 className="h-4 w-4" />
           <span className="hidden sm:inline text-xs">Link</span>
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setAudioDialogOpen(true)}
+          className="h-8 px-2 gap-1"
+          title="Upload audio recording"
+        >
+          <Music className="h-4 w-4" />
+          <span className="hidden sm:inline text-xs">Audio</span>
         </Button>
         <div className="mx-2 h-6 w-px bg-chalk-white-dark" />
         
