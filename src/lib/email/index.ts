@@ -307,13 +307,57 @@ export async function sendStorySubmittedEmail({
   storyTitle,
   authorName,
   storyId,
+  moderationScore,
+  moderationFlags,
 }: {
   to: string;
   storyTitle: string;
   authorName: string;
   storyId: string;
+  moderationScore?: number;
+  moderationFlags?: string[];
 }): Promise<EmailResult> {
   const reviewUrl = `${SITE_URL}/stories/${storyId}`;
+  
+  // Build moderation section if there are results
+  let moderationSection = "";
+  if (moderationScore !== undefined) {
+    const isClean = moderationScore < 0.1 && (!moderationFlags || moderationFlags.length === 0);
+    const isFlagged = moderationScore >= 0.3;
+    
+    if (isClean) {
+      moderationSection = `
+        <div style="background-color: #d4edda; border: 1px solid #c3e6cb; padding: 16px 20px; margin: 0 0 24px 0; border-radius: 4px;">
+          <p style="margin: 0; color: #155724; font-size: 14px;">
+            ✅ <strong>AI Moderation: CLEAN</strong><br>
+            No concerning content detected.
+          </p>
+        </div>
+      `;
+    } else if (isFlagged) {
+      const flagsList = moderationFlags?.map(f => `• ${f.replace(/_/g, " ")}`).join("<br>") || "Unknown issues";
+      moderationSection = `
+        <div style="background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 16px 20px; margin: 0 0 24px 0; border-radius: 4px;">
+          <p style="margin: 0; color: #721c24; font-size: 14px;">
+            ⚠️ <strong>AI Moderation: FLAGGED (${Math.round(moderationScore * 100)}% concern)</strong><br><br>
+            Issues detected:<br>
+            ${flagsList}<br><br>
+            <em>Please review carefully before approving.</em>
+          </p>
+        </div>
+      `;
+    } else {
+      moderationSection = `
+        <div style="background-color: #fff3cd; border: 1px solid #ffc107; padding: 16px 20px; margin: 0 0 24px 0; border-radius: 4px;">
+          <p style="margin: 0; color: #856404; font-size: 14px;">
+            🔶 <strong>AI Moderation: LOW CONCERN (${Math.round(moderationScore * 100)}%)</strong><br>
+            Minor flags detected: ${moderationFlags?.join(", ") || "none"}<br>
+            Likely fine, but worth a quick check.
+          </p>
+        </div>
+      `;
+    }
+  }
   
   const html = baseTemplate(`
     <h2 style="margin: 0 0 24px 0; color: #1a1a1a; font-size: 28px; font-weight: normal;">
@@ -330,6 +374,7 @@ export async function sendStorySubmittedEmail({
         by ${authorName}
       </p>
     </div>
+    ${moderationSection}
     <p style="margin: 0 0 32px 0; text-align: center;">
       <a href="${reviewUrl}" style="display: inline-block; background-color: #1a1a1a; color: #f8f7f4; text-decoration: none; padding: 14px 32px; border-radius: 4px; font-size: 15px;">
         Review Story
@@ -339,7 +384,9 @@ export async function sendStorySubmittedEmail({
 
   return sendEmail({
     to,
-    subject: `New story for review: "${storyTitle}"`,
+    subject: moderationFlags && moderationFlags.length > 0 
+      ? `⚠️ New story for review (flagged): "${storyTitle}"`
+      : `New story for review: "${storyTitle}"`,
     html,
   });
 }
@@ -351,10 +398,14 @@ export async function notifyAdminsOfNewStory({
   storyTitle,
   authorName,
   storyId,
+  moderationScore,
+  moderationFlags,
 }: {
   storyTitle: string;
   authorName: string;
   storyId: string;
+  moderationScore?: number;
+  moderationFlags?: string[];
 }): Promise<void> {
   // Admin email - you can change this or make it an env var
   const adminEmail = process.env.ADMIN_EMAIL || "hello@peopleofcornwall.com";
@@ -364,5 +415,7 @@ export async function notifyAdminsOfNewStory({
     storyTitle,
     authorName,
     storyId,
+    moderationScore,
+    moderationFlags,
   });
 }
