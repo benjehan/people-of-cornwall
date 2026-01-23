@@ -25,11 +25,13 @@ CREATE INDEX IF NOT EXISTS idx_stories_view_count ON stories(view_count DESC);
 ALTER TABLE story_views ENABLE ROW LEVEL SECURITY;
 
 -- Anyone can insert a view (tracked server-side)
+DROP POLICY IF EXISTS "Service can track views" ON story_views;
 CREATE POLICY "Service can track views"
   ON story_views FOR INSERT
   WITH CHECK (TRUE);
 
 -- Admins can see views
+DROP POLICY IF EXISTS "Admins can view stats" ON story_views;
 CREATE POLICY "Admins can view stats"
   ON story_views FOR SELECT
   USING (
@@ -37,6 +39,9 @@ CREATE POLICY "Admins can view stats"
   );
 
 -- Function to increment view count (called from API)
+-- Drop first to handle parameter name changes
+DROP FUNCTION IF EXISTS increment_story_view(UUID);
+
 CREATE OR REPLACE FUNCTION increment_story_view(story_uuid UUID)
 RETURNS void AS $$
 BEGIN
