@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ImagePlus, Loader2, Upload, Camera, AlertCircle } from "lucide-react";
+import { ImagePlus, Loader2, Upload, Camera, AlertCircle, Minimize2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 interface ImageUploadDialogProps {
@@ -22,6 +22,93 @@ interface ImageUploadDialogProps {
   storyId?: string;
 }
 
+// Maximum dimensions for uploaded images
+const MAX_WIDTH = 1920;
+const MAX_HEIGHT = 1920;
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const JPEG_QUALITY = 0.85;
+
+/**
+ * Compress and resize an image file using Canvas API
+ * Returns a compressed Blob
+ */
+async function compressImage(file: File): Promise<{ blob: Blob; wasCompressed: boolean }> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    if (!ctx) {
+      reject(new Error("Canvas not supported"));
+      return;
+    }
+
+    img.onload = () => {
+      let { width, height } = img;
+      let wasCompressed = false;
+
+      // Calculate new dimensions while maintaining aspect ratio
+      if (width > MAX_WIDTH || height > MAX_HEIGHT) {
+        const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+        wasCompressed = true;
+      }
+
+      // Set canvas dimensions
+      canvas.width = width;
+      canvas.height = height;
+
+      // Draw image on canvas (this also strips EXIF data which can be huge)
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // Convert to blob with compression
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            // If still too large, reduce quality further
+            if (blob.size > MAX_FILE_SIZE) {
+              canvas.toBlob(
+                (smallerBlob) => {
+                  if (smallerBlob) {
+                    resolve({ blob: smallerBlob, wasCompressed: true });
+                  } else {
+                    reject(new Error("Failed to compress image"));
+                  }
+                },
+                "image/jpeg",
+                0.7 // Lower quality for very large images
+              );
+            } else {
+              resolve({ blob, wasCompressed: wasCompressed || blob.size < file.size });
+            }
+          } else {
+            reject(new Error("Failed to compress image"));
+          }
+        },
+        "image/jpeg",
+        JPEG_QUALITY
+      );
+    };
+
+    img.onerror = () => {
+      reject(new Error("Failed to load image"));
+    };
+
+    // Load the image
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+/**
+ * Format file size for display
+ */
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export function ImageUploadDialog({
   open,
   onOpenChange,
@@ -29,14 +116,21 @@ export function ImageUploadDialog({
   storyId,
 }: ImageUploadDialogProps) {
   const [isUploading, setIsUploading] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [compressedBlob, setCompressedBlob] = useState<Blob | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [attribution, setAttribution] = useState("");
   const [hasRights, setHasRights] = useState(false);
+  const [compressionInfo, setCompressionInfo] = useState<{
+    original: number;
+    compressed: number;
+    wasCompressed: boolean;
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -46,25 +140,40 @@ export function ImageUploadDialog({
       return;
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setError("Image must be less than 5MB");
-      return;
-    }
-
     setError(null);
     setSelectedFile(file);
+    setIsCompressing(true);
+    setCompressionInfo(null);
 
-    // Create preview
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setPreview(e.target?.result as string);
-    };
-    reader.readAsDataURL(file);
+    try {
+      // Compress the image
+      const { blob, wasCompressed } = await compressImage(file);
+      
+      setCompressedBlob(blob);
+      setCompressionInfo({
+        original: file.size,
+        compressed: blob.size,
+        wasCompressed,
+      });
+
+      // Create preview from compressed blob
+      const previewUrl = URL.createObjectURL(blob);
+      setPreview(previewUrl);
+
+      // Check if still too large after compression
+      if (blob.size > MAX_FILE_SIZE) {
+        setError(`Image is still too large (${formatFileSize(blob.size)}). Please try a smaller image.`);
+      }
+    } catch (err) {
+      console.error("Compression error:", err);
+      setError("Failed to process image. Please try a different file.");
+    } finally {
+      setIsCompressing(false);
+    }
   };
 
   const handleUpload = async () => {
-    if (!selectedFile || !hasRights) return;
+    if (!compressedBlob || !hasRights) return;
 
     setIsUploading(true);
     setError(null);
@@ -82,16 +191,16 @@ export function ImageUploadDialog({
         return;
       }
 
-      // Create unique filename
-      const ext = selectedFile.name.split(".").pop();
-      const fileName = `${user.id}/${storyId || "drafts"}/${Date.now()}.${ext}`;
+      // Create unique filename (always .jpg since we compress to JPEG)
+      const fileName = `${user.id}/${storyId || "drafts"}/${Date.now()}.jpg`;
 
       // Upload to Supabase Storage
       const { data, error: uploadError } = await supabase.storage
         .from("story-media")
-        .upload(fileName, selectedFile, {
+        .upload(fileName, compressedBlob, {
           cacheControl: "3600",
           upsert: false,
+          contentType: "image/jpeg",
         });
 
       if (uploadError) {
@@ -128,10 +237,12 @@ export function ImageUploadDialog({
 
   const handleClose = () => {
     setSelectedFile(null);
+    setCompressedBlob(null);
     setPreview(null);
     setAttribution("");
     setHasRights(false);
     setError(null);
+    setCompressionInfo(null);
     onOpenChange(false);
   };
 
@@ -154,7 +265,7 @@ export function ImageUploadDialog({
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+            accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/heic,image/heif"
             onChange={handleFileSelect}
             className="hidden"
           />
@@ -163,15 +274,30 @@ export function ImageUploadDialog({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="w-full border-2 border-dashed border-bone rounded-lg p-8 text-center hover:border-slate transition-colors focus:outline-none focus:ring-2 focus:ring-slate focus:ring-offset-2"
+              disabled={isCompressing}
+              className="w-full border-2 border-dashed border-bone rounded-lg p-8 text-center hover:border-slate transition-colors focus:outline-none focus:ring-2 focus:ring-slate focus:ring-offset-2 disabled:opacity-50"
             >
-              <Upload className="mx-auto h-10 w-10 text-stone mb-3" />
-              <p className="text-sm font-medium text-granite">
-                Click to select an image
-              </p>
-              <p className="text-xs text-stone mt-1">
-                JPEG, PNG, GIF or WebP up to 5MB
-              </p>
+              {isCompressing ? (
+                <>
+                  <Loader2 className="mx-auto h-10 w-10 text-stone mb-3 animate-spin" />
+                  <p className="text-sm font-medium text-granite">
+                    Processing image...
+                  </p>
+                  <p className="text-xs text-stone mt-1">
+                    Optimizing for upload
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Upload className="mx-auto h-10 w-10 text-stone mb-3" />
+                  <p className="text-sm font-medium text-granite">
+                    Click to select an image
+                  </p>
+                  <p className="text-xs text-stone mt-1">
+                    Any size — we'll automatically optimize it
+                  </p>
+                </>
+              )}
             </button>
           ) : (
             <div className="space-y-3">
@@ -182,13 +308,27 @@ export function ImageUploadDialog({
                   className="w-full h-48 object-contain"
                 />
               </div>
+              
+              {/* Compression info */}
+              {compressionInfo && compressionInfo.wasCompressed && (
+                <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 rounded-lg p-2">
+                  <Minimize2 className="h-3 w-3 flex-shrink-0" />
+                  <span>
+                    Optimized: {formatFileSize(compressionInfo.original)} → {formatFileSize(compressionInfo.compressed)}
+                    {" "}({Math.round((1 - compressionInfo.compressed / compressionInfo.original) * 100)}% smaller)
+                  </span>
+                </div>
+              )}
+
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={() => {
                   setSelectedFile(null);
+                  setCompressedBlob(null);
                   setPreview(null);
+                  setCompressionInfo(null);
                   if (fileInputRef.current) fileInputRef.current.value = "";
                 }}
                 className="w-full text-sm"
@@ -256,7 +396,7 @@ export function ImageUploadDialog({
           </Button>
           <Button
             onClick={handleUpload}
-            disabled={!selectedFile || !hasRights || isUploading}
+            disabled={!compressedBlob || !hasRights || isUploading || (compressedBlob && compressedBlob.size > MAX_FILE_SIZE)}
             className="bg-granite text-parchment hover:bg-slate gap-2"
           >
             {isUploading ? (
