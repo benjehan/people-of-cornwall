@@ -42,10 +42,15 @@ A rich archive of authentic Cornish stories becomes a resource for:
 | **Voice Narration** | Speak your story instead of typing (great for elderly users) |
 | **AI Writing Assistant** | Helps polish grammar and style while keeping the authentic voice |
 | **Photo & Video Uploads** | Add images and embed YouTube/Vimeo videos |
+| **Audio Recording Upload** | Add MP3 audio recordings or oral histories |
 | **AI Image Generation** | Creates heritage-style illustrations for stories without photos |
 | **Location Pinning** | Place your story on the interactive map of Cornwall |
 | **Timeline Tagging** | Tag stories by decade for historical browsing |
+| **Ambient Soundscapes** | Add atmospheric background sounds (waves, rain, pub, harbour, etc.) |
+| **Text-to-Speech** | Readers can listen to stories read aloud with male/female voice |
 | **Privacy Options** | Choose to publish anonymously if preferred |
+| **Image Cropping** | Crop and adjust images before uploading |
+| **Link Embeds** | Add preview cards for external links (news, Wikipedia, etc.) |
 
 ### For Readers & Community
 | Feature | Description |
@@ -54,8 +59,10 @@ A rich archive of authentic Cornish stories becomes a resource for:
 | **Timeline View** | Browse stories chronologically from 1900s to present |
 | **Search & Discovery** | Find stories by keyword, location, or theme |
 | **Collections** | Curated themed collections (e.g., "Mining Memories", "Fishing Tales") |
+| **Listen to Stories** | Text-to-speech player with ambient background sounds |
 | **Comments & Engagement** | Comment on stories, share memories, like content |
 | **Author Profiles** | Learn about storytellers and read all their contributions |
+| **WhatsApp/Social Sharing** | Share stories with images on social platforms |
 | **Dark Mode** | Comfortable reading in any lighting |
 
 ### For Administrators
@@ -256,6 +263,70 @@ The platform can serve as a trusted local guide, connecting readers with authent
 3. **Authenticity**: Ensure all promotions feel natural and add value to readers
 4. **Transparency**: Clear labeling of sponsored content
 5. **Reinvestment**: Profits go back into platform development and community initiatives
+
+---
+
+## 🚀 Community Growth Strategies
+
+### Getting People to the Platform
+
+| Strategy | Description | Effort |
+|----------|-------------|--------|
+| **Local Press Coverage** | Pitch story to Cornwall Live, Falmouth Packet, West Briton | Low |
+| **BBC Radio Cornwall** | Human interest segment about preserving local stories | Low |
+| **Library Partnerships** | Storytelling sessions at local libraries with signups | Medium |
+| **WI & Rotary Clubs** | Present at meetings, help members write their stories | Medium |
+| **Parish Magazine Features** | Article in every parish newsletter across Cornwall | Low |
+| **Care Home Visits** | Help elderly residents record their memories | Medium |
+| **School Heritage Projects** | Students interview grandparents, submit stories | Medium |
+| **Town Council Newsletters** | Feature in Truro, Penzance, Falmouth council comms | Low |
+
+### Making Them Come Back
+
+| Strategy | Description | Implementation |
+|----------|-------------|----------------|
+| **Weekly Story Digest** | Email newsletter with best new stories | Email signup + Mailjet |
+| **Story of the Week** | Featured homepage story, social media share | Admin picks, auto-rotates |
+| **Seasonal Prompts** | "Christmas in Cornwall", "Summer Holidays 1970s" | Monthly themed prompts |
+| **Story Chains** | Connected stories (e.g., all about one village) | Collections + tags |
+| **Anniversary Alerts** | "This story was shared 1 year ago today" | Automated emails |
+| **Author Milestones** | Celebrate when authors hit 5, 10, 25 stories | Badges + notifications |
+| **Community Events** | Monthly online storytelling evenings (Zoom) | Marketing + calendar |
+| **Local Hero Features** | Spotlight on prolific contributors | Author profiles |
+
+### Creating Viral Moments
+
+| Opportunity | Description |
+|-------------|-------------|
+| **"Lost Cornwall" Challenge** | Share photos of places that no longer exist |
+| **"My First Job" Collection** | Relatable stories from all ages |
+| **"Storm Stories"** | After big weather events, collect experiences |
+| **Dialect Recording** | Audio of authentic Cornish dialect speakers |
+| **Recipe Stories** | Traditional family recipes with the memories behind them |
+| **"Before & After"** | Same location photographed decades apart |
+| **Celebrity Connections** | Stories about famous Cornish people from locals who knew them |
+
+### Reducing Barriers to Entry
+
+| Barrier | Solution |
+|---------|----------|
+| "I'm not a writer" | Voice narration, AI writing help |
+| "I don't have photos" | AI image generation |
+| "It's too complicated" | Simple 3-step submission flow |
+| "No one will care" | Highlight comments and engagement on existing stories |
+| "I'm too old for technology" | Library/care home assisted sessions |
+| "I don't have time" | "Mini-stories" format (500 words or less) |
+
+### Community Ambassador Program
+
+Recruit local volunteers to:
+- Help elderly neighbours write and submit stories
+- Promote the platform at local events
+- Verify historical accuracy of local stories
+- Suggest stories that should be featured
+- Connect with local history groups
+
+**Recognition:** Ambassador badge, monthly newsletter feature, early access to new features
 
 ---
 

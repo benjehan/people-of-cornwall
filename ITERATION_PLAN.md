@@ -678,16 +678,42 @@ Before starting Phase 4:
 
 ---
 
+## ✅ Recently Implemented Features
+
+### Ambient Sounds for Stories ✅
+Writers can add atmospheric background sounds to immerse readers:
+- **12 Soundscapes**: Waves, rain, harbour, pub, church bells, wind, seagulls, storm, mine, market, dripping water, rugby match
+- **Preview**: 8-second preview in story editor before selecting
+- **Integration**: Plays automatically with text-to-speech reader
+- **Storage**: Hosted on Supabase Storage CDN
+
+### Text-to-Speech Story Reader ✅
+Readers can listen to stories read aloud:
+- **Voice Selection**: Authors choose male or female voice
+- **Browser-based**: Uses Web Speech API (no API costs!)
+- **Ambient Integration**: Background sounds play alongside narration
+- **Controls**: Play, pause, progress bar, volume
+
+### Rich Media Embeds ✅
+- **Link Cards**: Preview cards for external links (news, Wikipedia, etc.)
+- **Video Embeds**: YouTube and Vimeo with thumbnail extraction
+- **Audio Uploads**: MP3 recordings with inline player
+- **Image Cropping**: Crop uploaded images before insertion
+
+### Enhanced Author Experience ✅
+- **Edit stories in review**: Authors can edit while awaiting approval
+- **Author name sync**: Display name updates reflect on all stories
+- **Collection feedback**: Visual confirmation when adding to collections
+
+### Admin AI Tools ✅
+- **AI Image Generation**: Generate DALL-E images for stories without photos
+- **One-click in review panel**: Admin can create heritage illustrations
+
+---
+
 ## Near-Term Enhancements (Ready to Implement)
 
 Quick wins that enhance the current platform without major infrastructure changes:
-
-### Ambient Sounds for Stories ✨
-Let writers add atmospheric background sounds to their stories:
-- **Soundscapes**: Waves, rain, harbour, pub, church bells, wind, seagulls
-- **Player**: Subtle control at top of story for readers
-- **Selection**: Simple dropdown in story editor
-- **Storage**: Use royalty-free sounds hosted on CDN
 
 ### Enhanced Audio Stories
 - Allow longer audio recordings (oral history style)
@@ -698,6 +724,11 @@ Let writers add atmospheric background sounds to their stories:
 - Visual themes for stories (seaside, mining, pastoral)
 - Customizable reading backgrounds
 - Font choices for different eras
+
+### Community Engagement Features
+- **Story of the Week**: Auto-featured rotating story
+- **Monthly writing prompts**: Themed challenges
+- **Contributor badges**: Recognition for active members
 
 ---
 

@@ -217,13 +217,22 @@ The platform must feel like a **slow digital museum**, not a feed.
 ### AI & Search
 | Service | Purpose |
 |---------|---------|
-| OpenAI GPT-4 | Summaries, tags, moderation |
+| OpenAI GPT-4 | Summaries, tags, moderation, writing assistance |
+| OpenAI DALL-E 3 | Heritage-style image generation |
 | Supabase FTS | Full-text search with pg_trgm |
+
+### Audio & Voice
+| Service | Purpose |
+|---------|---------|
+| Web Speech API | Browser text-to-speech for story reading |
+| SpeechRecognition | Voice-to-text for story narration |
+| Supabase Storage | Ambient sound files (waves, rain, harbour, etc.) |
 
 ### Email
 | Service | Purpose |
 |---------|---------|
-| Resend | Transactional emails |
+| Mailjet | Magic link authentication emails |
+| Resend | Application notifications |
 
 ---
 
