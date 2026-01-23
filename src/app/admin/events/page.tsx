@@ -1,22 +1,26 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  ArrowLeft,
   Calendar,
   MapPin,
   Clock,
   CheckCircle,
   XCircle,
-  Loader2,
-  ExternalLink,
-  Star,
   Trash2,
+  ExternalLink,
+  Loader2,
+  AlertTriangle,
+  Star,
+  Eye,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/use-user";
@@ -26,18 +30,22 @@ interface Event {
   title: string;
   description: string | null;
   location_name: string;
+  location_address: string | null;
+  image_url: string | null;
   starts_at: string;
   ends_at: string | null;
+  all_day: boolean;
   is_approved: boolean;
   is_featured: boolean;
-  price_info: string | null;
-  is_free: boolean;
-  website_url: string | null;
   created_at: string;
+  created_by: string;
+  creator?: {
+    display_name: string | null;
+    email: string | null;
+  };
 }
 
 export default function AdminEventsPage() {
-  const router = useRouter();
   const { user, isAdmin, isLoading: userLoading } = useUser();
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,8 +55,15 @@ export default function AdminEventsPage() {
     setIsLoading(true);
     const supabase = createClient();
 
-    const { data, error } = await (supabase.from("events") as any)
-      .select("*")
+    const { data, error } = await (supabase
+      .from("events") as any)
+      .select(`
+        *,
+        creator:users!created_by (
+          display_name,
+          email
+        )
+      `)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -60,30 +75,77 @@ export default function AdminEventsPage() {
   }, []);
 
   useEffect(() => {
-    if (!userLoading && !isAdmin) {
-      router.push("/");
-    } else if (isAdmin) {
+    if (!userLoading && isAdmin) {
       loadEvents();
     }
-  }, [userLoading, isAdmin, router, loadEvents]);
+  }, [userLoading, isAdmin, loadEvents]);
 
   const handleApprove = async (eventId: string) => {
     setActionLoading(eventId);
     const supabase = createClient();
 
-    await (supabase.from("events") as any)
+    await (supabase
+      .from("events") as any)
       .update({ is_approved: true })
       .eq("id", eventId);
+
+    // Log moderation action
+    await (supabase
+      .from("moderation_log") as any)
+      .insert({
+        content_type: "event",
+        content_id: eventId,
+        action: "approved",
+        moderator_id: user?.id,
+      });
 
     await loadEvents();
     setActionLoading(null);
   };
 
   const handleReject = async (eventId: string) => {
+    if (!confirm("Reject this event? It won't be deleted but will remain hidden.")) return;
+    
     setActionLoading(eventId);
     const supabase = createClient();
 
-    await (supabase.from("events") as any)
+    await (supabase
+      .from("events") as any)
+      .update({ is_approved: false })
+      .eq("id", eventId);
+
+    // Log moderation action
+    await (supabase
+      .from("moderation_log") as any)
+      .insert({
+        content_type: "event",
+        content_id: eventId,
+        action: "rejected",
+        moderator_id: user?.id,
+      });
+
+    await loadEvents();
+    setActionLoading(null);
+  };
+
+  const handleDelete = async (eventId: string) => {
+    if (!confirm("Permanently delete this event? This cannot be undone.")) return;
+    
+    setActionLoading(eventId);
+    const supabase = createClient();
+
+    // Log before delete
+    await (supabase
+      .from("moderation_log") as any)
+      .insert({
+        content_type: "event",
+        content_id: eventId,
+        action: "deleted",
+        moderator_id: user?.id,
+      });
+
+    await (supabase
+      .from("events") as any)
       .delete()
       .eq("id", eventId);
 
@@ -91,12 +153,13 @@ export default function AdminEventsPage() {
     setActionLoading(null);
   };
 
-  const handleToggleFeatured = async (eventId: string, featured: boolean) => {
+  const handleToggleFeatured = async (eventId: string, currentFeatured: boolean) => {
     setActionLoading(eventId);
     const supabase = createClient();
 
-    await (supabase.from("events") as any)
-      .update({ is_featured: !featured })
+    await (supabase
+      .from("events") as any)
+      .update({ is_featured: !currentFeatured })
       .eq("id", eventId);
 
     await loadEvents();
@@ -105,14 +168,23 @@ export default function AdminEventsPage() {
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString("en-GB", {
-      weekday: "short",
       day: "numeric",
       month: "short",
       year: "numeric",
     });
   };
 
-  if (userLoading || isLoading) {
+  const formatTime = (dateStr: string) => {
+    return new Date(dateStr).toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const pendingEvents = events.filter(e => !e.is_approved);
+  const approvedEvents = events.filter(e => e.is_approved);
+
+  if (userLoading) {
     return (
       <div className="flex min-h-screen flex-col bg-parchment">
         <Header />
@@ -124,148 +196,222 @@ export default function AdminEventsPage() {
     );
   }
 
-  const pendingEvents = events.filter((e) => !e.is_approved);
-  const approvedEvents = events.filter((e) => e.is_approved);
+  if (!isAdmin) {
+    return (
+      <div className="flex min-h-screen flex-col bg-parchment">
+        <Header />
+        <main className="flex flex-1 items-center justify-center p-4">
+          <Card className="max-w-md border-bone bg-cream text-center">
+            <CardContent className="pt-6">
+              <AlertTriangle className="mx-auto h-12 w-12 text-red-500 mb-4" />
+              <h2 className="font-serif text-xl font-bold text-granite mb-2">
+                Access Denied
+              </h2>
+              <p className="text-stone mb-4">
+                You don't have permission to access this page.
+              </p>
+              <Link href="/">
+                <Button className="bg-granite text-parchment hover:bg-slate">
+                  Go Home
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  const EventCard = ({ event }: { event: Event }) => (
+    <Card className={`border-bone bg-cream ${!event.is_approved ? "border-l-4 border-l-yellow-500" : ""}`}>
+      <CardContent className="p-4">
+        <div className="flex gap-4">
+          {event.image_url && (
+            <div className="w-24 h-24 flex-shrink-0 rounded overflow-hidden">
+              <img
+                src={event.image_url}
+                alt={event.title}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  {!event.is_approved && (
+                    <Badge className="bg-yellow-500 text-white text-xs">Pending</Badge>
+                  )}
+                  {event.is_featured && (
+                    <Badge className="bg-copper text-parchment text-xs">⭐ Featured</Badge>
+                  )}
+                </div>
+                <h3 className="font-serif font-bold text-granite">{event.title}</h3>
+                <div className="flex items-center gap-3 text-sm text-stone mt-1">
+                  <span className="flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    {formatDate(event.starts_at)}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
+                    {event.location_name}
+                  </span>
+                </div>
+                {event.creator && (
+                  <p className="text-xs text-silver mt-1">
+                    By: {event.creator.display_name || event.creator.email || "Unknown"}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {event.description && (
+              <p className="text-sm text-stone mt-2 line-clamp-2">{event.description}</p>
+            )}
+
+            <div className="flex items-center gap-2 mt-3">
+              {!event.is_approved ? (
+                <>
+                  <Button
+                    size="sm"
+                    onClick={() => handleApprove(event.id)}
+                    disabled={actionLoading === event.id}
+                    className="bg-green-600 text-white hover:bg-green-700 gap-1"
+                  >
+                    {actionLoading === event.id ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <CheckCircle className="h-3 w-3" />
+                    )}
+                    Approve
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleReject(event.id)}
+                    disabled={actionLoading === event.id}
+                    className="border-red-300 text-red-600 hover:bg-red-50 gap-1"
+                  >
+                    <XCircle className="h-3 w-3" />
+                    Reject
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleToggleFeatured(event.id, event.is_featured)}
+                  disabled={actionLoading === event.id}
+                  className="border-bone gap-1"
+                >
+                  <Star className={`h-3 w-3 ${event.is_featured ? "fill-yellow-500 text-yellow-500" : ""}`} />
+                  {event.is_featured ? "Unfeature" : "Feature"}
+                </Button>
+              )}
+              <Link href={`/events/${event.id}`}>
+                <Button size="sm" variant="ghost" className="gap-1">
+                  <Eye className="h-3 w-3" />
+                  View
+                </Button>
+              </Link>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => handleDelete(event.id)}
+                disabled={actionLoading === event.id}
+                className="text-red-600 hover:bg-red-50 gap-1"
+              >
+                <Trash2 className="h-3 w-3" />
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="flex min-h-screen flex-col bg-parchment">
       <Header />
 
       <main className="flex-1 py-8">
-        <div className="mx-auto max-w-4xl px-4 sm:px-6">
-          <h1 className="mb-8 font-serif text-3xl font-bold text-granite">
-            🗓️ Manage Events
-          </h1>
+        <div className="mx-auto max-w-5xl px-4 sm:px-6">
+          <Link
+            href="/admin"
+            className="mb-6 inline-flex items-center gap-1 text-sm text-stone hover:text-granite"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Admin
+          </Link>
 
-          {/* Pending Events */}
-          <section className="mb-10">
-            <h2 className="mb-4 font-serif text-xl font-bold text-granite flex items-center gap-2">
-              <Clock className="h-5 w-5 text-copper" />
-              Pending Approval ({pendingEvents.length})
-            </h2>
-
-            {pendingEvents.length === 0 ? (
-              <Card className="border-bone bg-cream">
-                <CardContent className="py-8 text-center text-stone">
-                  No events pending approval.
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {pendingEvents.map((event) => (
-                  <Card key={event.id} className="border-copper bg-copper/5">
-                    <CardContent className="pt-6">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <h3 className="font-serif text-lg font-bold text-granite">
-                            {event.title}
-                          </h3>
-                          <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-stone">
-                            <span className="flex items-center gap-1">
-                              <Calendar className="h-4 w-4" />
-                              {formatDate(event.starts_at)}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <MapPin className="h-4 w-4" />
-                              {event.location_name}
-                            </span>
-                          </div>
-                          {event.description && (
-                            <p className="mt-2 text-sm text-stone line-clamp-2">
-                              {event.description}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            onClick={() => handleApprove(event.id)}
-                            disabled={actionLoading === event.id}
-                            className="bg-green-600 text-white hover:bg-green-700"
-                          >
-                            {actionLoading === event.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <CheckCircle className="h-4 w-4" />
-                            )}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleReject(event.id)}
-                            disabled={actionLoading === event.id}
-                            className="text-red-600 border-red-300 hover:bg-red-50"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="font-serif text-3xl font-bold text-granite">
+                🗓️ Manage Events
+              </h1>
+              <p className="text-stone mt-1">
+                Review and manage community events
+              </p>
+            </div>
+            {pendingEvents.length > 0 && (
+              <Badge className="bg-yellow-500 text-white text-lg px-3 py-1">
+                {pendingEvents.length} Pending
+              </Badge>
             )}
-          </section>
+          </div>
 
-          {/* Approved Events */}
-          <section>
-            <h2 className="mb-4 font-serif text-xl font-bold text-granite flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              Approved Events ({approvedEvents.length})
-            </h2>
+          <Tabs defaultValue="pending">
+            <TabsList className="mb-6">
+              <TabsTrigger value="pending" className="gap-2">
+                <AlertTriangle className="h-4 w-4" />
+                Pending ({pendingEvents.length})
+              </TabsTrigger>
+              <TabsTrigger value="approved" className="gap-2">
+                <CheckCircle className="h-4 w-4" />
+                Approved ({approvedEvents.length})
+              </TabsTrigger>
+            </TabsList>
 
-            {approvedEvents.length === 0 ? (
-              <Card className="border-bone bg-cream">
-                <CardContent className="py-8 text-center text-stone">
-                  No approved events yet.
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-3">
-                {approvedEvents.map((event) => (
-                  <Card key={event.id} className="border-bone bg-cream">
-                    <CardContent className="py-4">
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-medium text-granite truncate">
-                              {event.title}
-                            </h3>
-                            {event.is_featured && (
-                              <Badge className="bg-yellow-500 text-white">⭐ Featured</Badge>
-                            )}
-                          </div>
-                          <div className="text-sm text-stone">
-                            {formatDate(event.starts_at)} • {event.location_name}
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant={event.is_featured ? "default" : "outline"}
-                            onClick={() => handleToggleFeatured(event.id, event.is_featured)}
-                            disabled={actionLoading === event.id}
-                            className={event.is_featured ? "bg-yellow-500 hover:bg-yellow-600" : ""}
-                          >
-                            <Star className={`h-4 w-4 ${event.is_featured ? "fill-white" : ""}`} />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleReject(event.id)}
-                            disabled={actionLoading === event.id}
-                            className="text-red-600 border-red-300 hover:bg-red-50"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </section>
+            <TabsContent value="pending" className="space-y-4">
+              {isLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-granite" />
+                </div>
+              ) : pendingEvents.length === 0 ? (
+                <Card className="border-bone bg-cream text-center py-8">
+                  <CardContent>
+                    <CheckCircle className="mx-auto h-12 w-12 text-green-500 mb-4" />
+                    <p className="text-stone">No pending events to review!</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                pendingEvents.map((event) => (
+                  <EventCard key={event.id} event={event} />
+                ))
+              )}
+            </TabsContent>
+
+            <TabsContent value="approved" className="space-y-4">
+              {isLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-granite" />
+                </div>
+              ) : approvedEvents.length === 0 ? (
+                <Card className="border-bone bg-cream text-center py-8">
+                  <CardContent>
+                    <Calendar className="mx-auto h-12 w-12 text-stone/30 mb-4" />
+                    <p className="text-stone">No approved events yet</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                approvedEvents.map((event) => (
+                  <EventCard key={event.id} event={event} />
+                ))
+              )}
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
 

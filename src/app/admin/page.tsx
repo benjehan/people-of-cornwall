@@ -31,6 +31,8 @@ interface Stats {
   totalComments: number;
   pendingDeletions: number;
   activePrompts: number;
+  pendingEvents: number;
+  pendingNominations: number;
 }
 
 export default function AdminDashboard() {
@@ -52,7 +54,7 @@ export default function AdminDashboard() {
       const supabase = createClient();
 
       // Fetch counts (excluding soft-deleted stories)
-      const [storiesRes, reviewRes, publishedRes, usersRes, commentsRes, deletionsRes, promptsRes] = await Promise.all([
+      const [storiesRes, reviewRes, publishedRes, usersRes, commentsRes, deletionsRes, promptsRes, eventsRes, nominationsRes] = await Promise.all([
         (supabase.from("stories") as any).select("id", { count: "exact", head: true }).eq("soft_deleted", false),
         (supabase.from("stories") as any).select("id", { count: "exact", head: true }).eq("status", "review").eq("soft_deleted", false),
         (supabase.from("stories") as any).select("id", { count: "exact", head: true }).eq("status", "published").eq("soft_deleted", false),
@@ -60,6 +62,8 @@ export default function AdminDashboard() {
         (supabase.from("comments") as any).select("id", { count: "exact", head: true }),
         (supabase.from("stories") as any).select("id", { count: "exact", head: true }).eq("deletion_requested", true).eq("soft_deleted", false),
         (supabase.from("prompts") as any).select("id", { count: "exact", head: true }).eq("active", true),
+        (supabase.from("events") as any).select("id", { count: "exact", head: true }).eq("is_approved", false),
+        (supabase.from("poll_nominations") as any).select("id", { count: "exact", head: true }).eq("is_approved", false),
       ]);
 
       setStats({
@@ -70,6 +74,8 @@ export default function AdminDashboard() {
         totalComments: commentsRes.count || 0,
         pendingDeletions: deletionsRes.count || 0,
         activePrompts: promptsRes.count || 0,
+        pendingEvents: eventsRes.count || 0,
+        pendingNominations: nominationsRes.count || 0,
       });
       setLoadingStats(false);
     };
@@ -278,6 +284,11 @@ export default function AdminDashboard() {
                   <CardTitle className="flex items-center gap-2 text-lg font-serif text-granite">
                     <Vote className="h-5 w-5 text-copper" />
                     Community Polls
+                    {stats && stats.pendingNominations > 0 && (
+                      <Badge className="ml-auto bg-yellow-500 text-white border-0">
+                        {stats.pendingNominations} pending
+                      </Badge>
+                    )}
                   </CardTitle>
                   <CardDescription className="text-stone">
                     Create and manage "Best of Cornwall" voting polls.
@@ -292,6 +303,11 @@ export default function AdminDashboard() {
                   <CardTitle className="flex items-center gap-2 text-lg font-serif text-granite">
                     <Calendar className="h-5 w-5 text-copper" />
                     Local Events
+                    {stats && stats.pendingEvents > 0 && (
+                      <Badge className="ml-auto bg-yellow-500 text-white border-0">
+                        {stats.pendingEvents} pending
+                      </Badge>
+                    )}
                   </CardTitle>
                   <CardDescription className="text-stone">
                     Review and approve community-submitted events.
