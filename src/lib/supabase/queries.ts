@@ -401,20 +401,35 @@ export async function getFeaturedCollections(limit = 3) {
 // COMMENTS
 // =============================================================================
 
-export type CommentWithAuthor = Tables<"comments"> & {
+export type CommentWithAuthor = {
+  id: string;
+  story_id: string;
+  user_id: string;
+  body: string;
+  status: string;
+  created_at: string;
+  parent_id: string | null;
+  image_url: string | null;
+  like_count: number;
+  moderation_score: number | null;
+  moderation_flags: string[] | null;
   author: {
     id: string;
     display_name: string | null;
     avatar_url: string | null;
   } | null;
+  has_liked?: boolean;
+  replies?: CommentWithAuthor[];
 };
 
 /**
- * Get comments for a story
+ * Get comments for a story (with likes and replies)
+ * Sorted by most liked first, then by date
  */
-export async function getStoryComments(storyId: string) {
+export async function getStoryComments(storyId: string, userId?: string) {
   const supabase = await createClient();
 
+  // Fetch all comments for the story (visible and flagged - admins see flagged in admin panel)
   const { data, error } = await (supabase
     .from("comments") as any)
     .select(`
@@ -422,7 +437,8 @@ export async function getStoryComments(storyId: string) {
       author:users(id, display_name, avatar_url)
     `)
     .eq("story_id", storyId)
-    .eq("status", "visible")
+    .in("status", ["visible", "flagged"])
+    .order("like_count", { ascending: false })
     .order("created_at", { ascending: true });
 
   if (error) {
@@ -430,7 +446,50 @@ export async function getStoryComments(storyId: string) {
     return [];
   }
 
-  return (data || []) as CommentWithAuthor[];
+  // If user is logged in, check which comments they've liked
+  let userLikes: Set<string> = new Set();
+  if (userId) {
+    const { data: likes } = await (supabase
+      .from("comment_likes") as any)
+      .select("comment_id")
+      .eq("user_id", userId);
+    
+    if (likes) {
+      userLikes = new Set(likes.map((l: any) => l.comment_id));
+    }
+  }
+
+  // Add has_liked to each comment
+  const commentsWithLikes = (data || []).map((comment: any) => ({
+    ...comment,
+    has_liked: userLikes.has(comment.id),
+    like_count: comment.like_count || 0,
+  }));
+
+  // Organize into threaded structure
+  const commentMap = new Map<string, CommentWithAuthor>();
+  const rootComments: CommentWithAuthor[] = [];
+
+  // First pass: create map
+  commentsWithLikes.forEach((comment: CommentWithAuthor) => {
+    comment.replies = [];
+    commentMap.set(comment.id, comment);
+  });
+
+  // Second pass: organize into threads
+  commentsWithLikes.forEach((comment: CommentWithAuthor) => {
+    if (comment.parent_id && commentMap.has(comment.parent_id)) {
+      const parent = commentMap.get(comment.parent_id);
+      parent?.replies?.push(comment);
+    } else {
+      rootComments.push(comment);
+    }
+  });
+
+  // Sort root comments by likes (most liked first)
+  rootComments.sort((a, b) => (b.like_count || 0) - (a.like_count || 0));
+
+  return rootComments;
 }
 
 /**

@@ -110,8 +110,8 @@ export default async function StoryPage({
 
   const isPreview = story.status !== "published";
 
-  // Get comments (only for published stories)
-  const comments = story.status === "published" ? await getStoryComments(id) : [];
+  // Get comments (only for published stories) - pass userId to check likes
+  const comments = story.status === "published" ? await getStoryComments(id, user?.id) : [];
 
   // Check if current user has liked
   const hasLiked = user ? await hasUserLikedStory(id, user.id) : false;

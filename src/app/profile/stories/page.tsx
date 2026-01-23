@@ -428,7 +428,11 @@ function StoryCard({ story, onRefresh }: StoryCardProps) {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={handleCancelDeletion}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleCancelDeletion();
+                    }}
                     disabled={isPending}
                     className="gap-1 border-green-600 text-green-600 hover:bg-green-50"
                   >
@@ -439,7 +443,11 @@ function StoryCard({ story, onRefresh }: StoryCardProps) {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={handleDelete}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleDelete();
+                    }}
                     disabled={isPending}
                     className="gap-1 border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700"
                   >
