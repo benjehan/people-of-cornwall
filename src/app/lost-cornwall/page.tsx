@@ -60,6 +60,7 @@ export default function LostCornwallPage() {
   const [selectedPhoto, setSelectedPhoto] = useState<LostCornwallPhoto | null>(null);
   const [memoryText, setMemoryText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const loadPhotos = useCallback(async () => {
     setIsLoading(true);
@@ -121,15 +122,17 @@ export default function LostCornwallPage() {
 
     if (error) {
       console.error("Error submitting memory:", error);
-      toast.error("Failed to share your memory");
+      setSubmitMessage({ type: "error", text: "Failed to share your memory" });
     } else {
-      toast.success("Memory shared! Thank you for contributing.");
+      setSubmitMessage({ type: "success", text: "Memory shared! Thank you for contributing." });
       setMemoryText("");
       // Reload photos to get new memory
       await loadPhotos();
       // Update selected photo
       const updated = photos.find(p => p.id === selectedPhoto.id);
       if (updated) setSelectedPhoto(updated);
+      // Clear message after 3 seconds
+      setTimeout(() => setSubmitMessage(null), 3000);
     }
     setIsSubmitting(false);
   };
@@ -388,6 +391,11 @@ export default function LostCornwallPage() {
                       )}
                       Share Memory
                     </Button>
+                    {submitMessage && (
+                      <p className={`mt-2 text-sm text-center ${submitMessage.type === "success" ? "text-green-600" : "text-red-600"}`}>
+                        {submitMessage.text}
+                      </p>
+                    )}
                   </div>
                 ) : (
                   <div className="mt-4 pt-4 border-t border-bone text-center">

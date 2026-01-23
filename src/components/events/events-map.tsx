@@ -20,13 +20,17 @@ interface Event {
   starts_at: string;
   ends_at: string | null;
   all_day: boolean;
+  contact_name: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  website_url: string | null;
   price_info: string | null;
   is_free: boolean;
   is_accessible: boolean;
   is_dog_friendly: boolean;
   is_child_friendly: boolean;
   is_vegan_friendly: boolean;
-  website_url: string | null;
+  is_featured: boolean;
 }
 
 interface EventsMapProps {

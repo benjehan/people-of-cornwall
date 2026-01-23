@@ -93,6 +93,7 @@ export default function WhereIsThisPage() {
   const [resultCorrect, setResultCorrect] = useState(false);
   const [allGuesses, setAllGuesses] = useState<Guess[]>([]);
   const [showGuesses, setShowGuesses] = useState(false);
+  const [guessError, setGuessError] = useState<string | null>(null);
 
   const loadChallenges = useCallback(async () => {
     setIsLoading(true);
@@ -159,12 +160,13 @@ export default function WhereIsThisPage() {
 
     if (error) {
       if (error.code === "23505") {
-        toast.error("You've already submitted a guess for this challenge!");
+        setGuessError("You've already submitted a guess for this challenge!");
       } else {
         console.error("Error submitting guess:", error);
-        toast.error("Failed to submit guess");
+        setGuessError("Failed to submit guess");
       }
     } else {
+      setGuessError(null);
       setUserGuess({
         guess_location_name: guessLocation.trim(),
         is_correct: false,
@@ -334,6 +336,9 @@ export default function WhereIsThisPage() {
                     <p className="text-xs text-silver">
                       Be as specific as possible (village name, landmark, beach name, etc.)
                     </p>
+                    {guessError && (
+                      <p className="mt-2 text-sm text-red-600">{guessError}</p>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-4">
