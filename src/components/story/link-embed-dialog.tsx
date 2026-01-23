@@ -69,22 +69,29 @@ export function LinkEmbedDialog({
   const handleInsert = () => {
     if (!preview) return;
 
-    // Create the link embed HTML
-    const linkHtml = `
-<div class="link-embed" data-url="${preview.url}">
+    // Escape HTML entities in text content to prevent XSS
+    const escapeHtml = (text: string) => {
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    };
+
+    // Create the link embed HTML with paragraphs before and after for editing
+    const linkHtml = `<p></p><div class="link-embed" data-url="${preview.url}" contenteditable="false">
   <a href="${preview.url}" target="_blank" rel="noopener noreferrer" class="link-embed-card">
-    ${preview.image ? `<div class="link-embed-image"><img src="${preview.image}" alt="${preview.title}" /></div>` : ""}
+    ${preview.image ? `<div class="link-embed-image"><img src="${preview.image}" alt="${escapeHtml(preview.title)}" /></div>` : ""}
     <div class="link-embed-content">
       <div class="link-embed-site">
         ${preview.favicon ? `<img src="${preview.favicon}" alt="" class="link-embed-favicon" />` : ""}
-        <span>${preview.siteName}</span>
+        <span>${escapeHtml(preview.siteName)}</span>
       </div>
-      <div class="link-embed-title">${preview.title}</div>
-      ${preview.description ? `<div class="link-embed-description">${preview.description}</div>` : ""}
+      <div class="link-embed-title">${escapeHtml(preview.title)}</div>
+      ${preview.description ? `<div class="link-embed-description">${escapeHtml(preview.description)}</div>` : ""}
     </div>
   </a>
-</div>
-    `.trim();
+</div><p></p>`;
 
     onInsert(linkHtml);
     handleClose();

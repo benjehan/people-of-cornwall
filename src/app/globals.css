@@ -659,13 +659,28 @@ blockquote {
 
 .link-embed,
 .prose .link-embed,
-.story-content .link-embed {
+.story-content .link-embed,
+.ProseMirror .link-embed {
+  display: block;
   margin: 1.5rem 0;
   border-radius: var(--radius-lg);
   overflow: hidden;
   background: var(--parchment);
   border: 1px solid var(--bone);
   transition: all var(--transition-base);
+  max-width: 100%;
+  cursor: pointer;
+}
+
+/* Ensure link embed doesn't capture all clicks in editor */
+.ProseMirror .link-embed {
+  user-select: none;
+  pointer-events: auto;
+}
+
+/* Allow clicking through to the link */
+.ProseMirror .link-embed a {
+  pointer-events: auto;
 }
 
 .link-embed:hover {
