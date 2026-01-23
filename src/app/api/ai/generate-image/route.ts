@@ -179,22 +179,23 @@ Do NOT include any style instructions - just describe WHAT should be in the imag
       );
     }
 
-    const imageBuffer = await imageResponse.arrayBuffer();
+    const imageArrayBuffer = await imageResponse.arrayBuffer();
+    const imageUint8Array = new Uint8Array(imageArrayBuffer);
     
     // Upload to Supabase Storage (using admin client to bypass RLS)
     const fileName = `${user.id}/ai-generated/ai-${Date.now()}.png`;
     const { data: uploadData, error: uploadError } = await adminClient.storage
       .from("story-media")
-      .upload(fileName, imageBuffer, {
+      .upload(fileName, imageUint8Array, {
         cacheControl: "3600",
         contentType: "image/png",
         upsert: false,
       });
 
     if (uploadError) {
-      console.error("Supabase upload error:", uploadError);
+      console.error("Supabase upload error:", uploadError.message, uploadError);
       return NextResponse.json(
-        { error: "Failed to save generated image" },
+        { error: `Failed to save generated image: ${uploadError.message}` },
         { status: 500 }
       );
     }
