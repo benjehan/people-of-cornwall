@@ -72,6 +72,21 @@ export default function SettingsPage() {
             return;
           }
           console.log('[SETTINGS] Profile updated successfully');
+
+          // Also update author_display_name on all user's stories
+          const { error: storiesError } = await (supabase
+            .from("stories") as any)
+            .update({
+              author_display_name: displayName,
+            })
+            .eq("author_id", user.id);
+
+          if (storiesError) {
+            console.error('[SETTINGS] Stories update error:', storiesError);
+            // Don't fail the whole operation, just log it
+          } else {
+            console.log('[SETTINGS] Author name updated on all stories');
+          }
         } else {
           // Create new profile
           const { error: insertError } = await (supabase.from("users") as any).insert({
@@ -87,6 +102,20 @@ export default function SettingsPage() {
             return;
           }
           console.log('[SETTINGS] Profile created successfully');
+
+          // Also update author_display_name on all user's stories
+          const { error: storiesError } = await (supabase
+            .from("stories") as any)
+            .update({
+              author_display_name: displayName,
+            })
+            .eq("author_id", user.id);
+
+          if (storiesError) {
+            console.error('[SETTINGS] Stories update error:', storiesError);
+          } else {
+            console.log('[SETTINGS] Author name updated on all stories');
+          }
         }
 
         setSaved(true);
