@@ -101,13 +101,10 @@ export function StoryEditor({
 
   const handleAIEnhance = (enhancedContent: string) => {
     if (!editor) return;
-    // Wrap in paragraph tags if needed
-    const wrappedContent = enhancedContent
-      .split('\n\n')
-      .map(p => `<p>${p.trim()}</p>`)
-      .join('');
-    editor.commands.setContent(wrappedContent);
-    onChange(wrappedContent);
+    // The AI dialog now returns proper HTML with media preserved
+    // Just set it directly
+    editor.commands.setContent(enhancedContent);
+    onChange(enhancedContent);
   };
 
   if (!editor) {
