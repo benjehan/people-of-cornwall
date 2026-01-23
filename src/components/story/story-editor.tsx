@@ -16,6 +16,7 @@ import { SpeechToText } from "./speech-to-text";
 import { AIEnhanceDialog } from "./ai-enhance-dialog";
 import { AIImageDialog } from "./ai-image-dialog";
 import { VideoEmbed } from "./video-node-extension";
+import { LinkEmbed } from "./link-embed-extension";
 
 interface StoryEditorProps {
   content: string;
@@ -60,6 +61,11 @@ export function StoryEditor({
       VideoEmbed.configure({
         HTMLAttributes: {
           class: "video-embed",
+        },
+      }),
+      LinkEmbed.configure({
+        HTMLAttributes: {
+          class: "link-embed",
         },
       }),
     ],
@@ -136,9 +142,16 @@ export function StoryEditor({
     onChange(enhancedContent);
   };
 
-  const handleLinkInsert = (linkHtml: string) => {
+  const handleLinkInsert = (linkData: {
+    url: string;
+    title: string;
+    description?: string;
+    image?: string;
+    siteName: string;
+    favicon?: string;
+  }) => {
     if (!editor) return;
-    editor.chain().focus().insertContent(linkHtml).run();
+    editor.chain().focus().setLinkEmbed(linkData).run();
   };
 
   const handleAudioInsert = (url: string, title?: string) => {

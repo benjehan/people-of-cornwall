@@ -19,7 +19,14 @@ interface LinkPreviewData {
 interface LinkEmbedDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onInsert: (linkHtml: string) => void;
+  onInsert: (linkData: {
+    url: string;
+    title: string;
+    description?: string;
+    image?: string;
+    siteName: string;
+    favicon?: string;
+  }) => void;
 }
 
 export function LinkEmbedDialog({
@@ -69,31 +76,15 @@ export function LinkEmbedDialog({
   const handleInsert = () => {
     if (!preview) return;
 
-    // Escape HTML entities in text content to prevent XSS
-    const escapeHtml = (text: string) => {
-      return text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-    };
-
-    // Create the link embed HTML with paragraphs before and after for editing
-    const linkHtml = `<p></p><div class="link-embed" data-url="${preview.url}" contenteditable="false">
-  <a href="${preview.url}" target="_blank" rel="noopener noreferrer" class="link-embed-card">
-    ${preview.image ? `<div class="link-embed-image"><img src="${preview.image}" alt="${escapeHtml(preview.title)}" /></div>` : ""}
-    <div class="link-embed-content">
-      <div class="link-embed-site">
-        ${preview.favicon ? `<img src="${preview.favicon}" alt="" class="link-embed-favicon" />` : ""}
-        <span>${escapeHtml(preview.siteName)}</span>
-      </div>
-      <div class="link-embed-title">${escapeHtml(preview.title)}</div>
-      ${preview.description ? `<div class="link-embed-description">${escapeHtml(preview.description)}</div>` : ""}
-    </div>
-  </a>
-</div><p></p>`;
-
-    onInsert(linkHtml);
+    // Pass structured data to the editor
+    onInsert({
+      url: preview.url,
+      title: preview.title,
+      description: preview.description || undefined,
+      image: preview.image || undefined,
+      siteName: preview.siteName,
+      favicon: preview.favicon || undefined,
+    });
     handleClose();
   };
 
