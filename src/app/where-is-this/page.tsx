@@ -218,10 +218,18 @@ export default function WhereIsThisPage() {
           <h1 className="font-serif text-4xl md:text-5xl text-granite mb-4">
             Can You Identify This Location?
           </h1>
-          <p className="text-stone max-w-2xl mx-auto text-lg">
+          <p className="text-stone max-w-2xl mx-auto text-lg mb-6">
             Test your knowledge of Cornwall! Examine the mystery photo and guess the location.
             A new challenge appears regularly.
           </p>
+          {user && (
+            <Link href="/where-is-this/submit">
+              <Button variant="outline" className="border-atlantic text-atlantic hover:bg-atlantic hover:text-parchment">
+                <Send className="h-4 w-4 mr-2" />
+                Submit a Challenge
+              </Button>
+            </Link>
+          )}
         </div>
 
         {isLoading ? (

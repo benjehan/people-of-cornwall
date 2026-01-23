@@ -19,6 +19,8 @@ import {
   Vote,
   Megaphone,
   Calendar,
+  HelpCircle,
+  Camera,
 } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
 import { createClient } from "@/lib/supabase/client";
@@ -33,6 +35,8 @@ interface Stats {
   activePrompts: number;
   pendingEvents: number;
   pendingNominations: number;
+  pendingWhereIsThis: number;
+  pendingLostCornwall: number;
 }
 
 export default function AdminDashboard() {
@@ -54,7 +58,7 @@ export default function AdminDashboard() {
       const supabase = createClient();
 
       // Fetch counts (excluding soft-deleted stories)
-      const [storiesRes, reviewRes, publishedRes, usersRes, commentsRes, deletionsRes, promptsRes, eventsRes, nominationsRes] = await Promise.all([
+      const [storiesRes, reviewRes, publishedRes, usersRes, commentsRes, deletionsRes, promptsRes, eventsRes, nominationsRes, whereIsThisRes, lostCornwallRes] = await Promise.all([
         (supabase.from("stories") as any).select("id", { count: "exact", head: true }).eq("soft_deleted", false),
         (supabase.from("stories") as any).select("id", { count: "exact", head: true }).eq("status", "review").eq("soft_deleted", false),
         (supabase.from("stories") as any).select("id", { count: "exact", head: true }).eq("status", "published").eq("soft_deleted", false),
@@ -64,6 +68,8 @@ export default function AdminDashboard() {
         (supabase.from("prompts") as any).select("id", { count: "exact", head: true }).eq("active", true),
         (supabase.from("events") as any).select("id", { count: "exact", head: true }).eq("is_approved", false),
         (supabase.from("poll_nominations") as any).select("id", { count: "exact", head: true }).eq("is_approved", false),
+        (supabase.from("where_is_this") as any).select("id", { count: "exact", head: true }).eq("is_pending", true),
+        (supabase.from("lost_cornwall") as any).select("id", { count: "exact", head: true }).eq("is_pending", true),
       ]);
 
       setStats({
@@ -76,6 +82,8 @@ export default function AdminDashboard() {
         activePrompts: promptsRes.count || 0,
         pendingEvents: eventsRes.count || 0,
         pendingNominations: nominationsRes.count || 0,
+        pendingWhereIsThis: whereIsThisRes.count || 0,
+        pendingLostCornwall: lostCornwallRes.count || 0,
       });
       setLoadingStats(false);
     };
@@ -311,6 +319,44 @@ export default function AdminDashboard() {
                   </CardTitle>
                   <CardDescription className="text-stone">
                     Review and approve community-submitted events.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
+
+            <Link href="/admin/where-is-this">
+              <Card className="h-full border-bone bg-cream transition-all hover:border-granite/30 hover:shadow-md">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg font-serif text-granite">
+                    <HelpCircle className="h-5 w-5 text-atlantic" />
+                    Where Is This?
+                    {stats && stats.pendingWhereIsThis > 0 && (
+                      <Badge className="ml-auto bg-yellow-500 text-white border-0">
+                        {stats.pendingWhereIsThis} pending
+                      </Badge>
+                    )}
+                  </CardTitle>
+                  <CardDescription className="text-stone">
+                    Review challenge submissions and manage active challenges.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
+
+            <Link href="/admin/lost-cornwall">
+              <Card className="h-full border-bone bg-cream transition-all hover:border-granite/30 hover:shadow-md">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg font-serif text-granite">
+                    <Camera className="h-5 w-5 text-sepia" />
+                    Lost Cornwall
+                    {stats && stats.pendingLostCornwall > 0 && (
+                      <Badge className="ml-auto bg-yellow-500 text-white border-0">
+                        {stats.pendingLostCornwall} pending
+                      </Badge>
+                    )}
+                  </CardTitle>
+                  <CardDescription className="text-stone">
+                    Review historic photo submissions and manage the gallery.
                   </CardDescription>
                 </CardHeader>
               </Card>

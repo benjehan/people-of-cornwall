@@ -33,6 +33,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import Image from "next/image";
+import Link from "next/link";
 
 interface LostCornwallPhoto {
   id: string;
@@ -255,10 +256,18 @@ export default function LostCornwallPage() {
           <h1 className="font-serif text-4xl md:text-5xl text-granite mb-4">
             Windows to the Past
           </h1>
-          <p className="text-stone max-w-2xl mx-auto text-lg">
+          <p className="text-stone max-w-2xl mx-auto text-lg mb-6">
             Explore historic photographs of Cornwall and share your memories. 
             Do you recognize these places? Remember these scenes? Help us preserve our heritage.
           </p>
+          {user && (
+            <Link href="/lost-cornwall/submit">
+              <Button variant="outline" className="border-sepia text-sepia hover:bg-sepia hover:text-parchment">
+                <Camera className="h-4 w-4 mr-2" />
+                Share a Historic Photo
+              </Button>
+            </Link>
+          )}
         </div>
 
         {/* Sort Controls */}
