@@ -5,23 +5,27 @@
 -- 1. COMMUNITY POLLS / "THE BEST OF..." VOTING
 -- ============================================
 
--- Poll categories enum
-CREATE TYPE poll_category AS ENUM (
-  'best_joke',
-  'best_business',
-  'best_pub',
-  'best_cafe',
-  'best_restaurant',
-  'best_walk',
-  'best_beach',
-  'best_kindness',
-  'best_event',
-  'best_memory',
-  'best_site',
-  'best_shop',
-  'best_character',
-  'other'
-);
+-- Poll categories enum (only create if doesn't exist)
+DO $$ BEGIN
+  CREATE TYPE poll_category AS ENUM (
+    'best_joke',
+    'best_business',
+    'best_pub',
+    'best_cafe',
+    'best_restaurant',
+    'best_walk',
+    'best_beach',
+    'best_kindness',
+    'best_event',
+    'best_memory',
+    'best_site',
+    'best_shop',
+    'best_character',
+    'other'
+  );
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
 -- Polls table (admin creates polls)
 CREATE TABLE IF NOT EXISTS polls (
@@ -65,20 +69,24 @@ CREATE TABLE IF NOT EXISTS poll_votes (
 -- 2. CONTRIBUTOR BADGES
 -- ============================================
 
-CREATE TYPE badge_type AS ENUM (
-  'first_story',        -- Published first story
-  'storyteller_5',      -- 5 published stories
-  'storyteller_10',     -- 10 published stories
-  'storyteller_25',     -- 25 published stories
-  'voice_keeper',       -- First audio recording
-  'memory_keeper',      -- Stories span 3+ decades
-  'local_legend',       -- 10+ stories about one location
-  'community_star',     -- 50+ comments received
-  'ambassador',         -- Community ambassador (manual)
-  'founding_member',    -- Joined in first month
-  'helpful_voice',      -- 20+ comments on others' stories
-  'popular_story'       -- Story with 100+ likes
-);
+DO $$ BEGIN
+  CREATE TYPE badge_type AS ENUM (
+    'first_story',        -- Published first story
+    'storyteller_5',      -- 5 published stories
+    'storyteller_10',     -- 10 published stories
+    'storyteller_25',     -- 25 published stories
+    'voice_keeper',       -- First audio recording
+    'memory_keeper',      -- Stories span 3+ decades
+    'local_legend',       -- 10+ stories about one location
+    'community_star',     -- 50+ comments received
+    'ambassador',         -- Community ambassador (manual)
+    'founding_member',    -- Joined in first month
+    'helpful_voice',      -- 20+ comments on others' stories
+    'popular_story'       -- Story with 100+ likes
+  );
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
 CREATE TABLE IF NOT EXISTS user_badges (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -93,11 +101,15 @@ CREATE TABLE IF NOT EXISTS user_badges (
 -- 3. EMAIL DIGEST SUBSCRIPTIONS
 -- ============================================
 
-CREATE TYPE digest_frequency AS ENUM (
-  'weekly',
-  'monthly',
-  'never'
-);
+DO $$ BEGIN
+  CREATE TYPE digest_frequency AS ENUM (
+    'weekly',
+    'monthly',
+    'never'
+  );
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
 CREATE TABLE IF NOT EXISTS digest_subscriptions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
