@@ -15,6 +15,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getAmbientSound } from "@/lib/ambient-sounds";
 
 interface StoryReaderProps {
   storyBody: string;
@@ -174,8 +175,11 @@ export function StoryReader({
     
     // Start ambient sound if available
     if (ambientSoundId && ambientAudioRef.current) {
+      console.log("[StoryReader] Starting ambient sound...");
       ambientAudioRef.current.volume = (isMuted ? 0 : volume) * 0.3; // Lower volume for ambient
-      ambientAudioRef.current.play().catch(console.error);
+      ambientAudioRef.current.play()
+        .then(() => console.log("[StoryReader] Ambient sound playing"))
+        .catch((err) => console.error("[StoryReader] Ambient sound failed:", err));
     }
   }, [speechSupported, getVoice, storyTitle, isMuted, volume, ambientSoundId]);
 
@@ -233,9 +237,23 @@ export function StoryReader({
   // Load ambient audio
   useEffect(() => {
     if (ambientSoundId) {
-      const audioUrl = `https://qigfvouunlunkconlcqk.supabase.co/storage/v1/object/public/ambient-sounds/${ambientSoundId}.mp3`;
-      ambientAudioRef.current = new Audio(audioUrl);
-      ambientAudioRef.current.loop = true;
+      const sound = getAmbientSound(ambientSoundId);
+      if (sound) {
+        console.log("[StoryReader] Loading ambient sound:", sound.name, sound.url);
+        const audio = new Audio(sound.url);
+        audio.loop = true;
+        audio.preload = "auto";
+        
+        audio.oncanplaythrough = () => {
+          console.log("[StoryReader] Ambient sound ready to play");
+        };
+        
+        audio.onerror = (e) => {
+          console.error("[StoryReader] Ambient sound failed to load:", e);
+        };
+        
+        ambientAudioRef.current = audio;
+      }
     }
     
     return () => {
