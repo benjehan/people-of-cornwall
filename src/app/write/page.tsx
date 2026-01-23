@@ -369,6 +369,7 @@ function WritePageContent() {
                 onChange={setBody}
                 placeholder="Start writing your story... What happened? Where were you? What do you remember?"
                 storyId={storyId || undefined}
+                title={title}
               />
 
               {/* Save Status */}

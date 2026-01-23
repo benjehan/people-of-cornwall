@@ -5,16 +5,20 @@ import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import Image from "@tiptap/extension-image";
 import { Button } from "@/components/ui/button";
-import { Bold, Italic, List, ListOrdered, Undo, Redo, ImagePlus } from "lucide-react";
+import { Bold, Italic, List, ListOrdered, Undo, Redo, ImagePlus, Youtube, Mic, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ImageUploadDialog } from "./image-upload-dialog";
+import { VideoEmbedDialog } from "./video-embed-dialog";
+import { SpeechToText } from "./speech-to-text";
+import { AIEnhanceDialog } from "./ai-enhance-dialog";
 
 interface StoryEditorProps {
   content: string;
   onChange: (content: string) => void;
   placeholder?: string;
   storyId?: string;
+  title?: string;
 }
 
 export function StoryEditor({
@@ -22,8 +26,12 @@ export function StoryEditor({
   onChange,
   placeholder = "Start writing your story...",
   storyId,
+  title = "",
 }: StoryEditorProps) {
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
+  const [videoDialogOpen, setVideoDialogOpen] = useState(false);
+  const [aiDialogOpen, setAiDialogOpen] = useState(false);
+  const [showVoiceInput, setShowVoiceInput] = useState(false);
   const [initialContent, setInitialContent] = useState(content);
 
   const editor = useEditor({
@@ -80,6 +88,28 @@ export function StoryEditor({
     }
   };
 
+  const handleVideoEmbed = (embedHtml: string) => {
+    if (!editor) return;
+    editor.chain().focus().insertContent(embedHtml).run();
+  };
+
+  const handleSpeechTranscript = useCallback((text: string) => {
+    if (!editor) return;
+    // Insert the transcribed text at the cursor position
+    editor.chain().focus().insertContent(text).run();
+  }, [editor]);
+
+  const handleAIEnhance = (enhancedContent: string) => {
+    if (!editor) return;
+    // Wrap in paragraph tags if needed
+    const wrappedContent = enhancedContent
+      .split('\n\n')
+      .map(p => `<p>${p.trim()}</p>`)
+      .join('');
+    editor.commands.setContent(wrappedContent);
+    onChange(wrappedContent);
+  };
+
   if (!editor) {
     return (
       <div className="min-h-[400px] animate-pulse rounded-lg bg-chalk-white-dark/50" />
@@ -88,16 +118,36 @@ export function StoryEditor({
 
   return (
     <div className="rounded-lg border border-chalk-white-dark bg-chalk-white">
-      {/* Image Upload Dialog */}
+      {/* Dialogs */}
       <ImageUploadDialog
         open={imageDialogOpen}
         onOpenChange={setImageDialogOpen}
         onUpload={handleImageInsert}
         storyId={storyId}
       />
+      <VideoEmbedDialog
+        open={videoDialogOpen}
+        onOpenChange={setVideoDialogOpen}
+        onEmbed={handleVideoEmbed}
+      />
+      <AIEnhanceDialog
+        open={aiDialogOpen}
+        onOpenChange={setAiDialogOpen}
+        originalContent={content}
+        title={title}
+        onAccept={handleAIEnhance}
+      />
+
+      {/* Voice Input Section (collapsible) */}
+      {showVoiceInput && (
+        <div className="border-b border-chalk-white-dark bg-cream/50 p-4">
+          <SpeechToText onTranscript={handleSpeechTranscript} />
+        </div>
+      )}
 
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-1 border-b border-chalk-white-dark p-2">
+        {/* Text formatting */}
         <Button
           type="button"
           variant="ghost"
@@ -107,6 +157,7 @@ export function StoryEditor({
             "h-8 w-8 p-0",
             editor.isActive("bold") && "bg-chalk-white-dark"
           )}
+          title="Bold"
         >
           <Bold className="h-4 w-4" />
         </Button>
@@ -119,10 +170,13 @@ export function StoryEditor({
             "h-8 w-8 p-0",
             editor.isActive("italic") && "bg-chalk-white-dark"
           )}
+          title="Italic"
         >
           <Italic className="h-4 w-4" />
         </Button>
         <div className="mx-2 h-6 w-px bg-chalk-white-dark" />
+        
+        {/* Lists */}
         <Button
           type="button"
           variant="ghost"
@@ -132,6 +186,7 @@ export function StoryEditor({
             "h-8 w-8 p-0",
             editor.isActive("bulletList") && "bg-chalk-white-dark"
           )}
+          title="Bullet list"
         >
           <List className="h-4 w-4" />
         </Button>
@@ -144,21 +199,67 @@ export function StoryEditor({
             "h-8 w-8 p-0",
             editor.isActive("orderedList") && "bg-chalk-white-dark"
           )}
+          title="Numbered list"
         >
           <ListOrdered className="h-4 w-4" />
         </Button>
         <div className="mx-2 h-6 w-px bg-chalk-white-dark" />
+        
+        {/* Media */}
         <Button
           type="button"
           variant="ghost"
           size="sm"
           onClick={() => setImageDialogOpen(true)}
           className="h-8 px-2 gap-1"
+          title="Add image"
         >
           <ImagePlus className="h-4 w-4" />
           <span className="hidden sm:inline text-xs">Image</span>
         </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setVideoDialogOpen(true)}
+          className="h-8 px-2 gap-1"
+          title="Embed YouTube or Vimeo video"
+        >
+          <Youtube className="h-4 w-4" />
+          <span className="hidden sm:inline text-xs">Video</span>
+        </Button>
+        <div className="mx-2 h-6 w-px bg-chalk-white-dark" />
+        
+        {/* Voice & AI */}
+        <Button
+          type="button"
+          variant={showVoiceInput ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setShowVoiceInput(!showVoiceInput)}
+          className={cn(
+            "h-8 px-2 gap-1",
+            showVoiceInput && "bg-granite text-parchment"
+          )}
+          title="Voice input - narrate your story"
+        >
+          <Mic className="h-4 w-4" />
+          <span className="hidden sm:inline text-xs">Voice</span>
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setAiDialogOpen(true)}
+          className="h-8 px-2 gap-1"
+          title="AI writing assistant"
+        >
+          <Wand2 className="h-4 w-4" />
+          <span className="hidden sm:inline text-xs">AI Help</span>
+        </Button>
+        
         <div className="flex-1" />
+        
+        {/* Undo/Redo */}
         <Button
           type="button"
           variant="ghost"
@@ -166,6 +267,7 @@ export function StoryEditor({
           onClick={() => editor.chain().focus().undo().run()}
           disabled={!editor.can().undo()}
           className="h-8 w-8 p-0"
+          title="Undo"
         >
           <Undo className="h-4 w-4" />
         </Button>
@@ -176,6 +278,7 @@ export function StoryEditor({
           onClick={() => editor.chain().focus().redo().run()}
           disabled={!editor.can().redo()}
           className="h-8 w-8 p-0"
+          title="Redo"
         >
           <Redo className="h-4 w-4" />
         </Button>
@@ -233,6 +336,25 @@ export function StoryEditor({
           border-radius: 0.5rem;
           margin: 1rem auto;
           display: block;
+        }
+        
+        .ProseMirror .video-embed {
+          position: relative;
+          width: 100%;
+          padding-bottom: 56.25%; /* 16:9 aspect ratio */
+          margin: 1.5rem 0;
+          border-radius: 0.5rem;
+          overflow: hidden;
+          background: #1a1a1a;
+        }
+        
+        .ProseMirror .video-embed iframe {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          border: 0;
         }
       `}</style>
     </div>
