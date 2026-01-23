@@ -17,6 +17,9 @@ export function StoryCard({ story, featured = false, showImage = true }: StoryCa
   const authorName = story.anonymous
     ? "Anonymous"
     : story.author_display_name || "A Cornish voice";
+  
+  // Only link to author profile if not anonymous and we have an author_id
+  const authorLink = !story.anonymous && story.author_id ? `/author/${story.author_id}` : null;
 
   // Format the date
   const recordedDate = story.published_at
@@ -100,7 +103,15 @@ export function StoryCard({ story, featured = false, showImage = true }: StoryCa
             {/* Author & engagement */}
             <div className="flex flex-wrap items-center justify-between gap-4">
               <span className="text-sm text-stone">
-                By {authorName}
+                By {authorLink ? (
+                  <Link 
+                    href={authorLink} 
+                    className="hover:text-granite hover:underline"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {authorName}
+                  </Link>
+                ) : authorName}
                 {recordedDate && <span className="ml-2 text-silver">· {recordedDate}</span>}
               </span>
               <div className="flex items-center gap-4 text-sm text-stone">
@@ -176,7 +187,15 @@ export function StoryCard({ story, featured = false, showImage = true }: StoryCa
             {/* Author & stats */}
             <div className="mt-auto flex items-center justify-between pt-3 border-t border-bone">
               <span className="text-xs text-stone truncate">
-                {authorName}
+                {authorLink ? (
+                  <Link 
+                    href={authorLink} 
+                    className="hover:text-granite hover:underline"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {authorName}
+                  </Link>
+                ) : authorName}
               </span>
               <div className="flex items-center gap-2 text-xs text-silver">
                 <span className="flex items-center gap-1">
@@ -227,7 +246,15 @@ export function StoryCard({ story, featured = false, showImage = true }: StoryCa
         <div className="mt-auto pt-4 border-t border-bone">
           <div className="flex items-center justify-between">
             <span className="text-sm text-stone">
-              {authorName}
+              {authorLink ? (
+                <Link 
+                  href={authorLink} 
+                  className="hover:text-granite hover:underline"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {authorName}
+                </Link>
+              ) : authorName}
             </span>
             <div className="flex items-center gap-3 text-xs text-silver">
               <span className="flex items-center gap-1">

@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { FileText, Settings, PenLine, Calendar, Mail } from "lucide-react";
+import { FileText, Settings, PenLine, Calendar, Mail, ExternalLink, User } from "lucide-react";
 import { useUser, getDisplayName, getAvatarUrl } from "@/hooks/use-user";
 
 export default function ProfilePage() {
@@ -73,11 +73,32 @@ export default function ProfilePage() {
                       Joined {joinedDate}
                     </span>
                   </div>
+
+                  {/* Bio */}
+                  {(profile as any)?.bio ? (
+                    <p className="mb-4 text-stone leading-relaxed max-w-xl text-center sm:text-left">
+                      {(profile as any).bio}
+                    </p>
+                  ) : (
+                    <p className="mb-4 text-silver italic text-center sm:text-left">
+                      No bio yet —{" "}
+                      <Link href="/profile/settings" className="text-granite underline hover:text-slate">
+                        add one in settings
+                      </Link>
+                    </p>
+                  )}
+
                   <div className="flex flex-wrap justify-center gap-2 sm:justify-start">
                     <Link href="/write">
                       <Button className="gap-2 bg-granite text-parchment hover:bg-slate">
                         <PenLine className="h-4 w-4" />
                         Share a story
+                      </Button>
+                    </Link>
+                    <Link href={`/author/${user.id}`}>
+                      <Button variant="outline" className="gap-2">
+                        <User className="h-4 w-4" />
+                        View Public Profile
                       </Button>
                     </Link>
                     <Link href="/profile/settings">
