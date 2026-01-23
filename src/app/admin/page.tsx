@@ -18,6 +18,7 @@ import {
   Sparkles,
   Vote,
   Megaphone,
+  Calendar,
 } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
 import { createClient } from "@/lib/supabase/client";
@@ -280,6 +281,20 @@ export default function AdminDashboard() {
                   </CardTitle>
                   <CardDescription className="text-stone">
                     Create and manage "Best of Cornwall" voting polls.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
+
+            <Link href="/admin/events">
+              <Card className="h-full border-bone bg-cream transition-all hover:border-granite/30 hover:shadow-md">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg font-serif text-granite">
+                    <Calendar className="h-5 w-5 text-copper" />
+                    Local Events
+                  </CardTitle>
+                  <CardDescription className="text-stone">
+                    Review and approve community-submitted events.
                   </CardDescription>
                 </CardHeader>
               </Card>

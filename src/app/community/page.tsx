@@ -42,6 +42,8 @@ import {
   Waves,
   ShoppingBag,
   User,
+  Share2,
+  Clock,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -72,8 +74,40 @@ interface Poll {
   category: keyof typeof POLL_CATEGORIES;
   location_name: string | null;
   is_active: boolean;
-  ends_at: string | null;
+  nominations_end_at: string | null;
+  voting_start_at: string | null;
+  voting_end_at: string | null;
   nominations: Nomination[];
+}
+
+// Countdown helper
+function getCountdown(targetDate: string | null): string | null {
+  if (!targetDate) return null;
+  const target = new Date(targetDate);
+  const now = new Date();
+  const diff = target.getTime() - now.getTime();
+  
+  if (diff <= 0) return "Ended";
+  
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  
+  if (days > 0) return `${days}d ${hours}h left`;
+  if (hours > 0) return `${hours}h left`;
+  return "Ending soon";
+}
+
+// Poll phase helper
+function getPollPhase(poll: Poll): "nominations" | "voting" | "ended" {
+  const now = new Date();
+  
+  if (poll.voting_end_at && new Date(poll.voting_end_at) < now) {
+    return "ended";
+  }
+  if (poll.voting_start_at && new Date(poll.voting_start_at) <= now) {
+    return "voting";
+  }
+  return "nominations";
 }
 
 interface Nomination {
@@ -361,9 +395,26 @@ export default function CommunityPage() {
               polls.map((poll) => {
                 const category = POLL_CATEGORIES[poll.category];
                 const CategoryIcon = category.icon;
+                const phase = getPollPhase(poll);
+                const countdown = phase === "nominations" 
+                  ? getCountdown(poll.nominations_end_at)
+                  : phase === "voting" 
+                    ? getCountdown(poll.voting_end_at)
+                    : null;
+
+                const sharePoll = () => {
+                  const url = `${window.location.origin}/community#poll-${poll.id}`;
+                  const text = `Vote in "${poll.title}" on People of Cornwall!`;
+                  if (navigator.share) {
+                    navigator.share({ title: poll.title, text, url });
+                  } else {
+                    navigator.clipboard.writeText(`${text}\n${url}`);
+                    alert("Link copied to clipboard!");
+                  }
+                };
                 
                 return (
-                  <Card key={poll.id} className="border-bone bg-cream overflow-hidden">
+                  <Card key={poll.id} id={`poll-${poll.id}`} className="border-bone bg-cream overflow-hidden">
                     <CardHeader className="bg-gradient-to-r from-granite to-slate text-parchment">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
@@ -380,15 +431,46 @@ export default function CommunityPage() {
                             )}
                           </div>
                         </div>
-                        <Badge variant="secondary" className="bg-parchment/20 text-parchment">
-                          {category.emoji} {category.label}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={sharePoll}
+                            className="text-parchment/80 hover:text-parchment hover:bg-parchment/10"
+                          >
+                            <Share2 className="h-4 w-4" />
+                          </Button>
+                          <Badge variant="secondary" className="bg-parchment/20 text-parchment">
+                            {category.emoji} {category.label}
+                          </Badge>
+                        </div>
                       </div>
                       {poll.description && (
                         <CardDescription className="text-parchment/80 mt-2">
                           {poll.description}
                         </CardDescription>
                       )}
+                      {/* Phase & Countdown */}
+                      <div className="flex items-center gap-3 mt-3 pt-3 border-t border-parchment/20">
+                        <Badge 
+                          variant="outline" 
+                          className={`border-0 ${
+                            phase === "nominations" ? "bg-blue-500/20 text-blue-200" :
+                            phase === "voting" ? "bg-green-500/20 text-green-200" :
+                            "bg-stone/20 text-stone"
+                          }`}
+                        >
+                          {phase === "nominations" ? "📝 Nominations Open" :
+                           phase === "voting" ? "🗳️ Voting Now" :
+                           "✅ Ended"}
+                        </Badge>
+                        {countdown && countdown !== "Ended" && (
+                          <span className="text-xs text-parchment/70 flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {countdown}
+                          </span>
+                        )}
+                      </div>
                     </CardHeader>
                     <CardContent className="pt-6">
                       {poll.nominations.length === 0 ? (

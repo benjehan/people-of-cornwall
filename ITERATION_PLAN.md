@@ -748,4 +748,111 @@ Quick wins that enhance the current platform without major infrastructure change
 
 ---
 
+## Future Feature Ideas (Backlog)
+
+Features to implement once the platform has more traction and community:
+
+### Lost Cornwall 📍
+- Tag locations with historical photos
+- "Before and after" comparisons
+- Community-sourced visual history
+- Map overlay of vanished places
+
+### "Where Is This?" Challenge 🔍
+- Photo-based guessing game
+- Community votes on answers
+- Weekly featured mystery photo
+- Leaderboard for correct guesses
+
+### Cornish Dialect Glossary 📖
+- Community-contributed phrases and words
+- Audio pronunciations
+- Regional variations
+- Search and browse by category
+
+### Best Photo of the Week 📸
+- Community nominations
+- Weekly voting
+- Featured on homepage
+- Annual "best of" compilation
+
+### Mini-Stories Feed 💬
+- 500-character quick stories
+- Twitter-like feed format
+- Quick memories and moments
+- Easier barrier to entry
+
+### Heritage Trails 🚶
+- Curated story routes on map
+- Walking tour integration
+- QR codes at physical locations
+- Tourism board partnerships
+
+---
+
+## Monetization Strategy
+
+### Phase 1: Community Building (Current)
+- Focus on organic growth
+- Free platform, no ads
+- Build trust and content library
+- Establish brand identity
+
+### Phase 2: Soft Monetization
+- **Sponsored Collections**: Local businesses sponsor themed collections (£50-200/month)
+- **Featured Events**: Priority listing in events calendar (£10-25/event)
+- **"Friend of Cornwall" Membership**: Optional £30/year for badges, early access
+
+### Phase 3: Business Integration
+- **Local Business Directory**: Featured listings near relevant stories
+- **Heritage Trail Sponsorship**: Businesses sponsor walking routes
+- **Museum Partnerships**: Co-branded digital exhibitions
+
+### Phase 4: Premium Features
+- **Stripe Integration**: Payment processing for sponsorships
+- **Business Dashboard**: Analytics for sponsors
+- **Advertising Slots**: Tasteful, heritage-aligned ads
+
+### Tourism Opportunities
+- **Visit Cornwall Partnership**: Official heritage content partner
+- **Hotel/B&B Promotions**: "Stay near this story" links
+- **Tour Operator Integration**: Stories as tour content
+- **Heritage Site Tie-ins**: Digital companion to physical visits
+
+### Revenue Projections (Year 2)
+| Stream | Monthly | Annual |
+|--------|---------|--------|
+| Sponsored Collections | £500 | £6,000 |
+| Featured Events | £200 | £2,400 |
+| Memberships (500 @ £30) | - | £15,000 |
+| Business Directory | £300 | £3,600 |
+| **Total** | **~£1,000** | **~£27,000** |
+
+---
+
+## Growth Strategy
+
+### Quick Wins (This Month)
+1. **Local Press**: Cornwall Live, West Briton, Falmouth Packet
+2. **BBC Radio Cornwall**: Heritage storytelling segment pitch
+3. **Parish Magazines**: Free listings in community newsletters
+
+### Medium Effort
+1. **Library Partnerships**: "Share Your Story" workshops
+2. **WI/Rotary Presentations**: Demo to community groups
+3. **Care Home Visits**: Help elderly residents record memories
+
+### Community Retention
+1. **Weekly Digest Emails**: Top 3 stories every Sunday ✅
+2. **Story of the Week**: Homepage featured story
+3. **Seasonal Prompts**: Christmas memories, harvest stories
+4. **Anniversary Emails**: "Your story was shared 1 year ago"
+
+### Social Media
+1. **Facebook Groups**: Target local village groups
+2. **Instagram Stories**: Daily heritage photos
+3. **WhatsApp Sharing**: Easy share buttons on stories ✅
+
+---
+
 *Last updated: January 2026*
