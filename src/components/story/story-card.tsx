@@ -45,13 +45,13 @@ export function StoryCard({ story, featured = false, showImage = true }: StoryCa
     return (
       <Link href={`/stories/${story.id}`} className="group block">
         <article className="overflow-hidden rounded-lg border border-bone bg-cream transition-all hover:border-granite hover:shadow-lg">
-          {/* Image */}
+          {/* Image - 16:9 aspect ratio for consistent display */}
           {showImage && imageUrl && (
-            <div className="relative h-64 w-full overflow-hidden bg-bone md:h-80">
+            <div className="relative aspect-[16/9] w-full overflow-hidden bg-granite">
               <img
                 src={imageUrl}
                 alt={story.title}
-                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-granite/60 to-transparent" />
               <div className="absolute bottom-4 left-4 right-4">
@@ -149,12 +149,12 @@ export function StoryCard({ story, featured = false, showImage = true }: StoryCa
     return (
       <Link href={`/stories/${story.id}`} className="group block h-full">
         <article className="flex h-full flex-col overflow-hidden rounded-lg border border-transparent bg-parchment transition-all hover:border-bone hover:bg-cream hover:shadow-sm">
-          {/* Image thumbnail */}
-          <div className="relative h-40 w-full overflow-hidden bg-bone">
+          {/* Image thumbnail - 16:9 aspect ratio for consistent display */}
+          <div className="relative aspect-[16/9] w-full overflow-hidden bg-granite">
             <img
               src={imageUrl}
               alt={story.title}
-              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+              className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
             />
           </div>
           
