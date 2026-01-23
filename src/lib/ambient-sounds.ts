@@ -193,6 +193,22 @@ export const AMBIENT_SOUNDS: AmbientSound[] = [
     category: "village",
     url: soundUrl("fishing.mp3"),
   },
+  {
+    id: "rugby",
+    name: "Rugby Match",
+    description: "Cheering crowds, whistles, the roar of the game",
+    icon: "🏉",
+    category: "village",
+    url: soundUrl("rugby.mp3"),
+  },
+  {
+    id: "drip",
+    name: "Old House Dripping",
+    description: "Water dripping in a damp old cottage",
+    icon: "💧",
+    category: "indoor",
+    url: soundUrl("drip.mp3"),
+  },
 ];
 
 // Group sounds by category for the dropdown

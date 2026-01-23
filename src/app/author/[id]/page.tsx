@@ -5,6 +5,7 @@ import { Footer } from "@/components/layout/footer";
 import { StoryCard } from "@/components/story/story-card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ArrowLeft, MapPin, Calendar, BookOpen } from "lucide-react";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { Metadata } from "next";
 import type { StoryWithDetails } from "@/types";
@@ -34,25 +35,37 @@ interface Story {
 }
 
 async function getAuthorProfile(id: string): Promise<Author | null> {
-  const supabase = await createClient();
-  const { data } = await (supabase
-    .from("users") as any)
+  // Use admin client to bypass RLS for public profile viewing
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("users")
     .select("id, display_name, avatar_url, bio, created_at")
     .eq("id", id)
     .single();
+  
+  if (error) {
+    console.error("[Author] Error fetching profile:", error);
+    return null;
+  }
   return data;
 }
 
 async function getAuthorStories(authorId: string): Promise<Story[]> {
-  const supabase = await createClient();
-  const { data } = await (supabase
-    .from("stories") as any)
+  // Use admin client to bypass RLS for public stories
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from("stories")
     .select("*, likes(count), comments(count)")
     .eq("author_id", authorId)
     .eq("status", "published")
     .eq("soft_deleted", false)
     .eq("anonymous", false) // Only show non-anonymous stories on profile
     .order("published_at", { ascending: false });
+
+  if (error) {
+    console.error("[Author] Error fetching stories:", error);
+    return [];
+  }
 
   return (data || []).map((story: any) => ({
     ...story,

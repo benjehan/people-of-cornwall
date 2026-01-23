@@ -54,13 +54,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { storyContent, storyTitle, customPrompt, imageStyle } = await request.json();
+    const { storyContent, storyTitle, customPrompt, imageStyle, prompt, style, storyId, insertIntoStory } = await request.json();
+    
+    // Support both old and new param names
+    const actualPrompt = customPrompt || prompt;
+    const actualStyle = imageStyle || style;
+    const actualContent = storyContent || (storyTitle ? `Title: ${storyTitle}` : null);
 
     // Build the prompt
-    let userPrompt = customPrompt;
+    let userPrompt = actualPrompt;
 
     // If no custom prompt, generate one from the story
-    if (!userPrompt && storyContent) {
+    if (!userPrompt && actualContent) {
       // First, use GPT to suggest a good image prompt based on the story
       const suggestResponse = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
@@ -81,7 +86,7 @@ Do NOT include any style instructions - just describe WHAT should be in the imag
             },
             {
               role: "user",
-              content: `Story title: "${storyTitle || 'Untitled'}"\n\nStory content:\n${storyContent.slice(0, 2000)}`
+              content: `Story title: "${storyTitle || 'Untitled'}"\n\nStory content:\n${actualContent.slice(0, 2000)}`
             }
           ],
           temperature: 0.7,
@@ -104,7 +109,7 @@ Do NOT include any style instructions - just describe WHAT should be in the imag
 
     // Determine style modifier based on user selection
     let styleModifier = "";
-    switch (imageStyle) {
+    switch (actualStyle) {
       case "painting":
         styleModifier = "Oil painting style, visible brushstrokes, rich textures.";
         break;
@@ -225,6 +230,26 @@ Do NOT include any style instructions - just describe WHAT should be in the imag
     }
 
     const creditsRemaining = isAdmin ? -1 : credits - 1; // -1 means unlimited
+
+    // If insertIntoStory is true, update the story body with the new image
+    if (insertIntoStory && storyId) {
+      const { data: story } = await adminClient
+        .from("stories")
+        .select("body")
+        .eq("id", storyId)
+        .single();
+
+      if (story) {
+        const imageHtml = `<p><img src="${publicUrl}" alt="AI generated illustration for ${storyTitle || 'this story'}" style="max-width: 100%; height: auto;" /></p>`;
+        // Insert image at the beginning of the story body
+        const newBody = imageHtml + (story.body || "");
+        
+        await adminClient
+          .from("stories")
+          .update({ body: newBody })
+          .eq("id", storyId);
+      }
+    }
 
     return NextResponse.json({
       imageUrl: publicUrl, // Now returns permanent Supabase URL

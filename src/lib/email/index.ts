@@ -317,7 +317,9 @@ export async function sendStorySubmittedEmail({
   moderationScore?: number;
   moderationFlags?: string[];
 }): Promise<EmailResult> {
+  // Link directly to the story page - admin must be logged in to review
   const reviewUrl = `${SITE_URL}/stories/${storyId}`;
+  const adminDashboardUrl = `${SITE_URL}/admin/review`;
   
   // Build moderation section if there are results
   let moderationSection = "";
@@ -375,10 +377,18 @@ export async function sendStorySubmittedEmail({
       </p>
     </div>
     ${moderationSection}
-    <p style="margin: 0 0 32px 0; text-align: center;">
+    <p style="margin: 0 0 16px 0; text-align: center;">
       <a href="${reviewUrl}" style="display: inline-block; background-color: #1a1a1a; color: #f8f7f4; text-decoration: none; padding: 14px 32px; border-radius: 4px; font-size: 15px;">
-        Review Story
+        Review This Story
       </a>
+    </p>
+    <p style="margin: 0 0 32px 0; text-align: center;">
+      <a href="${adminDashboardUrl}" style="color: #1a1a1a; text-decoration: underline; font-size: 14px;">
+        Or view all pending stories in Admin Dashboard
+      </a>
+    </p>
+    <p style="margin: 0; color: #6b6b6b; font-size: 13px; font-style: italic;">
+      Note: You must be signed in as an admin to review stories.
     </p>
   `);
 

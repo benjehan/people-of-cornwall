@@ -22,6 +22,8 @@ import {
   AlertCircle,
   RefreshCw,
   Sparkles,
+  Headphones,
+  User,
 } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
 import { saveStoryAction, submitStoryAction } from "@/app/actions/stories";
@@ -52,6 +54,7 @@ function WritePageContent() {
   const [promptId, setPromptId] = useState<string | null>(null);
   const [promptTitle, setPromptTitle] = useState<string | null>(null);
   const [ambientSound, setAmbientSound] = useState<string | null>(null);
+  const [voicePreference, setVoicePreference] = useState<"male" | "female">("male");
 
   // Redirect logic - only redirect if auth is done loading AND no user
   useEffect(() => {
@@ -104,6 +107,7 @@ function WritePageContent() {
           setAnonymous(story.anonymous || false);
           setPromptId(story.prompt_id || null);
           setAmbientSound(story.ambient_sound || null);
+          setVoicePreference(story.voice_preference || "male");
         }
       }
       
@@ -157,6 +161,7 @@ function WritePageContent() {
         anonymous,
         prompt_id: promptId,
         ambient_sound: ambientSound,
+        voice_preference: voicePreference,
       });
 
       console.log('[WRITE] Save result:', result);
@@ -205,6 +210,7 @@ function WritePageContent() {
         anonymous,
         prompt_id: promptId,
         ambient_sound: ambientSound,
+        voice_preference: voicePreference,
       });
 
       console.log('[WRITE] Save result:', saveResult);
@@ -471,9 +477,53 @@ function WritePageContent() {
                 </CardContent>
               </Card>
 
-              {/* Ambient Sound */}
+              {/* Audio Settings */}
               <Card className="border-bone bg-cream">
-                <CardContent className="pt-6">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg font-serif flex items-center gap-2">
+                    <Headphones className="h-4 w-4 text-slate" />
+                    Audio Settings
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Voice Preference for Text-to-Speech */}
+                  <div>
+                    <label className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-granite">
+                      <User className="h-4 w-4 text-slate" />
+                      Story Reader Voice
+                    </label>
+                    <p className="text-xs text-stone mb-2">
+                      Choose a voice for when readers listen to your story
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant={voicePreference === "male" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setVoicePreference("male")}
+                        className={voicePreference === "male" 
+                          ? "flex-1 bg-granite text-parchment" 
+                          : "flex-1 border-bone text-granite hover:bg-bone"}
+                      >
+                        Male Voice
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={voicePreference === "female" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setVoicePreference("female")}
+                        className={voicePreference === "female" 
+                          ? "flex-1 bg-granite text-parchment" 
+                          : "flex-1 border-bone text-granite hover:bg-bone"}
+                      >
+                        Female Voice
+                      </Button>
+                    </div>
+                  </div>
+
+                  <Separator className="bg-bone" />
+
+                  {/* Ambient Sound */}
                   <AmbientSoundSelector
                     value={ambientSound}
                     onChange={setAmbientSound}

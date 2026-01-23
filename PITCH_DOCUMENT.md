@@ -187,11 +187,75 @@ A rich archive of authentic Cornish stories becomes a resource for:
 - Family tree connections
 - Multi-language support (Cornish language!)
 
-### Phase 4: Sustainability
+### Phase 4: Sustainability & Commercialization
 - Optional donations/membership
 - Sponsored collections (heritage organizations)
 - Educational licensing
 - Grant funding for heritage preservation
+
+---
+
+## 💼 Commercialization & Revenue Opportunities
+
+### Local Business Promotion
+The platform can serve as a trusted local guide, connecting readers with authentic Cornish businesses:
+
+| Opportunity | Description | Revenue Model |
+|-------------|-------------|---------------|
+| **Local Business Spotlights** | Featured profiles of Cornish businesses with their own stories | Monthly sponsorship (£50-200/mo) |
+| **"Support Local" Directory** | Curated list of heritage-related businesses (cafés, shops, B&Bs) | Listing fee or commission |
+| **Event Promotion** | Promote local festivals, markets, and cultural events | Event listing fee |
+| **Cornish Products Marketplace** | Partner with local producers (food, crafts, art) | Commission on referrals |
+
+### Museums & Heritage Organizations
+| Opportunity | Description | Revenue Model |
+|-------------|-------------|---------------|
+| **Digital Exhibition Stories** | Museums create story collections around their exhibits | Annual partnership fee |
+| **Virtual Tours** | Link stories to physical locations for heritage trails | Trail sponsorship |
+| **Archive Digitization** | Help organizations share their historical materials | Service fee |
+| **Educational Resources** | Lesson plans and curriculum materials for schools | Licensing fee |
+
+### Tourism & Experience
+| Opportunity | Description | Revenue Model |
+|-------------|-------------|---------------|
+| **Heritage Trails** | GPS-guided story walks through towns and villages | App download / tour fee |
+| **Accommodation Partners** | Connect with B&Bs, cottages with their own stories | Referral commission |
+| **Tour Guide Partnerships** | Link with local tour operators | Referral fee |
+| **"Stay in the Story"** | Promote accommodations featured in stories | Booking commission |
+
+### Publishing & Content
+| Opportunity | Description | Revenue Model |
+|-------------|-------------|---------------|
+| **Cornish Books Section** | Promote local authors and Cornish literature | Affiliate commissions |
+| **Story Compilations** | Print or e-book anthologies of best stories | Book sales |
+| **Media Licensing** | License stories for documentaries, podcasts | Licensing fee |
+| **Podcast Series** | Audio versions of top stories | Sponsorship / ads |
+
+### Community & Membership
+| Opportunity | Description | Revenue Model |
+|-------------|-------------|---------------|
+| **"Friend of Cornwall" Membership** | Premium features, early access, supporter badge | £5-15/month |
+| **Corporate Sponsorship** | Company logos on collections or pages | Annual sponsorship |
+| **Donations** | Tip jar for readers who want to support | Voluntary donations |
+| **Grants** | Heritage Lottery Fund, Arts Council, etc. | Grant applications |
+
+### Example Revenue Projection (Year 2)
+| Source | Monthly | Annual |
+|--------|---------|--------|
+| 5 Business Spotlights @ £100 | £500 | £6,000 |
+| 2 Museum Partnerships @ £200 | £400 | £4,800 |
+| 100 Memberships @ £8 | £800 | £9,600 |
+| Book/Product Affiliates | £200 | £2,400 |
+| Event Sponsorships | £150 | £1,800 |
+| Grants | - | £10,000 |
+| **Total** | **~£2,050** | **~£34,600** |
+
+### Principles for Commercialization
+1. **Community First**: Never compromise the user experience with intrusive ads
+2. **Local Focus**: Only partner with genuine Cornish businesses and organizations
+3. **Authenticity**: Ensure all promotions feel natural and add value to readers
+4. **Transparency**: Clear labeling of sponsored content
+5. **Reinvestment**: Profits go back into platform development and community initiatives
 
 ---
 

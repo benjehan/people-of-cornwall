@@ -281,9 +281,7 @@ function StoryCard({ story, onRefresh }: StoryCardProps) {
   // Determine link based on status - clicking goes to view or edit
   const storyLink = story.status === "published" 
     ? `/stories/${story.id}` 
-    : (story.status === "draft" || story.status === "rejected" || story.status === "unpublished") 
-      ? `/write?id=${story.id}`
-      : null; // "review" status - no direct link, user waits for approval
+    : `/write?id=${story.id}`; // All other statuses can be edited
 
   const handleDelete = () => {
     if (story.status === "draft") {
@@ -416,11 +414,14 @@ function StoryCard({ story, onRefresh }: StoryCardProps) {
                     </Link>
                   </>
                 )}
-                {/* In review: just show status, no actions */}
+                {/* In review: allow editing */}
                 {story.status === "review" && (
-                  <div className="text-xs text-stone text-center py-2">
-                    Awaiting review...
-                  </div>
+                  <Link href={`/write?id=${story.id}`}>
+                    <Button variant="outline" size="sm" className="w-full gap-1 border-granite text-granite hover:bg-granite hover:text-parchment">
+                      <Edit className="h-4 w-4" />
+                      Edit
+                    </Button>
+                  </Link>
                 )}
                 
                 {/* Delete/Cancel buttons */}

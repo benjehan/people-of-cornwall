@@ -7,6 +7,7 @@ import { LikeButton } from "@/components/community/like-button";
 import { CommentSection } from "@/components/community/comment-section";
 import { AdminReviewPanel } from "@/components/admin/review-panel";
 import { AmbientPlayer } from "@/components/story/ambient-player";
+import { StoryReader } from "@/components/story/story-reader";
 import { MapPin, Calendar, ArrowLeft, Eye, AlertTriangle } from "lucide-react";
 import { getStoryById, getStoryComments, hasUserLikedStory, getRelatedStories } from "@/lib/supabase/queries";
 import { StoryCard } from "@/components/story/story-card";
@@ -15,10 +16,35 @@ import { createClient } from "@/lib/supabase/server";
 import type { Metadata } from "next";
 
 // Extract first image from story body
-function extractFirstImage(body: string | null): string | null {
+function extractFirstImage(body: string | null, siteUrl: string): string | null {
   if (!body) return null;
   const imgMatch = body.match(/<img[^>]+src="([^">]+)"/);
-  return imgMatch ? imgMatch[1] : null;
+  if (!imgMatch) return null;
+  
+  let imageUrl = imgMatch[1];
+  
+  // Ensure the URL is absolute for social sharing
+  if (imageUrl.startsWith('/')) {
+    imageUrl = `${siteUrl}${imageUrl}`;
+  } else if (!imageUrl.startsWith('http')) {
+    imageUrl = `${siteUrl}/${imageUrl}`;
+  }
+  
+  return imageUrl;
+}
+
+// Also check for video thumbnails as fallback
+function extractVideoThumbnail(body: string | null): string | null {
+  if (!body) return null;
+  
+  // YouTube
+  const ytMatch = body.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]+)/);
+  if (ytMatch) {
+    return `https://img.youtube.com/vi/${ytMatch[1]}/maxresdefault.jpg`;
+  }
+  
+  // Vimeo (would need API call, skip for now)
+  return null;
 }
 
 export async function generateMetadata({ 
@@ -35,9 +61,14 @@ export async function generateMetadata({
     };
   }
 
-  const description = story.ai_summary || story.body?.replace(/<[^>]*>/g, "").slice(0, 160) + "...";
-  const imageUrl = extractFirstImage(story.body);
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://peopleofcornwall.com";
+  const description = story.ai_summary || story.body?.replace(/<[^>]*>/g, "").slice(0, 160) + "...";
+  
+  // Try to get image from story, or fallback to video thumbnail
+  let imageUrl = extractFirstImage(story.body, siteUrl);
+  if (!imageUrl) {
+    imageUrl = extractVideoThumbnail(story.body);
+  }
 
   return {
     title: `${story.title} | People of Cornwall`,
@@ -240,10 +271,23 @@ export default async function StoryPage({
             )}
           </div>
 
-          {/* Ambient Sound Player */}
-          {story.ambient_sound && (
-            <AmbientPlayer soundId={story.ambient_sound} />
-          )}
+          {/* Listen to Story / Ambient Sound */}
+          <div className="mb-8 space-y-4">
+            {/* Text-to-Speech Reader */}
+            {story.status === "published" && (
+              <StoryReader 
+                storyBody={story.body || ""}
+                storyTitle={story.title}
+                voicePreference={(story.voice_preference as "male" | "female") || "male"}
+                ambientSoundId={story.ambient_sound}
+              />
+            )}
+            
+            {/* Standalone Ambient Sound (only if no TTS or for preview mode) */}
+            {story.ambient_sound && story.status !== "published" && (
+              <AmbientPlayer soundId={story.ambient_sound} />
+            )}
+          </div>
 
           {/* Curator's Note (AI Summary) */}
           {story.ai_summary && (
@@ -299,6 +343,7 @@ export default async function StoryPage({
                 storyBody={story.body || ""}
                 currentSummary={story.ai_summary}
                 currentTags={story.ai_tags}
+                hasImage={!!extractFirstImage(story.body, siteUrl)}
               />
             </div>
           )}
