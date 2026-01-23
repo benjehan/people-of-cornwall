@@ -16,6 +16,8 @@ import {
   Folder,
   Trash2,
   Sparkles,
+  Vote,
+  Megaphone,
 } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
 import { createClient } from "@/lib/supabase/client";
@@ -268,6 +270,59 @@ export default function AdminDashboard() {
                 </CardHeader>
               </Card>
             </Link>
+
+            <Link href="/admin/polls">
+              <Card className="h-full border-bone bg-cream transition-all hover:border-granite/30 hover:shadow-md">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg font-serif text-granite">
+                    <Vote className="h-5 w-5 text-copper" />
+                    Community Polls
+                  </CardTitle>
+                  <CardDescription className="text-stone">
+                    Create and manage "Best of Cornwall" voting polls.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
+          </div>
+
+          {/* Community Promotion */}
+          <h2 className="mb-4 mt-10 font-serif text-xl font-bold text-granite">Community</h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Link href="/community" target="_blank">
+              <Card className="h-full border-copper bg-gradient-to-r from-copper/10 to-atlantic/10 transition-all hover:shadow-md">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg font-serif text-granite">
+                    <Megaphone className="h-5 w-5 text-copper" />
+                    View Community Page
+                  </CardTitle>
+                  <CardDescription className="text-stone">
+                    See the public community page with polls and badges. Share this link to promote voting!
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <code className="text-xs text-atlantic bg-parchment px-2 py-1 rounded">
+                    peopleofcornwall.com/community
+                  </code>
+                </CardContent>
+              </Card>
+            </Link>
+
+            <Card className="h-full border-bone bg-cream">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg font-serif text-granite">
+                  📬 Weekly Digest
+                </CardTitle>
+                <CardDescription className="text-stone">
+                  Automatic emails go out every Sunday at 10am with top stories.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-stone">
+                  Managed via Vercel Cron. Users can subscribe on the community page or in their profile settings.
+                </p>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </main>

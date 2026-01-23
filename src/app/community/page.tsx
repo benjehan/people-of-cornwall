@@ -24,6 +24,7 @@ import {
   Sparkles,
   Mountain,
   PartyPopper,
+  CheckCircle,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -66,10 +67,64 @@ export default function CommunityPage() {
   const [polls, setPolls] = useState<Poll[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [votingId, setVotingId] = useState<string | null>(null);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isSubscribing, setIsSubscribing] = useState(false);
+  const [subscribeMessage, setSubscribeMessage] = useState<string | null>(null);
 
   useEffect(() => {
     loadPolls();
+    checkSubscription();
   }, [user]);
+
+  const checkSubscription = async () => {
+    if (!user?.email) return;
+    const supabase = createClient();
+    const { data } = await (supabase
+      .from("digest_subscriptions") as any)
+      .select("is_active")
+      .eq("email", user.email)
+      .single();
+    if (data?.is_active) {
+      setIsSubscribed(true);
+    }
+  };
+
+  const handleSubscribe = async () => {
+    if (!user?.email) return;
+    
+    setIsSubscribing(true);
+    const supabase = createClient();
+
+    // Check if already exists
+    const { data: existing } = await (supabase
+      .from("digest_subscriptions") as any)
+      .select("id, is_active")
+      .eq("email", user.email)
+      .single();
+
+    if (existing) {
+      // Reactivate if inactive
+      await (supabase
+        .from("digest_subscriptions") as any)
+        .update({ is_active: true, frequency: "weekly" })
+        .eq("id", existing.id);
+    } else {
+      // Create new subscription
+      await (supabase
+        .from("digest_subscriptions") as any)
+        .insert({
+          email: user.email,
+          user_id: user.id,
+          frequency: "weekly",
+          is_active: true,
+        });
+    }
+
+    setIsSubscribed(true);
+    setIsSubscribing(false);
+    setSubscribeMessage("You're subscribed! Check your inbox every Sunday.");
+    setTimeout(() => setSubscribeMessage(null), 5000);
+  };
 
   const loadPolls = async () => {
     setIsLoading(true);
@@ -411,17 +466,52 @@ export default function CommunityPage() {
             <CardContent className="flex flex-col md:flex-row items-center gap-6 p-8">
               <div className="flex-1">
                 <h3 className="font-serif text-2xl text-granite mb-2">
-                  Weekly Story Digest
+                  📬 Weekly Story Digest
                 </h3>
                 <p className="text-stone">
                   Get the 3 most popular stories of the week delivered to your inbox every Sunday.
                 </p>
+                {subscribeMessage && (
+                  <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
+                    <CheckCircle className="h-4 w-4" />
+                    {subscribeMessage}
+                  </p>
+                )}
               </div>
-              <Link href="/profile/settings">
-                <Button className="bg-granite text-parchment hover:bg-slate">
-                  Subscribe Now
-                </Button>
-              </Link>
+              {user ? (
+                isSubscribed ? (
+                  <div className="text-center">
+                    <div className="flex items-center gap-2 text-green-600 mb-2">
+                      <CheckCircle className="h-5 w-5" />
+                      <span className="font-medium">Subscribed!</span>
+                    </div>
+                    <Link href="/profile/settings" className="text-sm text-atlantic hover:underline">
+                      Manage preferences
+                    </Link>
+                  </div>
+                ) : (
+                  <Button 
+                    onClick={handleSubscribe}
+                    disabled={isSubscribing}
+                    className="bg-granite text-parchment hover:bg-slate"
+                  >
+                    {isSubscribing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Subscribing...
+                      </>
+                    ) : (
+                      "Subscribe Now"
+                    )}
+                  </Button>
+                )
+              ) : (
+                <Link href="/login?redirect=/community">
+                  <Button className="bg-granite text-parchment hover:bg-slate">
+                    Login to Subscribe
+                  </Button>
+                </Link>
+              )}
             </CardContent>
           </Card>
         </div>

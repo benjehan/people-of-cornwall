@@ -133,10 +133,15 @@ export async function POST(request: NextRequest) {
               <p style="margin: 0 0 8px; color: #888; font-size: 12px;">
                 You're receiving this because you subscribed to our weekly digest.
               </p>
-              <p style="margin: 0;">
-                <a href="${SITE_URL}/unsubscribe?token={{unsubscribe_token}}" 
+              <p style="margin: 0 0 8px;">
+                <a href="${SITE_URL}/profile/settings" 
                    style="color: #1F4E5F; font-size: 12px;">
-                  Unsubscribe from digest emails
+                  Manage email preferences
+                </a>
+                <span style="color: #ccc; margin: 0 8px;">|</span>
+                <a href="${SITE_URL}/unsubscribe?token={{unsubscribe_token}}" 
+                   style="color: #888; font-size: 12px;">
+                  Unsubscribe instantly
                 </a>
               </p>
             </div>
