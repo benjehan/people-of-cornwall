@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import {
   Calendar,
   MapPin,
@@ -35,9 +42,22 @@ import {
   Loader2,
   CalendarDays,
   List,
+  Map as MapIcon,
+  X,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/use-user";
+import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, nextSaturday, nextSunday, isSameDay } from "date-fns";
+
+// Dynamic import for map to avoid SSR issues
+const EventsMap = dynamic(() => import("@/components/events/events-map"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[600px] bg-bone/30 rounded-lg flex items-center justify-center">
+      <Loader2 className="h-8 w-8 animate-spin text-granite" />
+    </div>
+  ),
+});
 
 interface Event {
   id: string;
@@ -45,6 +65,8 @@ interface Event {
   description: string | null;
   location_name: string;
   location_address: string | null;
+  location_lat: number | null;
+  location_lng: number | null;
   image_url: string | null;
   starts_at: string;
   ends_at: string | null;
@@ -64,46 +86,27 @@ interface Event {
 
 const CORNISH_TOWNS = [
   "All Cornwall",
-  "Bodmin",
-  "Bude",
-  "Camborne",
-  "Falmouth",
-  "Hayle",
-  "Helston",
-  "Launceston",
-  "Liskeard",
-  "Looe",
-  "Lostwithiel",
-  "Marazion",
-  "Mevagissey",
-  "Mousehole",
-  "Newlyn",
-  "Newquay",
-  "Padstow",
-  "Penryn",
-  "Penzance",
-  "Perranporth",
-  "Port Isaac",
-  "Porthleven",
-  "Redruth",
-  "St Agnes",
-  "St Austell",
-  "St Ives",
-  "St Just",
-  "Tintagel",
-  "Truro",
-  "Wadebridge",
+  "Bodmin", "Bude", "Camborne", "Falmouth", "Hayle", "Helston", "Launceston",
+  "Liskeard", "Looe", "Lostwithiel", "Marazion", "Mevagissey", "Mousehole",
+  "Newlyn", "Newquay", "Padstow", "Penryn", "Penzance", "Perranporth",
+  "Port Isaac", "Porthleven", "Redruth", "St Agnes", "St Austell", "St Ives",
+  "St Just", "Tintagel", "Truro", "Wadebridge",
 ];
+
+type DateFilter = "anytime" | "today" | "this_week" | "next_weekend" | "this_month" | "custom";
 
 export default function EventsPage() {
   const { user } = useUser();
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  const [viewMode, setViewMode] = useState<"list" | "calendar" | "map">("list");
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   
   // Filters
   const [locationFilter, setLocationFilter] = useState("All Cornwall");
+  const [dateFilter, setDateFilter] = useState<DateFilter>("anytime");
+  const [customDate, setCustomDate] = useState<Date | undefined>(undefined);
   const [showFreeOnly, setShowFreeOnly] = useState(false);
   const [showAccessible, setShowAccessible] = useState(false);
   const [showDogFriendly, setShowDogFriendly] = useState(false);
@@ -111,16 +114,47 @@ export default function EventsPage() {
   const [showVeganFriendly, setShowVeganFriendly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Get date range from filter
+  const getDateRange = useCallback(() => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    
+    switch (dateFilter) {
+      case "today":
+        return { start: now, end: addDays(now, 1) };
+      case "this_week":
+        return { start: now, end: endOfWeek(now, { weekStartsOn: 1 }) };
+      case "next_weekend": {
+        const saturday = nextSaturday(now);
+        const sunday = nextSunday(now);
+        return { start: saturday, end: addDays(sunday, 1) };
+      }
+      case "this_month":
+        return { start: now, end: endOfMonth(now) };
+      case "custom":
+        if (customDate) {
+          return { start: customDate, end: addDays(customDate, 1) };
+        }
+        return { start: now, end: null };
+      default:
+        return { start: now, end: null };
+    }
+  }, [dateFilter, customDate]);
+
   const loadEvents = useCallback(async () => {
     setIsLoading(true);
     const supabase = createClient();
+    const { start, end } = getDateRange();
 
     let query = (supabase.from("events") as any)
       .select("*")
       .eq("is_approved", true)
-      .gte("starts_at", new Date().toISOString())
+      .gte("starts_at", start.toISOString())
       .order("starts_at", { ascending: true });
 
+    if (end) {
+      query = query.lte("starts_at", end.toISOString());
+    }
     if (locationFilter !== "All Cornwall") {
       query = query.ilike("location_name", `%${locationFilter}%`);
     }
@@ -148,7 +182,7 @@ export default function EventsPage() {
       setEvents(filtered);
     }
     setIsLoading(false);
-  }, [locationFilter, showFreeOnly, showAccessible, showDogFriendly, showChildFriendly, showVeganFriendly, searchQuery]);
+  }, [locationFilter, showFreeOnly, showAccessible, showDogFriendly, showChildFriendly, showVeganFriendly, searchQuery, getDateRange]);
 
   useEffect(() => {
     loadEvents();
@@ -209,6 +243,120 @@ export default function EventsPage() {
 
   const { daysInMonth, startDayOfWeek } = getDaysInMonth(currentMonth);
 
+  const clearFilters = () => {
+    setLocationFilter("All Cornwall");
+    setDateFilter("anytime");
+    setCustomDate(undefined);
+    setShowFreeOnly(false);
+    setShowAccessible(false);
+    setShowDogFriendly(false);
+    setShowChildFriendly(false);
+    setShowVeganFriendly(false);
+    setSearchQuery("");
+  };
+
+  const hasActiveFilters = locationFilter !== "All Cornwall" || dateFilter !== "anytime" || 
+    showFreeOnly || showAccessible || showDogFriendly || showChildFriendly || showVeganFriendly || searchQuery;
+
+  // Event Card component for reuse
+  const EventCard = ({ event, compact = false }: { event: Event; compact?: boolean }) => (
+    <Card 
+      className={`border-bone bg-cream hover:shadow-md transition-shadow cursor-pointer ${compact ? "" : ""}`}
+      onClick={() => setSelectedEvent(event)}
+    >
+      <CardContent className="p-0">
+        <div className={`flex ${compact ? "flex-col" : "flex-col sm:flex-row"}`}>
+          {/* Image */}
+          {event.image_url && (
+            <div className={compact ? "h-32" : "sm:w-48 h-32 sm:h-auto flex-shrink-0"}>
+              <img
+                src={event.image_url}
+                alt={event.title}
+                className={`w-full h-full object-cover ${compact ? "rounded-t-lg" : "rounded-t-lg sm:rounded-l-lg sm:rounded-tr-none"}`}
+              />
+            </div>
+          )}
+          
+          {/* Content */}
+          <div className="flex-1 p-4">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                {/* Date badge */}
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                  <Badge className="bg-copper text-parchment text-xs">
+                    {formatDate(event.starts_at)}
+                  </Badge>
+                  {!event.all_day && (
+                    <span className="text-xs text-stone flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {formatTime(event.starts_at)}
+                    </span>
+                  )}
+                  {event.is_featured && (
+                    <Badge className="bg-yellow-500 text-white text-xs">⭐</Badge>
+                  )}
+                </div>
+
+                <h3 className={`font-serif font-bold text-granite mb-1 ${compact ? "text-sm line-clamp-1" : "text-lg"}`}>
+                  {event.title}
+                </h3>
+
+                <p className="text-xs text-stone flex items-center gap-1 mb-2">
+                  <MapPin className="h-3 w-3 flex-shrink-0" />
+                  <span className="truncate">{event.location_name}</span>
+                </p>
+
+                {!compact && event.description && (
+                  <p className="text-sm text-stone line-clamp-2 mb-3">
+                    {event.description}
+                  </p>
+                )}
+
+                {/* Tags */}
+                <div className="flex flex-wrap gap-1">
+                  {event.is_free && (
+                    <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50 text-xs">
+                      Free
+                    </Badge>
+                  )}
+                  {event.is_accessible && (
+                    <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50 text-xs p-1">
+                      <Accessibility className="h-3 w-3" />
+                    </Badge>
+                  )}
+                  {event.is_dog_friendly && (
+                    <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50 text-xs p-1">
+                      <Dog className="h-3 w-3" />
+                    </Badge>
+                  )}
+                  {event.is_child_friendly && (
+                    <Badge variant="outline" className="text-pink-600 border-pink-200 bg-pink-50 text-xs p-1">
+                      <Baby className="h-3 w-3" />
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              {/* Actions */}
+              {!compact && (
+                <div className="flex flex-col gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => { e.stopPropagation(); shareEvent(event); }}
+                    className="text-stone hover:text-granite h-8 w-8"
+                  >
+                    <Share2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div className="flex min-h-screen flex-col bg-parchment">
       <Header />
@@ -240,6 +388,59 @@ export default function EventsPage() {
           {/* Filters */}
           <Card className="mb-6 border-bone bg-cream">
             <CardContent className="pt-6">
+              {/* Quick date filters */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="text-sm font-medium text-granite flex items-center mr-2">When:</span>
+                {[
+                  { value: "anytime" as DateFilter, label: "Anytime" },
+                  { value: "today" as DateFilter, label: "Today" },
+                  { value: "this_week" as DateFilter, label: "This Week" },
+                  { value: "next_weekend" as DateFilter, label: "Next Weekend" },
+                  { value: "this_month" as DateFilter, label: "This Month" },
+                ].map((option) => (
+                  <Button
+                    key={option.value}
+                    variant={dateFilter === option.value ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => { setDateFilter(option.value); setCustomDate(undefined); }}
+                    className={dateFilter === option.value 
+                      ? "bg-granite text-parchment" 
+                      : "border-bone text-stone hover:bg-bone"
+                    }
+                  >
+                    {option.label}
+                  </Button>
+                ))}
+                
+                {/* Custom date picker */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={dateFilter === "custom" ? "default" : "outline"}
+                      size="sm"
+                      className={dateFilter === "custom" 
+                        ? "bg-granite text-parchment" 
+                        : "border-bone text-stone hover:bg-bone"
+                      }
+                    >
+                      <CalendarDays className="h-4 w-4 mr-1" />
+                      {customDate ? format(customDate, "d MMM") : "Pick Date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={customDate}
+                      onSelect={(date) => {
+                        setCustomDate(date);
+                        setDateFilter("custom");
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
               <div className="flex flex-wrap items-end gap-4">
                 {/* Search */}
                 <div className="flex-1 min-w-[200px]">
@@ -270,12 +471,13 @@ export default function EventsPage() {
                 </div>
 
                 {/* View Toggle */}
-                <div className="flex gap-1 rounded-lg border border-bone p-1">
+                <div className="flex gap-1 rounded-lg border border-bone p-1 bg-parchment">
                   <Button
                     variant={viewMode === "list" ? "default" : "ghost"}
                     size="sm"
                     onClick={() => setViewMode("list")}
                     className={viewMode === "list" ? "bg-granite text-parchment" : ""}
+                    title="List View"
                   >
                     <List className="h-4 w-4" />
                   </Button>
@@ -284,14 +486,24 @@ export default function EventsPage() {
                     size="sm"
                     onClick={() => setViewMode("calendar")}
                     className={viewMode === "calendar" ? "bg-granite text-parchment" : ""}
+                    title="Calendar View"
                   >
                     <CalendarDays className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={viewMode === "map" ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setViewMode("map")}
+                    className={viewMode === "map" ? "bg-granite text-parchment" : ""}
+                    title="Map View"
+                  >
+                    <MapIcon className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
 
               {/* Filter toggles */}
-              <div className="mt-4 flex flex-wrap gap-4">
+              <div className="mt-4 flex flex-wrap items-center gap-4">
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
                   <Checkbox checked={showFreeOnly} onCheckedChange={(c) => setShowFreeOnly(c === true)} />
                   <PoundSterling className="h-4 w-4 text-green-600" />
@@ -317,9 +529,26 @@ export default function EventsPage() {
                   <Leaf className="h-4 w-4 text-green-600" />
                   Vegan Options
                 </label>
+                
+                {hasActiveFilters && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearFilters}
+                    className="text-stone hover:text-granite"
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Clear filters
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
+
+          {/* Results count */}
+          <div className="mb-4 text-sm text-stone">
+            {isLoading ? "Loading..." : `${events.length} event${events.length !== 1 ? "s" : ""} found`}
+          </div>
 
           {/* Content */}
           {isLoading ? (
@@ -333,138 +562,29 @@ export default function EventsPage() {
                 <Card className="border-bone bg-cream py-16 text-center">
                   <CardContent>
                     <Calendar className="mx-auto h-12 w-12 text-stone/30 mb-4" />
-                    <p className="text-stone mb-4">No upcoming events found</p>
+                    <p className="text-stone mb-4">No events found matching your filters</p>
+                    {hasActiveFilters && (
+                      <Button onClick={clearFilters} variant="outline" className="mb-4">
+                        Clear filters
+                      </Button>
+                    )}
                     {user && (
                       <Link href="/events/create">
                         <Button className="bg-granite text-parchment hover:bg-slate">
-                          Add the first event
+                          Add an event
                         </Button>
                       </Link>
                     )}
                   </CardContent>
                 </Card>
               ) : (
-                events.map((event) => (
-                  <Card key={event.id} className="border-bone bg-cream hover:shadow-md transition-shadow">
-                    <CardContent className="p-0">
-                      <div className="flex flex-col sm:flex-row">
-                        {/* Image */}
-                        {event.image_url && (
-                          <div className="sm:w-48 h-32 sm:h-auto flex-shrink-0">
-                            <img
-                              src={event.image_url}
-                              alt={event.title}
-                              className="w-full h-full object-cover rounded-t-lg sm:rounded-l-lg sm:rounded-tr-none"
-                            />
-                          </div>
-                        )}
-                        
-                        {/* Content */}
-                        <div className="flex-1 p-4">
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex-1">
-                              {/* Date badge */}
-                              <div className="flex items-center gap-2 mb-2">
-                                <Badge className="bg-copper text-parchment">
-                                  {formatDate(event.starts_at)}
-                                </Badge>
-                                {!event.all_day && (
-                                  <span className="text-sm text-stone flex items-center gap-1">
-                                    <Clock className="h-3 w-3" />
-                                    {formatTime(event.starts_at)}
-                                    {event.ends_at && ` - ${formatTime(event.ends_at)}`}
-                                  </span>
-                                )}
-                                {event.is_featured && (
-                                  <Badge className="bg-yellow-500 text-white">⭐ Featured</Badge>
-                                )}
-                              </div>
-
-                              <h3 className="font-serif text-xl font-bold text-granite mb-1">
-                                {event.title}
-                              </h3>
-
-                              <p className="text-sm text-stone flex items-center gap-1 mb-2">
-                                <MapPin className="h-4 w-4" />
-                                {event.location_name}
-                                {event.location_address && ` — ${event.location_address}`}
-                              </p>
-
-                              {event.description && (
-                                <p className="text-sm text-stone line-clamp-2 mb-3">
-                                  {event.description}
-                                </p>
-                              )}
-
-                              {/* Tags */}
-                              <div className="flex flex-wrap gap-1.5">
-                                {event.is_free && (
-                                  <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
-                                    Free
-                                  </Badge>
-                                )}
-                                {event.price_info && !event.is_free && (
-                                  <Badge variant="outline" className="border-bone">
-                                    {event.price_info}
-                                  </Badge>
-                                )}
-                                {event.is_accessible && (
-                                  <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50">
-                                    <Accessibility className="h-3 w-3 mr-1" />
-                                    Accessible
-                                  </Badge>
-                                )}
-                                {event.is_dog_friendly && (
-                                  <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50">
-                                    <Dog className="h-3 w-3 mr-1" />
-                                    Dogs OK
-                                  </Badge>
-                                )}
-                                {event.is_child_friendly && (
-                                  <Badge variant="outline" className="text-pink-600 border-pink-200 bg-pink-50">
-                                    <Baby className="h-3 w-3 mr-1" />
-                                    Kids
-                                  </Badge>
-                                )}
-                                {event.is_vegan_friendly && (
-                                  <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
-                                    <Leaf className="h-3 w-3 mr-1" />
-                                    Vegan
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Actions */}
-                            <div className="flex flex-col gap-2">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => shareEvent(event)}
-                                className="text-stone hover:text-granite"
-                              >
-                                <Share2 className="h-4 w-4" />
-                              </Button>
-                              {event.website_url && (
-                                <a href={event.website_url} target="_blank" rel="noopener noreferrer">
-                                  <Button variant="ghost" size="icon" className="text-stone hover:text-granite">
-                                    <ExternalLink className="h-4 w-4" />
-                                  </Button>
-                                </a>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
+                events.map((event) => <EventCard key={event.id} event={event} />)
               )}
             </div>
-          ) : (
+          ) : viewMode === "calendar" ? (
             /* Calendar View */
             <Card className="border-bone bg-cream">
-              <CardHeader className="flex flex-row items-center justify-between">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <Button
                   variant="ghost"
                   size="icon"
@@ -523,8 +643,9 @@ export default function EventsPage() {
                           {dayEvents.slice(0, 2).map((event) => (
                             <div
                               key={event.id}
-                              className="text-xs truncate bg-granite text-parchment rounded px-1"
+                              className="text-xs truncate bg-granite text-parchment rounded px-1 cursor-pointer hover:bg-slate"
                               title={event.title}
+                              onClick={() => setSelectedEvent(event)}
                             >
                               {event.title}
                             </div>
@@ -539,9 +660,176 @@ export default function EventsPage() {
                 </div>
               </CardContent>
             </Card>
+          ) : (
+            /* Map View */
+            <div className="rounded-lg overflow-hidden border border-bone">
+              <EventsMap 
+                events={events} 
+                onEventSelect={setSelectedEvent}
+                selectedEvent={selectedEvent}
+              />
+            </div>
           )}
         </div>
       </main>
+
+      {/* Event Detail Modal */}
+      {selectedEvent && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => setSelectedEvent(null)}
+        >
+          <Card 
+            className="max-w-lg w-full max-h-[90vh] overflow-y-auto border-bone bg-cream"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <CardContent className="p-0">
+              {selectedEvent.image_url && (
+                <div className="h-48 relative">
+                  <img
+                    src={selectedEvent.image_url}
+                    alt={selectedEvent.title}
+                    className="w-full h-full object-cover"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setSelectedEvent(null)}
+                    className="absolute top-2 right-2 bg-black/50 text-white hover:bg-black/70"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+              
+              <div className="p-6">
+                {!selectedEvent.image_url && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setSelectedEvent(null)}
+                    className="absolute top-2 right-2"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+
+                <div className="flex items-center gap-2 mb-3 flex-wrap">
+                  <Badge className="bg-copper text-parchment">
+                    {formatDate(selectedEvent.starts_at)}
+                  </Badge>
+                  {!selectedEvent.all_day && (
+                    <span className="text-sm text-stone flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {formatTime(selectedEvent.starts_at)}
+                      {selectedEvent.ends_at && ` - ${formatTime(selectedEvent.ends_at)}`}
+                    </span>
+                  )}
+                </div>
+
+                <h2 className="font-serif text-2xl font-bold text-granite mb-2">
+                  {selectedEvent.title}
+                </h2>
+
+                <p className="text-stone flex items-center gap-2 mb-4">
+                  <MapPin className="h-4 w-4 flex-shrink-0" />
+                  {selectedEvent.location_name}
+                  {selectedEvent.location_address && ` — ${selectedEvent.location_address}`}
+                </p>
+
+                {selectedEvent.description && (
+                  <p className="text-stone mb-4">{selectedEvent.description}</p>
+                )}
+
+                {/* Tags */}
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {selectedEvent.is_free && (
+                    <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
+                      Free
+                    </Badge>
+                  )}
+                  {selectedEvent.price_info && !selectedEvent.is_free && (
+                    <Badge variant="outline" className="border-bone">
+                      {selectedEvent.price_info}
+                    </Badge>
+                  )}
+                  {selectedEvent.is_accessible && (
+                    <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50">
+                      <Accessibility className="h-3 w-3 mr-1" />
+                      Accessible
+                    </Badge>
+                  )}
+                  {selectedEvent.is_dog_friendly && (
+                    <Badge variant="outline" className="text-amber-600 border-amber-200 bg-amber-50">
+                      <Dog className="h-3 w-3 mr-1" />
+                      Dogs OK
+                    </Badge>
+                  )}
+                  {selectedEvent.is_child_friendly && (
+                    <Badge variant="outline" className="text-pink-600 border-pink-200 bg-pink-50">
+                      <Baby className="h-3 w-3 mr-1" />
+                      Kids
+                    </Badge>
+                  )}
+                  {selectedEvent.is_vegan_friendly && (
+                    <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">
+                      <Leaf className="h-3 w-3 mr-1" />
+                      Vegan
+                    </Badge>
+                  )}
+                </div>
+
+                {/* Contact */}
+                {(selectedEvent.contact_email || selectedEvent.contact_phone || selectedEvent.website_url) && (
+                  <div className="border-t border-bone pt-4 space-y-2">
+                    {selectedEvent.contact_name && (
+                      <p className="text-sm text-granite font-medium">{selectedEvent.contact_name}</p>
+                    )}
+                    {selectedEvent.contact_email && (
+                      <a href={`mailto:${selectedEvent.contact_email}`} className="text-sm text-atlantic hover:underline block">
+                        {selectedEvent.contact_email}
+                      </a>
+                    )}
+                    {selectedEvent.contact_phone && (
+                      <a href={`tel:${selectedEvent.contact_phone}`} className="text-sm text-atlantic hover:underline block">
+                        {selectedEvent.contact_phone}
+                      </a>
+                    )}
+                    {selectedEvent.website_url && (
+                      <a 
+                        href={selectedEvent.website_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-sm text-atlantic hover:underline flex items-center gap-1"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        Visit website
+                      </a>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex gap-2 mt-6">
+                  <Button
+                    onClick={() => shareEvent(selectedEvent)}
+                    variant="outline"
+                    className="flex-1 border-granite text-granite"
+                  >
+                    <Share2 className="h-4 w-4 mr-2" />
+                    Share
+                  </Button>
+                  <Button
+                    onClick={() => setSelectedEvent(null)}
+                    className="flex-1 bg-granite text-parchment hover:bg-slate"
+                  >
+                    Close
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <Footer />
     </div>

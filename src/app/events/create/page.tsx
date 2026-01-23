@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Header } from "@/components/layout/header";
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -35,9 +36,13 @@ import {
   Dog,
   Baby,
   Leaf,
+  Upload,
+  Link as LinkIcon,
+  X,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/use-user";
+import Image from "next/image";
 
 const CORNISH_TOWNS = [
   "Bodmin", "Bude", "Camborne", "Falmouth", "Hayle", "Helston", "Launceston",
@@ -53,13 +58,18 @@ export default function CreateEventPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [locationName, setLocationName] = useState("");
   const [locationAddress, setLocationAddress] = useState("");
+  const [imageMode, setImageMode] = useState<"url" | "upload">("url");
   const [imageUrl, setImageUrl] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [startDate, setStartDate] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -76,6 +86,68 @@ export default function CreateEventPage() {
   const [isChildFriendly, setIsChildFriendly] = useState(false);
   const [isVeganFriendly, setIsVeganFriendly] = useState(false);
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      setError("Please select an image file");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Image must be less than 5MB");
+      return;
+    }
+
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+    setError(null);
+  };
+
+  const clearImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setImageUrl("");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const uploadImage = async (): Promise<string | null> => {
+    if (!imageFile) return imageUrl || null;
+
+    setIsUploadingImage(true);
+    const supabase = createClient();
+
+    try {
+      const fileExt = imageFile.name.split(".").pop();
+      const fileName = `events/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+      const { data, error: uploadError } = await supabase.storage
+        .from("story-media")
+        .upload(fileName, imageFile, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("story-media")
+        .getPublicUrl(fileName);
+
+      return publicUrl;
+    } catch (err) {
+      console.error("Error uploading image:", err);
+      throw new Error("Failed to upload image");
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -89,48 +161,79 @@ export default function CreateEventPage() {
     setIsSubmitting(true);
     setError(null);
 
-    const supabase = createClient();
+    try {
+      // Upload image if needed
+      const finalImageUrl = imageMode === "upload" && imageFile 
+        ? await uploadImage()
+        : imageUrl || null;
 
-    // Combine date and time
-    const startsAt = allDay 
-      ? `${startDate}T00:00:00`
-      : `${startDate}T${startTime || "00:00"}:00`;
-    
-    const endsAt = endDate 
-      ? (allDay ? `${endDate}T23:59:59` : `${endDate}T${endTime || "23:59"}:00`)
-      : null;
+      const supabase = createClient();
 
-    const { error: insertError } = await (supabase.from("events") as any).insert({
-      title: title.trim(),
-      description: description.trim() || null,
-      location_name: locationName,
-      location_address: locationAddress.trim() || null,
-      image_url: imageUrl.trim() || null,
-      starts_at: startsAt,
-      ends_at: endsAt,
-      all_day: allDay,
-      contact_name: contactName.trim() || null,
-      contact_email: contactEmail.trim() || null,
-      contact_phone: contactPhone.trim() || null,
-      website_url: websiteUrl.trim() || null,
-      price_info: priceInfo.trim() || null,
-      is_free: isFree,
-      is_accessible: isAccessible,
-      is_dog_friendly: isDogFriendly,
-      is_child_friendly: isChildFriendly,
-      is_vegan_friendly: isVeganFriendly,
-      created_by: user.id,
-      is_approved: false, // Needs admin approval
-    });
+      // Combine date and time
+      const startsAt = allDay 
+        ? `${startDate}T00:00:00`
+        : `${startDate}T${startTime || "00:00"}:00`;
+      
+      const endsAt = endDate 
+        ? (allDay ? `${endDate}T23:59:59` : `${endDate}T${endTime || "23:59"}:00`)
+        : null;
 
-    if (insertError) {
-      console.error("Error creating event:", insertError);
-      setError("Failed to create event. Please try again.");
-    } else {
+      const { data: eventData, error: insertError } = await (supabase.from("events") as any)
+        .insert({
+          title: title.trim(),
+          description: description.trim() || null,
+          location_name: locationName,
+          location_address: locationAddress.trim() || null,
+          image_url: finalImageUrl,
+          starts_at: startsAt,
+          ends_at: endsAt,
+          all_day: allDay,
+          contact_name: contactName.trim() || null,
+          contact_email: contactEmail.trim() || null,
+          contact_phone: contactPhone.trim() || null,
+          website_url: websiteUrl.trim() || null,
+          price_info: priceInfo.trim() || null,
+          is_free: isFree,
+          is_accessible: isAccessible,
+          is_dog_friendly: isDogFriendly,
+          is_child_friendly: isChildFriendly,
+          is_vegan_friendly: isVeganFriendly,
+          created_by: user.id,
+          is_approved: false, // Needs admin approval
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      // Notify admin via API
+      try {
+        await fetch("/api/admin/notify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "new_event",
+            eventId: eventData.id,
+            eventTitle: title.trim(),
+            eventLocation: locationName,
+            eventDate: startsAt,
+            submitterEmail: user.email,
+          }),
+        });
+      } catch (notifyError) {
+        console.error("Failed to notify admin:", notifyError);
+        // Don't fail the submission if notification fails
+      }
+
       setIsSuccess(true);
+    } catch (err) {
+      console.error("Error creating event:", err);
+      setError("Failed to create event. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setIsSubmitting(false);
   };
 
   if (userLoading) {
@@ -184,7 +287,7 @@ export default function CreateEventPage() {
                 Event Submitted!
               </h2>
               <p className="text-stone mb-4">
-                Thank you! Your event has been submitted for review and will appear once approved.
+                Thank you! Your event has been submitted for review. Our team will review it and you'll receive an email once it's approved.
               </p>
               <div className="flex gap-3 justify-center">
                 <Link href="/events">
@@ -201,6 +304,7 @@ export default function CreateEventPage() {
                     setStartTime("");
                     setEndDate("");
                     setEndTime("");
+                    clearImage();
                   }}
                   className="bg-granite text-parchment hover:bg-slate"
                 >
@@ -280,15 +384,71 @@ export default function CreateEventPage() {
                     />
                   </div>
 
+                  {/* Image Upload */}
                   <div>
-                    <Label htmlFor="image">Image URL (optional)</Label>
-                    <Input
-                      id="image"
-                      value={imageUrl}
-                      onChange={(e) => setImageUrl(e.target.value)}
-                      placeholder="https://..."
-                      className="border-bone"
-                    />
+                    <Label>Event Image (optional)</Label>
+                    <Tabs value={imageMode} onValueChange={(v) => setImageMode(v as "url" | "upload")} className="mt-2">
+                      <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="url" className="gap-2">
+                          <LinkIcon className="h-4 w-4" />
+                          Image URL
+                        </TabsTrigger>
+                        <TabsTrigger value="upload" className="gap-2">
+                          <Upload className="h-4 w-4" />
+                          Upload
+                        </TabsTrigger>
+                      </TabsList>
+                      
+                      <TabsContent value="url" className="mt-3">
+                        <Input
+                          value={imageUrl}
+                          onChange={(e) => setImageUrl(e.target.value)}
+                          placeholder="https://..."
+                          className="border-bone"
+                        />
+                      </TabsContent>
+                      
+                      <TabsContent value="upload" className="mt-3">
+                        {imagePreview ? (
+                          <div className="relative">
+                            <img
+                              src={imagePreview}
+                              alt="Preview"
+                              className="w-full h-48 object-cover rounded-lg border border-bone"
+                            />
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="icon"
+                              onClick={clearImage}
+                              className="absolute top-2 right-2"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div
+                            onClick={() => fileInputRef.current?.click()}
+                            className="border-2 border-dashed border-bone rounded-lg p-8 text-center cursor-pointer hover:border-granite transition-colors"
+                          >
+                            <ImageIcon className="h-8 w-8 text-stone mx-auto mb-2" />
+                            <p className="text-sm text-stone">
+                              Click to upload an image
+                            </p>
+                            <p className="text-xs text-silver mt-1">
+                              Max 5MB, JPG/PNG
+                            </p>
+                          </div>
+                        )}
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileSelect}
+                          className="hidden"
+                        />
+                      </TabsContent>
+                    </Tabs>
                   </div>
                 </div>
 
@@ -502,13 +662,13 @@ export default function CreateEventPage() {
                 {/* Submit */}
                 <Button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isUploadingImage}
                   className="w-full bg-granite text-parchment hover:bg-slate gap-2"
                 >
-                  {isSubmitting ? (
+                  {isSubmitting || isUploadingImage ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      Submitting...
+                      {isUploadingImage ? "Uploading image..." : "Submitting..."}
                     </>
                   ) : (
                     <>
