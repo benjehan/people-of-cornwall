@@ -12,8 +12,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ImagePlus, Loader2, Upload, Camera, AlertCircle, Minimize2 } from "lucide-react";
+import { ImagePlus, Loader2, Upload, Camera, AlertCircle, Minimize2, Crop } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { ImageCropDialog } from "./image-crop-dialog";
 
 interface ImageUploadDialogProps {
   open: boolean;
@@ -121,6 +122,8 @@ export function ImageUploadDialog({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [compressedBlob, setCompressedBlob] = useState<Blob | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [rawPreview, setRawPreview] = useState<string | null>(null); // For cropper
+  const [showCropDialog, setShowCropDialog] = useState(false);
   const [attribution, setAttribution] = useState("");
   const [hasRights, setHasRights] = useState(false);
   const [compressionInfo, setCompressionInfo] = useState<{
@@ -159,6 +162,7 @@ export function ImageUploadDialog({
       // Create preview from compressed blob
       const previewUrl = URL.createObjectURL(blob);
       setPreview(previewUrl);
+      setRawPreview(previewUrl); // Store for cropper
 
       // Check if still too large after compression
       if (blob.size > MAX_FILE_SIZE) {
@@ -169,6 +173,22 @@ export function ImageUploadDialog({
       setError("Failed to process image. Please try a different file.");
     } finally {
       setIsCompressing(false);
+    }
+  };
+
+  // Handle cropped image
+  const handleCropComplete = (croppedBlob: Blob) => {
+    setCompressedBlob(croppedBlob);
+    const croppedPreview = URL.createObjectURL(croppedBlob);
+    setPreview(croppedPreview);
+    
+    // Update compression info with cropped size
+    if (compressionInfo) {
+      setCompressionInfo({
+        ...compressionInfo,
+        compressed: croppedBlob.size,
+        wasCompressed: true,
+      });
     }
   };
 
@@ -239,6 +259,8 @@ export function ImageUploadDialog({
     setSelectedFile(null);
     setCompressedBlob(null);
     setPreview(null);
+    setRawPreview(null);
+    setShowCropDialog(false);
     setAttribution("");
     setHasRights(false);
     setError(null);
@@ -320,21 +342,35 @@ export function ImageUploadDialog({
                 </div>
               )}
 
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSelectedFile(null);
-                  setCompressedBlob(null);
-                  setPreview(null);
-                  setCompressionInfo(null);
-                  if (fileInputRef.current) fileInputRef.current.value = "";
-                }}
-                className="w-full text-sm"
-              >
-                Choose a different image
-              </Button>
+              {/* Action buttons */}
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowCropDialog(true)}
+                  className="flex-1 text-sm gap-1"
+                >
+                  <Crop className="h-4 w-4" />
+                  Crop & Adjust
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedFile(null);
+                    setCompressedBlob(null);
+                    setPreview(null);
+                    setRawPreview(null);
+                    setCompressionInfo(null);
+                    if (fileInputRef.current) fileInputRef.current.value = "";
+                  }}
+                  className="flex-1 text-sm"
+                >
+                  Change Image
+                </Button>
+              </div>
             </div>
           )}
 
@@ -413,6 +449,17 @@ export function ImageUploadDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* Crop Dialog */}
+      {rawPreview && (
+        <ImageCropDialog
+          open={showCropDialog}
+          onOpenChange={setShowCropDialog}
+          imageSrc={rawPreview}
+          onCropComplete={handleCropComplete}
+          aspectRatio={16 / 9}
+        />
+      )}
     </Dialog>
   );
 }
