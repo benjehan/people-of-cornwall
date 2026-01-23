@@ -5,13 +5,14 @@ import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import Image from "@tiptap/extension-image";
 import { Button } from "@/components/ui/button";
-import { Bold, Italic, List, ListOrdered, Undo, Redo, ImagePlus, Youtube, Mic, Wand2 } from "lucide-react";
+import { Bold, Italic, List, ListOrdered, Undo, Redo, ImagePlus, Youtube, Mic, Wand2, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useCallback } from "react";
 import { ImageUploadDialog } from "./image-upload-dialog";
 import { VideoEmbedDialog } from "./video-embed-dialog";
 import { SpeechToText } from "./speech-to-text";
 import { AIEnhanceDialog } from "./ai-enhance-dialog";
+import { AIImageDialog } from "./ai-image-dialog";
 import { VideoEmbed } from "./video-node-extension";
 
 interface StoryEditorProps {
@@ -32,6 +33,7 @@ export function StoryEditor({
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
   const [videoDialogOpen, setVideoDialogOpen] = useState(false);
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
+  const [aiImageDialogOpen, setAiImageDialogOpen] = useState(false);
   const [showVoiceInput, setShowVoiceInput] = useState(false);
   const [initialContent, setInitialContent] = useState(content);
 
@@ -157,6 +159,14 @@ export function StoryEditor({
         title={title}
         onAccept={handleAIEnhance}
       />
+      <AIImageDialog
+        open={aiImageDialogOpen}
+        onOpenChange={setAiImageDialogOpen}
+        onInsert={handleImageInsert}
+        storyContent={content}
+        storyTitle={title}
+        storyId={storyId}
+      />
 
       {/* Voice Input Section (collapsible) */}
       {showVoiceInput && (
@@ -232,10 +242,21 @@ export function StoryEditor({
           size="sm"
           onClick={() => setImageDialogOpen(true)}
           className="h-8 px-2 gap-1"
-          title="Add image"
+          title="Upload image"
         >
           <ImagePlus className="h-4 w-4" />
-          <span className="hidden sm:inline text-xs">Image</span>
+          <span className="hidden sm:inline text-xs">Upload</span>
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setAiImageDialogOpen(true)}
+          className="h-8 px-2 gap-1"
+          title="Generate AI illustration"
+        >
+          <Sparkles className="h-4 w-4" />
+          <span className="hidden sm:inline text-xs">AI Art</span>
         </Button>
         <Button
           type="button"

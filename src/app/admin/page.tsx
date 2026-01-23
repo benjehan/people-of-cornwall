@@ -48,11 +48,11 @@ export default function AdminDashboard() {
     const fetchStats = async () => {
       const supabase = createClient();
 
-      // Fetch counts
+      // Fetch counts (excluding soft-deleted stories)
       const [storiesRes, reviewRes, publishedRes, usersRes, commentsRes, deletionsRes, promptsRes] = await Promise.all([
-        (supabase.from("stories") as any).select("id", { count: "exact", head: true }),
-        (supabase.from("stories") as any).select("id", { count: "exact", head: true }).eq("status", "review"),
-        (supabase.from("stories") as any).select("id", { count: "exact", head: true }).eq("status", "published"),
+        (supabase.from("stories") as any).select("id", { count: "exact", head: true }).eq("soft_deleted", false),
+        (supabase.from("stories") as any).select("id", { count: "exact", head: true }).eq("status", "review").eq("soft_deleted", false),
+        (supabase.from("stories") as any).select("id", { count: "exact", head: true }).eq("status", "published").eq("soft_deleted", false),
         (supabase.from("users") as any).select("id", { count: "exact", head: true }),
         (supabase.from("comments") as any).select("id", { count: "exact", head: true }),
         (supabase.from("stories") as any).select("id", { count: "exact", head: true }).eq("deletion_requested", true).eq("soft_deleted", false),
