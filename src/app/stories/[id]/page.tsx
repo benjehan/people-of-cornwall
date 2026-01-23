@@ -132,6 +132,9 @@ export default async function StoryPage({
   const authorName = story.anonymous
     ? "Anonymous"
     : story.author_display_name || "A Cornish voice";
+  
+  // Link to author profile if not anonymous
+  const authorLink = !story.anonymous && story.author_id ? `/author/${story.author_id}` : null;
 
   const recordedDate = story.published_at
     ? new Date(story.published_at).toLocaleDateString("en-GB", {
@@ -215,7 +218,19 @@ export default async function StoryPage({
 
           {/* Author & Date */}
           <div className="mb-10 flex flex-wrap items-center gap-4 text-sm">
-            <span className="text-granite">By {authorName}</span>
+            <span className="text-granite">
+              By{" "}
+              {authorLink ? (
+                <Link 
+                  href={authorLink} 
+                  className="hover:text-slate underline underline-offset-2 decoration-bone hover:decoration-slate transition-colors"
+                >
+                  {authorName}
+                </Link>
+              ) : (
+                authorName
+              )}
+            </span>
             {recordedDate && (
               <span className="flex items-center gap-1.5 text-stone">
                 <Calendar className="h-4 w-4" />
