@@ -81,10 +81,15 @@ export default async function HomePage() {
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <div className="flex h-full items-center justify-center bg-gradient-to-br from-granite/80 to-slate/90">
+                    <div className="flex h-full items-center justify-center bg-gradient-to-br from-slate via-granite to-slate">
                       <div className="text-center text-parchment/80">
-                        <span className="text-6xl">📖</span>
-                        <p className="mt-2 text-sm font-medium">Featured Story</p>
+                        {/* St Piran's Cross / Cornish Flag inspired design */}
+                        <div className="relative w-24 h-24 mx-auto mb-4">
+                          <div className="absolute inset-0 bg-parchment/15 rounded-lg"></div>
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-20 bg-parchment/50 rounded"></div>
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-5 bg-parchment/50 rounded"></div>
+                        </div>
+                        <p className="text-sm font-medium uppercase tracking-wider opacity-70">Featured Story</p>
                       </div>
                     </div>
                   )}

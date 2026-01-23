@@ -49,13 +49,26 @@ export function StoryCard({ story, featured = false, showImage = true }: StoryCa
       <Link href={`/stories/${story.id}`} className="group block">
         <article className="overflow-hidden rounded-lg border border-bone bg-cream transition-all hover:border-granite hover:shadow-lg">
           {/* Image - 16:9 aspect ratio for consistent display */}
-          {showImage && imageUrl && (
+          {showImage && (
             <div className="relative aspect-[16/9] w-full overflow-hidden bg-granite">
-              <img
-                src={imageUrl}
-                alt={story.title}
-                className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
-              />
+              {imageUrl ? (
+                <img
+                  src={imageUrl}
+                  alt={story.title}
+                  className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
+                />
+              ) : (
+                /* Default Cornish placeholder for featured */
+                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate via-granite to-slate">
+                  <div className="text-center text-parchment/80">
+                    <div className="relative w-20 h-20 mx-auto mb-2">
+                      <div className="absolute inset-0 bg-parchment/20 rounded"></div>
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-16 bg-parchment/60 rounded-sm"></div>
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-4 bg-parchment/60 rounded-sm"></div>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-granite/60 to-transparent" />
               <div className="absolute bottom-4 left-4 right-4">
                 <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-parchment/80">
@@ -147,12 +160,12 @@ export function StoryCard({ story, featured = false, showImage = true }: StoryCa
     );
   }
 
-  // Regular card - horizontal layout with image thumbnail or audio indicator
-  if (showImage && (imageUrl || hasAudio)) {
+  // Regular card - horizontal layout with image thumbnail (always shown)
+  if (showImage) {
     return (
       <Link href={`/stories/${story.id}`} className="group block h-full">
         <article className="flex h-full flex-col overflow-hidden rounded-lg border border-transparent bg-parchment transition-all hover:border-bone hover:bg-cream hover:shadow-sm">
-          {/* Image thumbnail or audio indicator - 16:9 aspect ratio for consistent display */}
+          {/* Image thumbnail - 16:9 aspect ratio for consistent display */}
           <div className="relative aspect-[16/9] w-full overflow-hidden bg-granite">
             {imageUrl ? (
               <img
@@ -167,7 +180,20 @@ export function StoryCard({ story, featured = false, showImage = true }: StoryCa
                   <span className="text-xs font-medium uppercase tracking-wider opacity-70">Audio Story</span>
                 </div>
               </div>
-            ) : null}
+            ) : (
+              /* Default Cornish placeholder */
+              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate via-granite to-slate">
+                <div className="text-center text-parchment/80">
+                  {/* Cornish Cross / St Piran's Flag inspired design */}
+                  <div className="relative w-16 h-16 mx-auto mb-2">
+                    <div className="absolute inset-0 bg-parchment/20 rounded"></div>
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-12 bg-parchment/60 rounded-sm"></div>
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-3 bg-parchment/60 rounded-sm"></div>
+                  </div>
+                  <span className="text-xs font-medium uppercase tracking-wider opacity-60">Cornish Story</span>
+                </div>
+              </div>
+            )}
             {/* Audio badge overlay if story has audio AND image */}
             {imageUrl && hasAudio && (
               <div className="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-granite/80 px-2 py-1 text-xs text-parchment">

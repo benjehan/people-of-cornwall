@@ -6,7 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Loader2, Sparkles, Tag, ImagePlus, Image as ImageIcon } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { CheckCircle, XCircle, Loader2, Sparkles, Tag, ImagePlus, Image as ImageIcon, Wand2, Palette, ChevronDown, ChevronUp } from "lucide-react";
+
+type ImageStyle = "heritage" | "painting" | "watercolor" | "vintage" | "sketch";
+
+const styleOptions: { value: ImageStyle; label: string; description: string }[] = [
+  { value: "heritage", label: "Heritage", description: "Classic museum archive style" },
+  { value: "painting", label: "Oil Painting", description: "Rich, textured brushstrokes" },
+  { value: "watercolor", label: "Watercolor", description: "Soft, flowing colors" },
+  { value: "vintage", label: "Vintage Photo", description: "Sepia tones, aged look" },
+  { value: "sketch", label: "Sketch", description: "Pencil or charcoal drawing" },
+];
 
 interface ReviewPanelProps {
   storyId: string;
@@ -41,6 +52,10 @@ export function AdminReviewPanel({
   // AI Image generation state
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
+  const [showImageOptions, setShowImageOptions] = useState(false);
+  const [imageMode, setImageMode] = useState<"suggest" | "custom">("suggest");
+  const [imageStyle, setImageStyle] = useState<ImageStyle>("heritage");
+  const [customImagePrompt, setCustomImagePrompt] = useState("");
 
   const handleGenerateAI = async () => {
     setIsGenerating(true);
@@ -78,16 +93,14 @@ export function AdminReviewPanel({
     setActionResult(null);
 
     try {
-      // Generate a prompt based on story content
-      const cleanBody = storyBody.replace(/<[^>]*>/g, "").slice(0, 500);
-      const prompt = `Create a heritage-style illustration for this Cornish story: "${storyTitle}". ${cleanBody}`;
-
       const response = await fetch("/api/ai/generate-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          prompt,
-          style: "heritage",
+          storyContent: storyBody.replace(/<[^>]*>/g, " ").trim(),
+          storyTitle,
+          customPrompt: imageMode === "custom" ? customImagePrompt : null,
+          imageStyle,
           storyId,
           insertIntoStory: true, // Tell API to insert into story body
         }),
@@ -100,6 +113,7 @@ export function AdminReviewPanel({
       } else {
         setGeneratedImageUrl(data.imageUrl);
         setActionResult({ success: true, message: "AI image generated and added to story!" });
+        setShowImageOptions(false);
         // Refresh to show the new image
         router.refresh();
       }
@@ -238,20 +252,16 @@ export function AdminReviewPanel({
         <div className="border-b border-bone pb-4">
           <div className="flex items-center justify-between mb-2">
             <label className="text-sm font-medium text-granite">Story Image</label>
-            {!hasImage && (
+            {!hasImage && !generatedImageUrl && (
               <Button
-                onClick={handleGenerateImage}
-                disabled={isGeneratingImage}
+                onClick={() => setShowImageOptions(!showImageOptions)}
                 variant="outline"
                 size="sm"
                 className="gap-1.5 border-granite text-granite hover:bg-granite hover:text-parchment"
               >
-                {isGeneratingImage ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <ImagePlus className="h-3.5 w-3.5" />
-                )}
+                <ImagePlus className="h-3.5 w-3.5" />
                 Generate AI Image
+                {showImageOptions ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
               </Button>
             )}
           </div>
@@ -263,6 +273,96 @@ export function AdminReviewPanel({
               {generatedImageUrl && (
                 <span className="text-xs text-stone">(AI generated)</span>
               )}
+            </div>
+          ) : showImageOptions ? (
+            <div className="mt-3 space-y-4 rounded-lg bg-parchment border border-bone p-4">
+              {/* Mode Selection */}
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={imageMode === "suggest" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setImageMode("suggest")}
+                  className={imageMode === "suggest" ? "bg-granite text-parchment" : ""}
+                >
+                  <Wand2 className="h-4 w-4 mr-1" />
+                  AI Suggests
+                </Button>
+                <Button
+                  type="button"
+                  variant={imageMode === "custom" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setImageMode("custom")}
+                  className={imageMode === "custom" ? "bg-granite text-parchment" : ""}
+                >
+                  <ImageIcon className="h-4 w-4 mr-1" />
+                  Custom Prompt
+                </Button>
+              </div>
+
+              {/* AI Suggest Mode Info */}
+              {imageMode === "suggest" && (
+                <p className="text-xs text-stone">
+                  AI will analyze the story and create an appropriate illustration automatically.
+                </p>
+              )}
+
+              {/* Custom Prompt */}
+              {imageMode === "custom" && (
+                <div className="space-y-2">
+                  <Label htmlFor="admin-custom-prompt" className="text-xs">Describe the image</Label>
+                  <Textarea
+                    id="admin-custom-prompt"
+                    value={customImagePrompt}
+                    onChange={(e) => setCustomImagePrompt(e.target.value)}
+                    placeholder="e.g., A fishing boat returning to Mousehole harbour at sunset..."
+                    className="min-h-[80px] border-bone text-sm"
+                  />
+                </div>
+              )}
+
+              {/* Style Selection */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1 text-xs">
+                  <Palette className="h-3.5 w-3.5" />
+                  Art Style
+                </Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {styleOptions.map((style) => (
+                    <button
+                      key={style.value}
+                      type="button"
+                      onClick={() => setImageStyle(style.value)}
+                      className={`text-left p-2 rounded border transition-all ${
+                        imageStyle === style.value
+                          ? "border-copper bg-copper/10"
+                          : "border-bone hover:border-granite"
+                      }`}
+                    >
+                      <span className="block text-xs font-medium text-granite">{style.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Generate Button */}
+              <Button
+                onClick={handleGenerateImage}
+                disabled={isGeneratingImage || (imageMode === "custom" && !customImagePrompt.trim())}
+                className="w-full bg-granite text-parchment hover:bg-slate gap-2"
+              >
+                {isGeneratingImage ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Generating... (15-30s)
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    Generate Illustration
+                  </>
+                )}
+              </Button>
             </div>
           ) : (
             <p className="text-xs text-stone">
