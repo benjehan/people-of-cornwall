@@ -45,6 +45,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { LocationAutocomplete } from "@/components/ui/location-autocomplete";
 import Link from "next/link";
 import { ShareButtons } from "@/components/ui/share-buttons";
 
@@ -166,6 +167,8 @@ export default function PollsPage() {
     title: "",
     description: "",
     location_name: "",
+    location_lat: null as number | null,
+    location_lng: null as number | null,
     website_url: "",
     instagram_url: "",
     facebook_url: "",
@@ -327,7 +330,16 @@ export default function PollsPage() {
 
   const openNominateDialog = (pollId: string) => {
     setNominatePollId(pollId);
-    setNominationData({ title: "", description: "", location_name: "", website_url: "", instagram_url: "", facebook_url: "" });
+    setNominationData({ 
+      title: "", 
+      description: "", 
+      location_name: "", 
+      location_lat: null, 
+      location_lng: null, 
+      website_url: "", 
+      instagram_url: "", 
+      facebook_url: "" 
+    });
     setNominationSuccess(false);
     setNominateDialogOpen(true);
   };
@@ -338,7 +350,7 @@ export default function PollsPage() {
     setIsNominating(true);
     const supabase = createClient();
 
-    const { error } = await (supabase.from("poll_nominations") as any).insert({
+    const nominationPayload: Record<string, any> = {
       poll_id: nominatePollId,
       user_id: user.id,
       title: nominationData.title.trim(),
@@ -348,7 +360,17 @@ export default function PollsPage() {
       instagram_url: nominationData.instagram_url.trim() || null,
       facebook_url: nominationData.facebook_url.trim() || null,
       is_approved: false,
-    });
+    };
+
+    // Add coordinates if available
+    if (nominationData.location_lat !== null) {
+      nominationPayload.location_lat = nominationData.location_lat;
+    }
+    if (nominationData.location_lng !== null) {
+      nominationPayload.location_lng = nominationData.location_lng;
+    }
+
+    const { error } = await (supabase.from("poll_nominations") as any).insert(nominationPayload);
 
     if (!error) {
       setNominationSuccess(true);
@@ -883,14 +905,16 @@ export default function PollsPage() {
                   {/* Only show location if poll allows it */}
                   {activePolls.find(p => p.id === nominatePollId)?.show_nomination_location !== false && (
                     <div className="space-y-2">
-                      <Label htmlFor="nom-location">Location</Label>
-                      <Input
-                        id="nom-location"
+                      <Label>Location</Label>
+                      <LocationAutocomplete
                         value={nominationData.location_name}
-                        onChange={(e) => setNominationData({ ...nominationData, location_name: e.target.value })}
-                        placeholder="e.g., Newlyn, Penzance"
-                        className="border-bone"
-                        maxLength={100}
+                        onChange={(loc) => setNominationData({ 
+                          ...nominationData, 
+                          location_name: loc.name,
+                          location_lat: loc.lat,
+                          location_lng: loc.lng,
+                        })}
+                        placeholder="Search for a Cornish location..."
                       />
                     </div>
                   )}
