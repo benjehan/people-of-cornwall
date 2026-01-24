@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
@@ -40,9 +41,21 @@ import {
   Baby,
   Dog,
   Accessibility,
+  Upload,
+  X,
+  Image as ImageIcon,
+  Plus,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/use-user";
+
+interface EventImage {
+  id: string;
+  image_url: string;
+  caption: string | null;
+  is_primary: boolean;
+  display_order: number;
+}
 
 interface Event {
   id: string;
@@ -110,6 +123,12 @@ export default function AdminEventsPage() {
   });
   const [editError, setEditError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Image management state
+  const [eventImages, setEventImages] = useState<EventImage[]>([]);
+  const [isLoadingImages, setIsLoadingImages] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadEvents = useCallback(async () => {
     setIsLoading(true);
@@ -234,8 +253,117 @@ export default function AdminEventsPage() {
     return date.toISOString().slice(0, 16);
   };
 
+  // Load images for an event
+  const loadEventImages = async (eventId: string) => {
+    setIsLoadingImages(true);
+    const supabase = createClient();
+    
+    const { data, error } = await (supabase.from("event_images") as any)
+      .select("*")
+      .eq("event_id", eventId)
+      .order("display_order", { ascending: true });
+    
+    if (error) {
+      console.error("Error loading images:", error);
+      setEventImages([]);
+    } else {
+      setEventImages(data || []);
+    }
+    setIsLoadingImages(false);
+  };
+
+  // Upload new image
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !editingEvent) return;
+
+    if (!file.type.startsWith("image/")) {
+      setEditError("Please select an image file");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setEditError("Image must be less than 5MB");
+      return;
+    }
+
+    setIsUploadingImage(true);
+    const supabase = createClient();
+
+    try {
+      // Upload to storage
+      const fileExt = file.name.split(".").pop();
+      const fileName = `events/${editingEvent.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("story-media")
+        .upload(fileName, file, { cacheControl: "3600", upsert: false });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from("story-media")
+        .getPublicUrl(fileName);
+
+      // Add to event_images table
+      const isPrimary = eventImages.length === 0;
+      const { error: insertError } = await (supabase.from("event_images") as any)
+        .insert({
+          event_id: editingEvent.id,
+          image_url: urlData.publicUrl,
+          is_primary: isPrimary,
+          display_order: eventImages.length,
+        });
+
+      if (insertError) throw insertError;
+
+      // Reload images
+      await loadEventImages(editingEvent.id);
+      
+      // Clear file input
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    } catch (err: any) {
+      console.error("Upload error:", err);
+      setEditError(`Failed to upload image: ${err.message}`);
+    }
+    setIsUploadingImage(false);
+  };
+
+  // Delete image
+  const handleDeleteImage = async (imageId: string) => {
+    if (!confirm("Delete this image?")) return;
+    
+    const supabase = createClient();
+    const { error } = await (supabase.from("event_images") as any)
+      .delete()
+      .eq("id", imageId);
+
+    if (error) {
+      console.error("Error deleting image:", error);
+    } else if (editingEvent) {
+      await loadEventImages(editingEvent.id);
+    }
+  };
+
+  // Set image as primary
+  const handleSetPrimary = async (imageId: string) => {
+    if (!editingEvent) return;
+    
+    const supabase = createClient();
+    const { error } = await (supabase.from("event_images") as any)
+      .update({ is_primary: true })
+      .eq("id", imageId);
+
+    if (error) {
+      console.error("Error setting primary:", error);
+    } else {
+      await loadEventImages(editingEvent.id);
+    }
+  };
+
   // Open edit dialog
-  const openEditDialog = (event: Event) => {
+  const openEditDialog = async (event: Event) => {
     setEditingEvent(event);
     setEditForm({
       title: event.title,
@@ -252,7 +380,11 @@ export default function AdminEventsPage() {
       contact_email: event.contact_email || "",
     });
     setEditError(null);
+    setEventImages([]);
     setEditDialogOpen(true);
+    
+    // Load images for this event
+    await loadEventImages(event.id);
   };
 
   // Save edited event
@@ -676,6 +808,91 @@ export default function AdminEventsPage() {
                   placeholder="info@example.com"
                 />
               </div>
+            </div>
+
+            {/* Images */}
+            <div className="space-y-3 pt-4 border-t border-bone">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-medium text-granite flex items-center gap-2">
+                  <ImageIcon className="h-4 w-4" />
+                  Event Images
+                </h4>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingImage}
+                  className="gap-1"
+                >
+                  {isUploadingImage ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Plus className="h-3 w-3" />
+                  )}
+                  Add Image
+                </Button>
+              </div>
+
+              {isLoadingImages ? (
+                <div className="flex justify-center py-4">
+                  <Loader2 className="h-5 w-5 animate-spin text-stone" />
+                </div>
+              ) : eventImages.length === 0 ? (
+                <p className="text-sm text-stone text-center py-4">
+                  No images yet. Add images to make your event stand out!
+                </p>
+              ) : (
+                <div className="grid grid-cols-3 gap-3">
+                  {eventImages.map((img) => (
+                    <div key={img.id} className="relative group">
+                      <div className="aspect-video rounded-lg overflow-hidden border border-bone">
+                        <img
+                          src={img.image_url}
+                          alt="Event"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      {img.is_primary && (
+                        <Badge className="absolute top-1 left-1 bg-copper text-parchment text-xs">
+                          Primary
+                        </Badge>
+                      )}
+                      <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {!img.is_primary && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            className="h-6 w-6 p-0"
+                            onClick={() => handleSetPrimary(img.id)}
+                            title="Set as primary"
+                          >
+                            <Star className="h-3 w-3" />
+                          </Button>
+                        )}
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="destructive"
+                          className="h-6 w-6 p-0"
+                          onClick={() => handleDeleteImage(img.id)}
+                          title="Delete"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Options */}
