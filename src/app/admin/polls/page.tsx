@@ -41,6 +41,7 @@ import {
   Calendar,
   Users,
   Image as ImageIcon,
+  Pencil,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -76,6 +77,8 @@ interface Poll {
   voting_start_at: string | null;
   voting_end_at: string | null;
   winner_nomination_id: string | null;
+  show_nomination_location: boolean;
+  allow_nomination_images: boolean;
   nomination_count?: number;
   vote_count?: number;
 }
@@ -133,12 +136,14 @@ export default function AdminPollsPage() {
   const [polls, setPolls] = useState<Poll[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingPoll, setEditingPoll] = useState<Poll | null>(null);
   const [nominationsDialogOpen, setNominationsDialogOpen] = useState(false);
   const [selectedPoll, setSelectedPoll] = useState<Poll | null>(null);
   const [nominations, setNominations] = useState<Nomination[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Form state with all fields
+  // Form state for creating new poll
   const [newPoll, setNewPoll] = useState({
     title: "",
     description: "",
@@ -153,6 +158,15 @@ export default function AdminPollsPage() {
     allow_nomination_images: false,
   });
   const [formError, setFormError] = useState<string | null>(null);
+
+  // Form state for editing existing poll
+  const [editPoll, setEditPoll] = useState({
+    title: "",
+    description: "",
+    show_nomination_location: true,
+    allow_nomination_images: false,
+  });
+  const [editFormError, setEditFormError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !isAdmin) {
@@ -264,6 +278,50 @@ export default function AdminPollsPage() {
         show_nomination_location: true,
         allow_nomination_images: false,
       });
+      await loadPolls();
+    }
+    setIsSubmitting(false);
+  };
+
+  // Open edit dialog for a poll
+  const openEditDialog = (poll: Poll) => {
+    setEditingPoll(poll);
+    setEditPoll({
+      title: poll.title,
+      description: poll.description || "",
+      show_nomination_location: poll.show_nomination_location ?? true,
+      allow_nomination_images: poll.allow_nomination_images ?? false,
+    });
+    setEditFormError(null);
+    setEditDialogOpen(true);
+  };
+
+  // Update existing poll
+  const updatePoll = async () => {
+    if (!editingPoll || !editPoll.title.trim()) {
+      setEditFormError("Title is required");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setEditFormError(null);
+    const supabase = createClient();
+
+    const { error } = await (supabase.from("polls") as any)
+      .update({
+        title: editPoll.title.trim(),
+        description: editPoll.description.trim() || null,
+        show_nomination_location: editPoll.show_nomination_location,
+        allow_nomination_images: editPoll.allow_nomination_images,
+      })
+      .eq("id", editingPoll.id);
+
+    if (error) {
+      console.error("Error updating poll:", error);
+      setEditFormError(`Failed to update poll: ${error.message}`);
+    } else {
+      setEditDialogOpen(false);
+      setEditingPoll(null);
       await loadPolls();
     }
     setIsSubmitting(false);
@@ -662,6 +720,16 @@ export default function AdminPollsPage() {
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => openEditDialog(poll)}
+                          className="gap-1 justify-start"
+                        >
+                          <Pencil className="h-4 w-4" />
+                          Edit
+                        </Button>
+
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => loadNominations(poll)}
                           className="gap-1 justify-start"
                         >
@@ -806,6 +874,111 @@ export default function AdminPollsPage() {
                 ))
               )}
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Poll Dialog */}
+        <Dialog open={editDialogOpen} onOpenChange={(open) => {
+          setEditDialogOpen(open);
+          if (!open) {
+            setEditingPoll(null);
+            setEditFormError(null);
+          }
+        }}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Edit Poll Settings</DialogTitle>
+              <DialogDescription>
+                Update the poll title, description, and nomination options.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              {editFormError && (
+                <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+                  {editFormError}
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-title">Poll Title</Label>
+                <Input
+                  id="edit-title"
+                  value={editPoll.title}
+                  onChange={(e) => setEditPoll({ ...editPoll, title: e.target.value })}
+                  className="border-bone"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-description">Description</Label>
+                <Textarea
+                  id="edit-description"
+                  value={editPoll.description}
+                  onChange={(e) => setEditPoll({ ...editPoll, description: e.target.value })}
+                  className="border-bone"
+                  rows={2}
+                />
+              </div>
+
+              <div className="space-y-3 pt-4 border-t border-bone">
+                <h4 className="text-sm font-medium text-granite">Nomination Options</h4>
+                
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-parchment border border-bone">
+                  <Checkbox
+                    id="edit-show-location"
+                    checked={editPoll.show_nomination_location}
+                    onCheckedChange={(checked) => setEditPoll({ 
+                      ...editPoll, 
+                      show_nomination_location: checked === true 
+                    })}
+                    className="mt-0.5"
+                  />
+                  <div className="space-y-1">
+                    <Label htmlFor="edit-show-location" className="font-medium cursor-pointer">
+                      Show location field
+                    </Label>
+                    <p className="text-xs text-stone">
+                      Allow users to add a location to their nomination
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-parchment border border-bone">
+                  <Checkbox
+                    id="edit-allow-images"
+                    checked={editPoll.allow_nomination_images}
+                    onCheckedChange={(checked) => setEditPoll({ 
+                      ...editPoll, 
+                      allow_nomination_images: checked === true 
+                    })}
+                    className="mt-0.5"
+                  />
+                  <div className="space-y-1">
+                    <Label htmlFor="edit-allow-images" className="font-medium cursor-pointer flex items-center gap-2">
+                      <ImageIcon className="h-4 w-4 text-copper" />
+                      Allow image uploads
+                    </Label>
+                    <p className="text-xs text-stone">
+                      Let users add photos to their nominations
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={updatePoll} 
+                disabled={!editPoll.title.trim() || isSubmitting}
+                className="bg-granite text-parchment hover:bg-slate"
+              >
+                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Changes"}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 
