@@ -411,8 +411,8 @@ export default function BadgesDashboard() {
 
   if (isLoading || loadingStats) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-amber-400 border-t-transparent" />
+      <div className="min-h-screen bg-parchment flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-copper border-t-transparent" />
       </div>
     );
   }
@@ -420,48 +420,48 @@ export default function BadgesDashboard() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
+    <div className="min-h-screen bg-parchment">
       <Header />
 
       <main className="container mx-auto px-4 py-8 max-w-4xl">
         {/* Back button */}
-        <Link href="/profile" className="inline-flex items-center gap-1 text-slate-400 hover:text-white mb-6 transition-colors">
+        <Link href="/profile" className="inline-flex items-center gap-1 text-stone hover:text-granite mb-6 transition-colors">
           <ChevronLeft className="h-4 w-4" />
           Back to Profile
         </Link>
 
         {/* Header */}
         <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 text-amber-300 text-sm font-medium mb-4">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-copper/10 border border-copper/20 text-copper text-sm font-medium mb-4">
             <Award className="h-4 w-4" />
             Your Achievements
           </div>
-          <h1 className="font-serif text-4xl text-white mb-3">Badge Collection</h1>
-          <p className="text-slate-400 max-w-lg mx-auto">
+          <h1 className="font-serif text-4xl text-granite mb-3">Badge Collection</h1>
+          <p className="text-stone max-w-lg mx-auto">
             Earn badges by participating in the community. Track your progress toward each achievement.
           </p>
         </div>
 
         {/* Overall Progress */}
-        <Card className="bg-slate-800/50 border-slate-700 mb-8">
+        <Card className="bg-cream border-bone mb-8 shadow-sm">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className="p-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500">
-                  <Sparkles className="h-6 w-6 text-slate-900" />
+                <div className="p-3 rounded-xl bg-copper">
+                  <Sparkles className="h-6 w-6 text-parchment" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-semibold text-white">Collection Progress</h2>
-                  <p className="text-slate-400 text-sm">You've earned {earnedCount} of {totalCount} badges</p>
+                  <h2 className="text-xl font-semibold text-granite">Collection Progress</h2>
+                  <p className="text-stone text-sm">You've earned {earnedCount} of {totalCount} badges</p>
                 </div>
               </div>
-              <div className="text-3xl font-bold text-amber-400">
+              <div className="text-3xl font-bold text-copper">
                 {Math.round(earnedCount / totalCount * 100)}%
               </div>
             </div>
-            <div className="h-3 bg-slate-700 rounded-full overflow-hidden">
+            <div className="h-3 bg-bone rounded-full overflow-hidden">
               <div 
-                className="h-full bg-gradient-to-r from-amber-500 to-yellow-400 rounded-full transition-all duration-500"
+                className="h-full bg-copper rounded-full transition-all duration-500"
                 style={{ width: `${earnedCount / totalCount * 100}%` }}
               />
             </div>
@@ -471,8 +471,8 @@ export default function BadgesDashboard() {
         {/* Badges by Category */}
         {categories.map(category => (
           <div key={category} className="mb-8">
-            <h2 className="font-serif text-xl text-white mb-4 flex items-center gap-2">
-              <Star className="h-5 w-5 text-amber-400" />
+            <h2 className="font-serif text-xl text-granite mb-4 flex items-center gap-2">
+              <Star className="h-5 w-5 text-copper" />
               {category}
             </h2>
             
@@ -487,8 +487,8 @@ export default function BadgesDashboard() {
                     key={badge.type} 
                     className={`overflow-hidden transition-all ${
                       isEarned 
-                        ? "bg-slate-800/80 border-amber-500/30 shadow-lg shadow-amber-500/10" 
-                        : "bg-slate-800/30 border-slate-700"
+                        ? "bg-cream border-copper/30 shadow-md" 
+                        : "bg-parchment border-bone"
                     }`}
                   >
                     <CardContent className="p-4">
@@ -497,14 +497,14 @@ export default function BadgesDashboard() {
                         <div className={`relative flex-shrink-0 w-14 h-14 rounded-xl flex items-center justify-center text-3xl ${
                           isEarned 
                             ? `bg-gradient-to-br ${badge.gradient}` 
-                            : "bg-slate-700"
+                            : "bg-bone"
                         }`}>
                           {isEarned ? (
                             badge.emoji
                           ) : (
                             <>
-                              <span className="opacity-30">{badge.emoji}</span>
-                              <Lock className="absolute inset-0 m-auto h-5 w-5 text-slate-400" />
+                              <span className="opacity-40">{badge.emoji}</span>
+                              <Lock className="absolute inset-0 m-auto h-5 w-5 text-stone/50" />
                             </>
                           )}
                         </div>
@@ -512,34 +512,34 @@ export default function BadgesDashboard() {
                         {/* Content */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <h3 className={`font-medium truncate ${isEarned ? "text-white" : "text-slate-400"}`}>
+                            <h3 className={`font-medium truncate ${isEarned ? "text-granite" : "text-stone"}`}>
                               {badge.name}
                             </h3>
                             {isEarned && (
-                              <CheckCircle2 className="h-4 w-4 text-green-400 flex-shrink-0" />
+                              <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
                             )}
                           </div>
-                          <p className={`text-sm mb-2 ${isEarned ? "text-slate-300" : "text-slate-500"}`}>
+                          <p className={`text-sm mb-2 ${isEarned ? "text-stone" : "text-silver"}`}>
                             {badge.description}
                           </p>
                           
                           {/* Progress */}
                           {!isEarned && badge.type !== "early_supporter" && (
                             <div className="space-y-1">
-                              <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                              <div className="h-1.5 bg-bone rounded-full overflow-hidden">
                                 <div 
-                                  className={`h-full bg-gradient-to-r ${badge.gradient} rounded-full transition-all`}
+                                  className="h-full bg-copper rounded-full transition-all"
                                   style={{ width: `${progress}%` }}
                                 />
                               </div>
-                              <p className="text-xs text-slate-500">
+                              <p className="text-xs text-silver">
                                 {current} / {badge.requirement} {badge.unit}
                               </p>
                             </div>
                           )}
                           
                           {isEarned && (
-                            <p className="text-xs text-amber-400/70">
+                            <p className="text-xs text-copper">
                               ✓ Earned
                             </p>
                           )}
@@ -554,25 +554,25 @@ export default function BadgesDashboard() {
         ))}
 
         {/* CTA */}
-        <Card className="bg-gradient-to-r from-amber-500/10 to-yellow-500/10 border-amber-500/30 mt-8">
+        <Card className="bg-gradient-to-r from-copper/10 to-atlantic/10 border-copper/20 mt-8">
           <CardContent className="p-6 text-center">
-            <h3 className="font-serif text-xl text-white mb-2">Keep Contributing!</h3>
-            <p className="text-slate-400 mb-4">
+            <h3 className="font-serif text-xl text-granite mb-2">Keep Contributing!</h3>
+            <p className="text-stone mb-4">
               Every story, comment, and vote brings you closer to earning more badges.
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               <Link href="/write">
-                <Button className="bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-900 hover:from-amber-600 hover:to-yellow-600">
+                <Button className="bg-granite text-parchment hover:bg-slate">
                   Write a Story
                 </Button>
               </Link>
               <Link href="/polls">
-                <Button variant="outline" className="border-slate-600 text-white hover:bg-slate-700">
+                <Button variant="outline" className="border-granite text-granite hover:bg-granite hover:text-parchment">
                   Vote in Polls
                 </Button>
               </Link>
               <Link href="/where-is-this">
-                <Button variant="outline" className="border-slate-600 text-white hover:bg-slate-700">
+                <Button variant="outline" className="border-granite text-granite hover:bg-granite hover:text-parchment">
                   Play Where Is This?
                 </Button>
               </Link>
