@@ -54,6 +54,11 @@ const BADGE_INFO: Record<string, { emoji: string; name: string; color: string }>
   founding_member: { emoji: "🌟", name: "Founding Member", color: "bg-pink-100 text-pink-700" },
   helpful_voice: { emoji: "💬", name: "Helpful Voice", color: "bg-cyan-100 text-cyan-700" },
   popular_story: { emoji: "❤️", name: "Popular Story", color: "bg-rose-100 text-rose-700" },
+  location_expert: { emoji: "📍", name: "Location Expert", color: "bg-atlantic/20 text-atlantic" },
+  prompt_responder: { emoji: "💡", name: "Prompt Responder", color: "bg-yellow-100 text-yellow-700" },
+  community_voter: { emoji: "🗳️", name: "Community Voter", color: "bg-indigo-100 text-indigo-700" },
+  poll_winner: { emoji: "🥇", name: "Poll Winner", color: "bg-amber-100 text-amber-700" },
+  early_supporter: { emoji: "⭐", name: "Early Supporter", color: "bg-rose-100 text-rose-700" },
 };
 
 async function getAuthorProfile(id: string): Promise<Author | null> {

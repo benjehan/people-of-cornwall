@@ -9,8 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { FileText, Settings, PenLine, Calendar, Mail, ExternalLink, User } from "lucide-react";
+import { FileText, Settings, PenLine, Calendar, Mail, ExternalLink, User, Award } from "lucide-react";
 import { useUser, getDisplayName, getAvatarUrl } from "@/hooks/use-user";
+import { UserBadges } from "@/components/badges/user-badges";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -63,6 +64,12 @@ export default function ProfilePage() {
                   <h1 className="mb-1 font-serif text-3xl font-semibold">
                     {displayName}
                   </h1>
+                  
+                  {/* Badges */}
+                  <div className="mb-3 flex justify-center sm:justify-start">
+                    <UserBadges userId={user.id} size="md" />
+                  </div>
+                  
                   <div className="mb-4 flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:gap-4">
                     <span className="flex items-center justify-center gap-1 sm:justify-start">
                       <Mail className="h-4 w-4" />

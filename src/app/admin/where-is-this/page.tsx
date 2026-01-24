@@ -28,6 +28,8 @@ import {
   Clock,
   ArrowLeft,
   Trash2,
+  Users,
+  Award,
 } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
 import { createClient } from "@/lib/supabase/client";
@@ -56,6 +58,21 @@ interface Challenge {
   } | null;
 }
 
+interface Guess {
+  id: string;
+  challenge_id: string;
+  user_id: string | null;
+  guest_name: string | null;
+  guess_location_name: string;
+  is_correct: boolean;
+  distance_km: number | null;
+  created_at: string;
+  user?: {
+    display_name: string | null;
+    email: string | null;
+  } | null;
+}
+
 const DIFFICULTY_COLORS = {
   easy: "bg-green-500/20 text-green-700",
   medium: "bg-yellow-500/20 text-yellow-700",
@@ -70,6 +87,9 @@ export default function AdminWhereIsThisPage() {
   const [selectedChallenge, setSelectedChallenge] = useState<Challenge | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [showGuessesDialog, setShowGuessesDialog] = useState(false);
+  const [guesses, setGuesses] = useState<Guess[]>([]);
+  const [loadingGuesses, setLoadingGuesses] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
@@ -106,6 +126,60 @@ export default function AdminWhereIsThisPage() {
       loadChallenges();
     }
   }, [user, isAdmin]);
+
+  const loadGuesses = async (challengeId: string) => {
+    setLoadingGuesses(true);
+    const supabase = createClient();
+
+    const { data, error } = await (supabase
+      .from("where_is_this_guesses") as any)
+      .select(`
+        *,
+        user:users!user_id (
+          display_name,
+          email
+        )
+      `)
+      .eq("challenge_id", challengeId)
+      .order("created_at", { ascending: false });
+
+    if (!error && data) {
+      setGuesses(data);
+    }
+    setLoadingGuesses(false);
+  };
+
+  const viewGuesses = async (challenge: Challenge) => {
+    setSelectedChallenge(challenge);
+    await loadGuesses(challenge.id);
+    setShowGuessesDialog(true);
+  };
+
+  const markAsCorrect = async (guess: Guess) => {
+    setIsProcessing(true);
+    const supabase = createClient();
+
+    // Mark the guess as correct
+    await (supabase
+      .from("where_is_this_guesses") as any)
+      .update({ is_correct: true })
+      .eq("id", guess.id);
+
+    // Update challenge stats
+    await (supabase
+      .from("where_is_this") as any)
+      .update({ 
+        correct_guesses: (selectedChallenge?.correct_guesses || 0) + 1 
+      })
+      .eq("id", guess.challenge_id);
+
+    // Reload guesses and challenges
+    if (selectedChallenge) {
+      await loadGuesses(selectedChallenge.id);
+    }
+    await loadChallenges();
+    setIsProcessing(false);
+  };
 
   const approveChallenge = async (challenge: Challenge) => {
     setIsProcessing(true);
@@ -336,7 +410,20 @@ export default function AdminWhereIsThisPage() {
                           <MapPin className="h-4 w-4" />
                           {challenge.answer_location_name}
                         </p>
+                        <p className="text-xs text-stone mt-1">
+                          {challenge.total_guesses} guesses • {challenge.correct_guesses} correct
+                        </p>
                         <div className="flex gap-2 mt-4">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => viewGuesses(challenge)}
+                            disabled={isProcessing}
+                            className="flex-1"
+                          >
+                            <Users className="h-4 w-4 mr-1" />
+                            View Guesses
+                          </Button>
                           <Button
                             size="sm"
                             onClick={() => revealChallenge(challenge)}
@@ -344,7 +431,7 @@ export default function AdminWhereIsThisPage() {
                             className="flex-1 bg-atlantic hover:bg-atlantic/90 text-white"
                           >
                             <Eye className="h-4 w-4 mr-1" />
-                            Reveal Answer
+                            Reveal
                           </Button>
                         </div>
                       </CardContent>
@@ -416,7 +503,11 @@ export default function AdminWhereIsThisPage() {
                 </h2>
                 <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                   {revealedChallenges.slice(0, 8).map((challenge) => (
-                    <Card key={challenge.id} className="border-bone bg-cream/50">
+                    <Card 
+                      key={challenge.id} 
+                      className="border-bone bg-cream/50 cursor-pointer hover:border-granite/30 transition-colors"
+                      onClick={() => viewGuesses(challenge)}
+                    >
                       <div className="relative aspect-video">
                         <Image
                           src={challenge.image_url}
@@ -432,6 +523,7 @@ export default function AdminWhereIsThisPage() {
                         <p className="text-xs text-silver">
                           {challenge.total_guesses} guesses, {challenge.correct_guesses} correct
                         </p>
+                        <p className="text-xs text-atlantic mt-1">Click to view guesses →</p>
                       </CardContent>
                     </Card>
                   ))}
@@ -480,6 +572,81 @@ export default function AdminWhereIsThisPage() {
               disabled={isProcessing}
             >
               {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Reject & Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Guesses Dialog */}
+      <Dialog open={showGuessesDialog} onOpenChange={setShowGuessesDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Guesses for Challenge
+            </DialogTitle>
+            {selectedChallenge && (
+              <DialogDescription className="flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                Correct answer: <span className="font-medium">{selectedChallenge.answer_location_name}</span>
+              </DialogDescription>
+            )}
+          </DialogHeader>
+
+          {loadingGuesses ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-granite" />
+            </div>
+          ) : guesses.length === 0 ? (
+            <p className="text-center text-stone py-8">No guesses yet for this challenge.</p>
+          ) : (
+            <div className="space-y-3">
+              {guesses.map((guess) => (
+                <div
+                  key={guess.id}
+                  className={`flex items-center justify-between p-3 rounded-lg border ${
+                    guess.is_correct
+                      ? "bg-green-50 border-green-200"
+                      : "bg-cream border-bone"
+                  }`}
+                >
+                  <div className="flex-1">
+                    <p className="font-medium text-granite">
+                      {guess.user?.display_name || guess.user?.email || guess.guest_name || "Anonymous"}
+                    </p>
+                    <p className="text-sm text-stone">
+                      Guessed: <span className="font-medium">{guess.guess_location_name}</span>
+                    </p>
+                    <p className="text-xs text-silver">
+                      {new Date(guess.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {guess.is_correct ? (
+                      <Badge className="bg-green-600 text-white">
+                        <Award className="h-3 w-3 mr-1" />
+                        Winner
+                      </Badge>
+                    ) : (
+                      <Button
+                        size="sm"
+                        onClick={() => markAsCorrect(guess)}
+                        disabled={isProcessing}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-1" />
+                        Mark Correct
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowGuessesDialog(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
