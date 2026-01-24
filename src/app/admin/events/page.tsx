@@ -37,10 +37,13 @@ import {
   Pencil,
   Globe,
   Mail,
+  Phone,
+  User,
   PoundSterling,
   Baby,
   Dog,
   Accessibility,
+  Leaf,
   Upload,
   X,
   Image as ImageIcon,
@@ -71,11 +74,15 @@ interface Event {
   is_approved: boolean;
   is_featured: boolean;
   is_free: boolean;
+  price_info: string | null;
   is_child_friendly: boolean;
   is_dog_friendly: boolean;
   is_accessible: boolean;
+  is_vegan_friendly: boolean;
   website_url: string | null;
+  contact_name: string | null;
   contact_email: string | null;
+  contact_phone: string | null;
   created_at: string;
   created_by: string;
   creator?: {
@@ -91,12 +98,17 @@ interface EditForm {
   location_address: string;
   starts_at: string;
   ends_at: string;
+  all_day: boolean;
   is_free: boolean;
+  price_info: string;
   is_child_friendly: boolean;
   is_dog_friendly: boolean;
   is_accessible: boolean;
+  is_vegan_friendly: boolean;
   website_url: string;
+  contact_name: string;
   contact_email: string;
+  contact_phone: string;
 }
 
 export default function AdminEventsPage() {
@@ -115,12 +127,17 @@ export default function AdminEventsPage() {
     location_address: "",
     starts_at: "",
     ends_at: "",
+    all_day: false,
     is_free: false,
+    price_info: "",
     is_child_friendly: false,
     is_dog_friendly: false,
     is_accessible: false,
+    is_vegan_friendly: false,
     website_url: "",
+    contact_name: "",
     contact_email: "",
+    contact_phone: "",
   });
   const [editError, setEditError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -389,12 +406,17 @@ export default function AdminEventsPage() {
       location_address: event.location_address || "",
       starts_at: formatDateTimeForInput(event.starts_at),
       ends_at: formatDateTimeForInput(event.ends_at),
+      all_day: event.all_day ?? false,
       is_free: event.is_free ?? false,
+      price_info: event.price_info || "",
       is_child_friendly: event.is_child_friendly ?? false,
       is_dog_friendly: event.is_dog_friendly ?? false,
       is_accessible: event.is_accessible ?? false,
+      is_vegan_friendly: event.is_vegan_friendly ?? false,
       website_url: event.website_url || "",
+      contact_name: event.contact_name || "",
       contact_email: event.contact_email || "",
+      contact_phone: event.contact_phone || "",
     });
     setEditError(null);
     setEventImages([]);
@@ -424,12 +446,17 @@ export default function AdminEventsPage() {
         location_address: editForm.location_address.trim() || null,
         starts_at: new Date(editForm.starts_at).toISOString(),
         ends_at: editForm.ends_at ? new Date(editForm.ends_at).toISOString() : null,
+        all_day: editForm.all_day,
         is_free: editForm.is_free,
+        price_info: editForm.price_info.trim() || null,
         is_child_friendly: editForm.is_child_friendly,
         is_dog_friendly: editForm.is_dog_friendly,
         is_accessible: editForm.is_accessible,
+        is_vegan_friendly: editForm.is_vegan_friendly,
         website_url: editForm.website_url.trim() || null,
+        contact_name: editForm.contact_name.trim() || null,
         contact_email: editForm.contact_email.trim() || null,
+        contact_phone: editForm.contact_phone.trim() || null,
       })
       .eq("id", editingEvent.id);
 
@@ -773,57 +800,138 @@ export default function AdminEventsPage() {
             </div>
 
             {/* Dates */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-starts-at">Start Date & Time *</Label>
-                <Input
-                  id="edit-starts-at"
-                  type="datetime-local"
-                  value={editForm.starts_at}
-                  onChange={(e) => setEditForm({ ...editForm, starts_at: e.target.value })}
-                  className="border-bone"
-                />
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-starts-at">Start Date & Time *</Label>
+                  <Input
+                    id="edit-starts-at"
+                    type="datetime-local"
+                    value={editForm.starts_at}
+                    onChange={(e) => setEditForm({ ...editForm, starts_at: e.target.value })}
+                    className="border-bone"
+                    disabled={editForm.all_day}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-ends-at">End Date & Time</Label>
+                  <Input
+                    id="edit-ends-at"
+                    type="datetime-local"
+                    value={editForm.ends_at}
+                    onChange={(e) => setEditForm({ ...editForm, ends_at: e.target.value })}
+                    className="border-bone"
+                    disabled={editForm.all_day}
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-ends-at">End Date & Time</Label>
-                <Input
-                  id="edit-ends-at"
-                  type="datetime-local"
-                  value={editForm.ends_at}
-                  onChange={(e) => setEditForm({ ...editForm, ends_at: e.target.value })}
-                  className="border-bone"
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-parchment border border-bone">
+                <Checkbox
+                  id="edit-all-day"
+                  checked={editForm.all_day}
+                  onCheckedChange={(checked) => setEditForm({ ...editForm, all_day: checked === true })}
                 />
+                <Label htmlFor="edit-all-day" className="cursor-pointer flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-stone" />
+                  All Day Event
+                </Label>
               </div>
             </div>
 
-            {/* Links */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-website" className="flex items-center gap-2">
-                  <Globe className="h-4 w-4" />
-                  Website URL
-                </Label>
-                <Input
-                  id="edit-website"
-                  value={editForm.website_url}
-                  onChange={(e) => setEditForm({ ...editForm, website_url: e.target.value })}
-                  className="border-bone"
-                  placeholder="https://..."
+            {/* Price Info */}
+            <div className="space-y-4 pt-4 border-t border-bone">
+              <h4 className="text-sm font-medium text-granite flex items-center gap-2">
+                <PoundSterling className="h-4 w-4" />
+                Pricing
+              </h4>
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-parchment border border-bone">
+                <Checkbox
+                  id="edit-free"
+                  checked={editForm.is_free}
+                  onCheckedChange={(checked) => setEditForm({ ...editForm, is_free: checked === true, price_info: checked ? "" : editForm.price_info })}
                 />
+                <Label htmlFor="edit-free" className="cursor-pointer flex items-center gap-2">
+                  <PoundSterling className="h-4 w-4 text-green-600" />
+                  Free Event
+                </Label>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-email" className="flex items-center gap-2">
-                  <Mail className="h-4 w-4" />
-                  Contact Email
-                </Label>
-                <Input
-                  id="edit-email"
-                  type="email"
-                  value={editForm.contact_email}
-                  onChange={(e) => setEditForm({ ...editForm, contact_email: e.target.value })}
-                  className="border-bone"
-                  placeholder="info@example.com"
-                />
+              {!editForm.is_free && (
+                <div className="space-y-2">
+                  <Label htmlFor="edit-price-info">Price Information</Label>
+                  <Input
+                    id="edit-price-info"
+                    value={editForm.price_info}
+                    onChange={(e) => setEditForm({ ...editForm, price_info: e.target.value })}
+                    className="border-bone"
+                    placeholder="e.g. £15 adults, £8 children, Family £35"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Contact Information */}
+            <div className="space-y-4 pt-4 border-t border-bone">
+              <h4 className="text-sm font-medium text-granite flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Contact Information
+              </h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-contact-name" className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Contact Name
+                  </Label>
+                  <Input
+                    id="edit-contact-name"
+                    value={editForm.contact_name}
+                    onChange={(e) => setEditForm({ ...editForm, contact_name: e.target.value })}
+                    className="border-bone"
+                    placeholder="John Smith"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-email" className="flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
+                    Contact Email
+                  </Label>
+                  <Input
+                    id="edit-email"
+                    type="email"
+                    value={editForm.contact_email}
+                    onChange={(e) => setEditForm({ ...editForm, contact_email: e.target.value })}
+                    className="border-bone"
+                    placeholder="info@example.com"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-phone" className="flex items-center gap-2">
+                    <Phone className="h-4 w-4" />
+                    Contact Phone
+                  </Label>
+                  <Input
+                    id="edit-phone"
+                    type="tel"
+                    value={editForm.contact_phone}
+                    onChange={(e) => setEditForm({ ...editForm, contact_phone: e.target.value })}
+                    className="border-bone"
+                    placeholder="01234 567890"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-website" className="flex items-center gap-2">
+                    <Globe className="h-4 w-4" />
+                    Website URL
+                  </Label>
+                  <Input
+                    id="edit-website"
+                    value={editForm.website_url}
+                    onChange={(e) => setEditForm({ ...editForm, website_url: e.target.value })}
+                    className="border-bone"
+                    placeholder="https://..."
+                  />
+                </div>
               </div>
             </div>
 
@@ -912,23 +1020,14 @@ export default function AdminEventsPage() {
               )}
             </div>
 
-            {/* Options */}
+            {/* Amenities */}
             <div className="space-y-3 pt-4 border-t border-bone">
-              <h4 className="text-sm font-medium text-granite">Event Options</h4>
+              <h4 className="text-sm font-medium text-granite flex items-center gap-2">
+                <Accessibility className="h-4 w-4" />
+                Amenities & Accessibility
+              </h4>
               
               <div className="grid grid-cols-2 gap-3">
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-parchment border border-bone">
-                  <Checkbox
-                    id="edit-free"
-                    checked={editForm.is_free}
-                    onCheckedChange={(checked) => setEditForm({ ...editForm, is_free: checked === true })}
-                  />
-                  <Label htmlFor="edit-free" className="cursor-pointer flex items-center gap-2">
-                    <PoundSterling className="h-4 w-4 text-green-600" />
-                    Free Event
-                  </Label>
-                </div>
-                
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-parchment border border-bone">
                   <Checkbox
                     id="edit-child"
@@ -936,7 +1035,7 @@ export default function AdminEventsPage() {
                     onCheckedChange={(checked) => setEditForm({ ...editForm, is_child_friendly: checked === true })}
                   />
                   <Label htmlFor="edit-child" className="cursor-pointer flex items-center gap-2">
-                    <Baby className="h-4 w-4 text-blue-600" />
+                    <Baby className="h-4 w-4 text-pink-600" />
                     Child Friendly
                   </Label>
                 </div>
@@ -960,8 +1059,20 @@ export default function AdminEventsPage() {
                     onCheckedChange={(checked) => setEditForm({ ...editForm, is_accessible: checked === true })}
                   />
                   <Label htmlFor="edit-accessible" className="cursor-pointer flex items-center gap-2">
-                    <Accessibility className="h-4 w-4 text-purple-600" />
-                    Accessible
+                    <Accessibility className="h-4 w-4 text-blue-600" />
+                    Wheelchair Accessible
+                  </Label>
+                </div>
+                
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-parchment border border-bone">
+                  <Checkbox
+                    id="edit-vegan"
+                    checked={editForm.is_vegan_friendly}
+                    onCheckedChange={(checked) => setEditForm({ ...editForm, is_vegan_friendly: checked === true })}
+                  />
+                  <Label htmlFor="edit-vegan" className="cursor-pointer flex items-center gap-2">
+                    <Leaf className="h-4 w-4 text-green-600" />
+                    Vegan Options
                   </Label>
                 </div>
               </div>
