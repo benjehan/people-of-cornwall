@@ -9,9 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { FileText, Settings, PenLine, Calendar, Mail, ExternalLink, User, Award } from "lucide-react";
+import { FileText, Settings, PenLine, Calendar, Mail, ExternalLink, User, Award, MessageCircle } from "lucide-react";
 import { useUser, getDisplayName, getAvatarUrl } from "@/hooks/use-user";
 import { UserBadges } from "@/components/badges/user-badges";
+import { UserComments } from "@/components/profile/user-comments";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -153,6 +154,15 @@ export default function ProfilePage() {
                 </CardContent>
               </Card>
             </Link>
+          </div>
+
+          {/* My Comments */}
+          <div className="mt-8">
+            <h2 className="font-serif text-xl font-semibold text-granite mb-4 flex items-center gap-2">
+              <MessageCircle className="h-5 w-5" />
+              My Comments
+            </h2>
+            <UserComments userId={user.id} displayName={displayName} isOwnProfile />
           </div>
         </div>
       </main>

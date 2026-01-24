@@ -4,12 +4,13 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { StoryCard } from "@/components/story/story-card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowLeft, MapPin, Calendar, BookOpen, Award } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, BookOpen, Award, MessageCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { Metadata } from "next";
 import type { StoryWithDetails } from "@/types";
+import { UserComments } from "@/components/profile/user-comments";
 
 interface Author {
   id: string;
@@ -277,6 +278,18 @@ export default async function AuthorPage({
                 </p>
               </div>
             )}
+          </section>
+
+          {/* Comments */}
+          <section className="mt-12">
+            <h2 className="mb-6 font-serif text-2xl font-bold text-granite flex items-center gap-2">
+              <MessageCircle className="h-6 w-6" />
+              Comments by {author.display_name || "this contributor"}
+            </h2>
+            <UserComments 
+              userId={id} 
+              displayName={author.display_name || "Anonymous"} 
+            />
           </section>
         </div>
       </main>

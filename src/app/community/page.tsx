@@ -58,6 +58,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import Link from "next/link";
+import { ShareButtons } from "@/components/ui/share-buttons";
 
 // Poll category icons and labels
 const POLL_CATEGORIES = {
@@ -557,17 +558,6 @@ export default function CommunityPage() {
                     ? getCountdown(poll.voting_end_at)
                     : null;
 
-                const sharePoll = () => {
-                  const url = `${window.location.origin}/community#poll-${poll.id}`;
-                  const text = `Vote in "${poll.title}" on People of Cornwall!`;
-                  if (navigator.share) {
-                    navigator.share({ title: poll.title, text, url });
-                  } else {
-                    navigator.clipboard.writeText(`${text}\n${url}`);
-                    alert("Link copied to clipboard!");
-                  }
-                };
-                
                 return (
                   <Card key={poll.id} id={`poll-${poll.id}`} className="border-bone bg-cream overflow-hidden">
                     <CardHeader className="bg-gradient-to-r from-granite to-slate text-parchment">
@@ -587,14 +577,13 @@ export default function CommunityPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={sharePoll}
-                            className="text-parchment/80 hover:text-parchment hover:bg-parchment/10"
-                          >
-                            <Share2 className="h-4 w-4" />
-                          </Button>
+                          <ShareButtons
+                            url={`/community#poll-${poll.id}`}
+                            title={poll.title}
+                            description={poll.description || `Vote for the best ${category.label} in Cornwall!`}
+                            variant="compact"
+                            className="[&_button]:text-parchment/80 [&_button]:hover:text-parchment [&_button]:hover:bg-parchment/10"
+                          />
                           <Badge variant="secondary" className="bg-parchment/20 text-parchment">
                             {category.emoji} {category.label}
                           </Badge>

@@ -37,6 +37,7 @@ import { useUser } from "@/hooks/use-user";
 import Link from "next/link";
 import { CommentSection } from "@/components/comments/comment-section";
 import { LocationAutocomplete } from "@/components/ui/location-autocomplete";
+import { ShareButtons } from "@/components/ui/share-buttons";
 
 interface Challenge {
   id: string;
@@ -342,11 +343,20 @@ export default function WhereIsThisPage() {
                   alt="Mystery location"
                   className="absolute inset-0 w-full h-full object-cover"
                 />
-                <div className="absolute bottom-4 left-4">
+                <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
                   <Badge className="bg-black/70 text-white border-0 text-sm">
                     <Eye className="h-4 w-4 mr-1" />
                     {activeChallenge.total_guesses} guesses
                   </Badge>
+                  <div className="bg-black/70 rounded-lg px-2 py-1">
+                    <ShareButtons
+                      url={`/where-is-this`}
+                      title="Where Is This? - Cornwall Location Challenge"
+                      description="Can you identify this mystery location in Cornwall? Test your local knowledge!"
+                      variant="compact"
+                      className="[&_button]:text-white [&_button]:hover:bg-white/20"
+                    />
+                  </div>
                 </div>
               </div>
 

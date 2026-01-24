@@ -35,6 +35,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useUser } from "@/hooks/use-user";
 import Link from "next/link";
+import { ShareButtons } from "@/components/ui/share-buttons";
 
 interface LostCornwallPhoto {
   id: string;
@@ -389,6 +390,14 @@ export default function LostCornwallPage() {
                       <Eye className="h-4 w-4" />
                       {photo.view_count || 0}
                     </span>
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <ShareButtons
+                        url={`/lost-cornwall?photo=${photo.id}`}
+                        title={`Lost Cornwall: ${photo.title}`}
+                        description={photo.description || `Historic photo from ${photo.year_taken || 'Cornwall'}`}
+                        variant="compact"
+                      />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -478,23 +487,31 @@ export default function LostCornwallPage() {
                 </DialogHeader>
 
                 {/* Like & Stats - Prominent placement */}
-                <div className="flex items-center gap-4 mb-4 pb-4 border-b border-bone">
-                  <button
-                    onClick={() => handleLike(selectedPhoto.id, selectedPhoto.user_has_liked || false)}
-                    disabled={!user || isLiking === selectedPhoto.id}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
-                      selectedPhoto.user_has_liked 
-                        ? "bg-red-50 text-red-500 border border-red-200" 
-                        : "bg-cream text-stone border border-bone hover:bg-red-50 hover:text-red-500 hover:border-red-200"
-                    } disabled:opacity-50`}
-                  >
-                    <Heart className={`h-5 w-5 ${selectedPhoto.user_has_liked ? "fill-current" : ""}`} />
-                    <span className="font-medium">{selectedPhoto.like_count || 0}</span>
-                  </button>
-                  <div className="flex items-center gap-1 text-stone text-sm">
-                    <Eye className="h-4 w-4" />
-                    {selectedPhoto.view_count || 0} views
+                <div className="flex items-center justify-between gap-4 mb-4 pb-4 border-b border-bone">
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={() => handleLike(selectedPhoto.id, selectedPhoto.user_has_liked || false)}
+                      disabled={!user || isLiking === selectedPhoto.id}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                        selectedPhoto.user_has_liked 
+                          ? "bg-red-50 text-red-500 border border-red-200" 
+                          : "bg-cream text-stone border border-bone hover:bg-red-50 hover:text-red-500 hover:border-red-200"
+                      } disabled:opacity-50`}
+                    >
+                      <Heart className={`h-5 w-5 ${selectedPhoto.user_has_liked ? "fill-current" : ""}`} />
+                      <span className="font-medium">{selectedPhoto.like_count || 0}</span>
+                    </button>
+                    <div className="flex items-center gap-1 text-stone text-sm">
+                      <Eye className="h-4 w-4" />
+                      {selectedPhoto.view_count || 0} views
+                    </div>
                   </div>
+                  <ShareButtons
+                    url={`/lost-cornwall?photo=${selectedPhoto.id}`}
+                    title={`Lost Cornwall: ${selectedPhoto.title}`}
+                    description={selectedPhoto.description || `Historic photo from ${selectedPhoto.year_taken || 'Cornwall'}`}
+                    variant="compact"
+                  />
                 </div>
 
                 {/* Description */}

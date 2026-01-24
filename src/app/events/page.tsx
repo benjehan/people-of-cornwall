@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/use-user";
+import { ShareButtons } from "@/components/ui/share-buttons";
 
 // Date helper functions (replacing date-fns)
 const addDays = (date: Date, days: number): Date => {
@@ -308,24 +309,40 @@ export default function EventsPage() {
   const hasActiveFilters = locationFilter !== "All Cornwall" || dateFilter !== "anytime" || 
     showFreeOnly || showAccessible || showDogFriendly || showChildFriendly || showVeganFriendly || searchQuery;
 
+  // Check if event is in the past
+  const isEventPast = (event: Event): boolean => {
+    const endDate = event.ends_at ? new Date(event.ends_at) : new Date(event.starts_at);
+    return endDate < new Date();
+  };
+
   // Event Card component for reuse
-  const EventCard = ({ event, compact = false }: { event: Event; compact?: boolean }) => (
-    <Card 
-      className={`border-bone bg-cream hover:shadow-md transition-shadow cursor-pointer ${compact ? "" : ""}`}
-      onClick={() => setSelectedEvent(event)}
-    >
-      <CardContent className="p-0">
-        <div className={`flex ${compact ? "flex-col" : "flex-col sm:flex-row"}`}>
-          {/* Image */}
-          {event.image_url && (
-            <div className={compact ? "h-32" : "sm:w-48 h-32 sm:h-auto flex-shrink-0"}>
-              <img
-                src={event.image_url}
-                alt={event.title}
-                className={`w-full h-full object-cover ${compact ? "rounded-t-lg" : "rounded-t-lg sm:rounded-l-lg sm:rounded-tr-none"}`}
-              />
-            </div>
-          )}
+  const EventCard = ({ event, compact = false }: { event: Event; compact?: boolean }) => {
+    const isPast = isEventPast(event);
+    
+    return (
+      <Card 
+        className={`border-bone bg-cream hover:shadow-md transition-shadow cursor-pointer relative overflow-hidden ${compact ? "" : ""} ${isPast ? "opacity-75" : ""}`}
+        onClick={() => setSelectedEvent(event)}
+      >
+        {/* Past Event Ribbon */}
+        {isPast && (
+          <div className="absolute top-3 -left-8 z-10 rotate-[-45deg] bg-stone text-white text-xs font-bold py-1 px-10 shadow-md">
+            PAST
+          </div>
+        )}
+        
+        <CardContent className="p-0">
+          <div className={`flex ${compact ? "flex-col" : "flex-col sm:flex-row"}`}>
+            {/* Image */}
+            {event.image_url && (
+              <div className={`relative ${compact ? "h-32" : "sm:w-48 h-32 sm:h-auto flex-shrink-0"}`}>
+                <img
+                  src={event.image_url}
+                  alt={event.title}
+                  className={`w-full h-full object-cover ${compact ? "rounded-t-lg" : "rounded-t-lg sm:rounded-l-lg sm:rounded-tr-none"} ${isPast ? "grayscale" : ""}`}
+                />
+              </div>
+            )}
           
           {/* Content */}
           <div className="flex-1 p-4">
@@ -389,15 +406,13 @@ export default function EventsPage() {
 
               {/* Actions */}
               {!compact && (
-                <div className="flex flex-col gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => { e.stopPropagation(); shareEvent(event); }}
-                    className="text-stone hover:text-granite h-8 w-8"
-                  >
-                    <Share2 className="h-4 w-4" />
-                  </Button>
+                <div onClick={(e) => e.stopPropagation()}>
+                  <ShareButtons 
+                    url={`/events/${event.id}`}
+                    title={event.title}
+                    description={event.description || undefined}
+                    variant="compact"
+                  />
                 </div>
               )}
             </div>
@@ -405,7 +420,8 @@ export default function EventsPage() {
         </div>
       </CardContent>
     </Card>
-  );
+    );
+  };
 
   return (
     <div className="flex min-h-screen flex-col bg-parchment">
