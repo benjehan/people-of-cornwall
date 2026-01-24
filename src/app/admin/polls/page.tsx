@@ -492,7 +492,7 @@ export default function AdminPollsPage() {
                       <Label htmlFor="nominations_end">Nominations End</Label>
                       <div 
                         className="relative cursor-pointer"
-                        onClick={() => document.getElementById('nominations_end')?.showPicker?.()}
+                        onClick={() => (document.getElementById('nominations_end') as HTMLInputElement)?.click()}
                       >
                         <Input
                           id="nominations_end"
@@ -508,7 +508,7 @@ export default function AdminPollsPage() {
                       <Label htmlFor="voting_start">Voting Starts</Label>
                       <div 
                         className="relative cursor-pointer"
-                        onClick={() => document.getElementById('voting_start')?.showPicker?.()}
+                        onClick={() => (document.getElementById('voting_start') as HTMLInputElement)?.click()}
                       >
                         <Input
                           id="voting_start"
@@ -524,7 +524,7 @@ export default function AdminPollsPage() {
                       <Label htmlFor="voting_end">Voting Ends</Label>
                       <div 
                         className="relative cursor-pointer"
-                        onClick={() => document.getElementById('voting_end')?.showPicker?.()}
+                        onClick={() => (document.getElementById('voting_end') as HTMLInputElement)?.click()}
                       >
                         <Input
                           id="voting_end"
