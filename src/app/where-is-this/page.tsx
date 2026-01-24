@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useUser } from "@/hooks/use-user";
 import Link from "next/link";
 import { CommentSection } from "@/components/comments/comment-section";
 
@@ -82,7 +84,9 @@ const DIFFICULTY_LABELS = {
 };
 
 export default function WhereIsThisPage() {
+  const router = useRouter();
   const { user } = useAuth();
+  const { isAdmin, isLoading: authLoading } = useUser();
   const [activeChallenge, setActiveChallenge] = useState<Challenge | null>(null);
   const [pastChallenges, setPastChallenges] = useState<Challenge[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -95,6 +99,13 @@ export default function WhereIsThisPage() {
   const [showGuesses, setShowGuesses] = useState(false);
   const [guessError, setGuessError] = useState<string | null>(null);
   const [selectedPastChallenge, setSelectedPastChallenge] = useState<Challenge | null>(null);
+
+  // Temporarily admin-only while polishing
+  useEffect(() => {
+    if (!authLoading && !isAdmin) {
+      router.push("/");
+    }
+  }, [authLoading, isAdmin, router]);
 
   const loadChallenges = useCallback(async () => {
     setIsLoading(true);

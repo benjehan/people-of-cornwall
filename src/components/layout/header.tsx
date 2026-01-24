@@ -73,42 +73,44 @@ export function Header() {
             Collections
           </Link>
           
-          {/* Explore Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-medium text-stone transition-colors hover:text-granite outline-none">
-              Explore
-              <ChevronDown className="h-4 w-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="center" className="w-52">
-              <DropdownMenuItem asChild>
-                <Link href="/lost-cornwall" className="flex items-center gap-2 cursor-pointer">
-                  <Camera className="h-4 w-4 text-sepia" />
-                  <div>
-                    <p className="font-medium">Lost Cornwall</p>
-                    <p className="text-xs text-stone">Historic photographs</p>
-                  </div>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/where-is-this" className="flex items-center gap-2 cursor-pointer">
-                  <HelpCircle className="h-4 w-4 text-atlantic" />
-                  <div>
-                    <p className="font-medium">Where Is This?</p>
-                    <p className="text-xs text-stone">Location guessing game</p>
-                  </div>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/events" className="flex items-center gap-2 cursor-pointer">
-                  <Calendar className="h-4 w-4 text-copper" />
-                  <div>
-                    <p className="font-medium">Events</p>
-                    <p className="text-xs text-stone">Local happenings</p>
-                  </div>
-                </Link>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Explore Dropdown - Admin only for now */}
+          {mounted && isAdmin && (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-medium text-stone transition-colors hover:text-granite outline-none">
+                Explore
+                <ChevronDown className="h-4 w-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center" className="w-52">
+                <DropdownMenuItem asChild>
+                  <Link href="/lost-cornwall" className="flex items-center gap-2 cursor-pointer">
+                    <Camera className="h-4 w-4 text-sepia" />
+                    <div>
+                      <p className="font-medium">Lost Cornwall</p>
+                      <p className="text-xs text-stone">Historic photographs</p>
+                    </div>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/where-is-this" className="flex items-center gap-2 cursor-pointer">
+                    <HelpCircle className="h-4 w-4 text-atlantic" />
+                    <div>
+                      <p className="font-medium">Where Is This?</p>
+                      <p className="text-xs text-stone">Location guessing game</p>
+                    </div>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/events" className="flex items-center gap-2 cursor-pointer">
+                    <Calendar className="h-4 w-4 text-copper" />
+                    <div>
+                      <p className="font-medium">Events</p>
+                      <p className="text-xs text-stone">Local happenings</p>
+                    </div>
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </nav>
 
         {/* Actions */}
@@ -279,34 +281,36 @@ export function Header() {
               Collections
             </Link>
             
-            {/* Explore section */}
-            <div className="mt-2 pt-2 border-t border-bone">
-              <p className="px-3 py-1 text-xs font-semibold text-stone uppercase tracking-wide">Explore</p>
-              <Link
-                href="/lost-cornwall"
-                className="rounded-md px-3 py-2.5 text-sm font-medium text-granite hover:bg-cream flex items-center gap-2"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <Camera className="h-4 w-4 text-sepia" />
-                Lost Cornwall
-              </Link>
-              <Link
-                href="/where-is-this"
-                className="rounded-md px-3 py-2.5 text-sm font-medium text-granite hover:bg-cream flex items-center gap-2"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <HelpCircle className="h-4 w-4 text-atlantic" />
-                Where Is This?
-              </Link>
-              <Link
-                href="/events"
-                className="rounded-md px-3 py-2.5 text-sm font-medium text-granite hover:bg-cream flex items-center gap-2"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <Calendar className="h-4 w-4 text-copper" />
-                Events
-              </Link>
-            </div>
+            {/* Explore section - Admin only for now */}
+            {isAdmin && (
+              <div className="mt-2 pt-2 border-t border-bone">
+                <p className="px-3 py-1 text-xs font-semibold text-stone uppercase tracking-wide">Explore</p>
+                <Link
+                  href="/lost-cornwall"
+                  className="rounded-md px-3 py-2.5 text-sm font-medium text-granite hover:bg-cream flex items-center gap-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Camera className="h-4 w-4 text-sepia" />
+                  Lost Cornwall
+                </Link>
+                <Link
+                  href="/where-is-this"
+                  className="rounded-md px-3 py-2.5 text-sm font-medium text-granite hover:bg-cream flex items-center gap-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <HelpCircle className="h-4 w-4 text-atlantic" />
+                  Where Is This?
+                </Link>
+                <Link
+                  href="/events"
+                  className="rounded-md px-3 py-2.5 text-sm font-medium text-granite hover:bg-cream flex items-center gap-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Calendar className="h-4 w-4 text-copper" />
+                  Events
+                </Link>
+              </div>
+            )}
 
             {user && (
               <Link

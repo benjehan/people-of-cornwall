@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useUser } from "@/hooks/use-user";
 import Link from "next/link";
 
 interface LostCornwallPhoto {
@@ -63,7 +65,9 @@ interface Memory {
 }
 
 export default function LostCornwallPage() {
+  const router = useRouter();
   const { user } = useAuth();
+  const { isAdmin, isLoading: authLoading } = useUser();
   const [photos, setPhotos] = useState<LostCornwallPhoto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPhoto, setSelectedPhoto] = useState<LostCornwallPhoto | null>(null);
@@ -72,6 +76,13 @@ export default function LostCornwallPage() {
   const [submitMessage, setSubmitMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>("popular");
   const [isLiking, setIsLiking] = useState<string | null>(null);
+
+  // Temporarily admin-only while polishing
+  useEffect(() => {
+    if (!authLoading && !isAdmin) {
+      router.push("/");
+    }
+  }, [authLoading, isAdmin, router]);
 
   const loadPhotos = useCallback(async () => {
     setIsLoading(true);
@@ -409,11 +420,11 @@ export default function LostCornwallPage() {
 
       {/* Photo Detail Dialog */}
       <Dialog open={!!selectedPhoto} onOpenChange={() => setSelectedPhoto(null)}>
-        <DialogContent className="max-w-4xl p-0 overflow-hidden bg-granite">
+        <DialogContent className="max-w-3xl p-0 overflow-hidden bg-parchment max-h-[90vh] overflow-y-auto">
           {selectedPhoto && (
-            <div className="flex flex-col md:flex-row">
-              {/* Image section */}
-              <div className="relative md:w-2/3 aspect-[4/3] md:aspect-auto md:min-h-[500px] bg-black overflow-hidden">
+            <div className="flex flex-col">
+              {/* Image section - Full width on top */}
+              <div className="relative aspect-[4/3] bg-black overflow-hidden">
                 <img
                   src={selectedPhoto.image_url}
                   alt={selectedPhoto.title}
@@ -444,41 +455,30 @@ export default function LostCornwallPage() {
 
                 {/* Year badge */}
                 {selectedPhoto.year_taken && (
-                  <Badge className="absolute top-4 right-4 bg-sepia/90 text-parchment border-0 text-base">
+                  <Badge className="absolute top-4 right-4 bg-sepia/90 text-white border-0 text-base">
                     <Clock className="h-4 w-4 mr-1" />
                     {selectedPhoto.year_taken}
                   </Badge>
                 )}
               </div>
 
-              {/* Info section */}
-              <div className="md:w-1/3 bg-parchment p-6 flex flex-col max-h-[600px]">
-                <DialogHeader>
+              {/* Info section - Below image */}
+              <div className="p-6">
+                {/* Title and Location */}
+                <DialogHeader className="mb-4">
                   <DialogTitle className="font-serif text-2xl text-granite">
                     {selectedPhoto.title}
                   </DialogTitle>
                   {selectedPhoto.location_name && (
-                    <p className="text-stone flex items-center gap-1 text-sm">
+                    <p className="text-stone flex items-center gap-1 text-sm mt-1">
                       <MapPin className="h-4 w-4" />
                       {selectedPhoto.location_name}
                     </p>
                   )}
                 </DialogHeader>
 
-                {selectedPhoto.description && (
-                  <p className="text-stone mt-4 text-sm leading-relaxed">
-                    {selectedPhoto.description}
-                  </p>
-                )}
-
-                {selectedPhoto.source_credit && (
-                  <p className="text-silver text-xs mt-2 italic">
-                    {selectedPhoto.source_credit}
-                  </p>
-                )}
-
-                {/* Like & Stats */}
-                <div className="flex items-center gap-4 mt-4 pt-4 border-t border-bone">
+                {/* Like & Stats - Prominent placement */}
+                <div className="flex items-center gap-4 mb-4 pb-4 border-b border-bone">
                   <button
                     onClick={() => handleLike(selectedPhoto.id, selectedPhoto.user_has_liked || false)}
                     disabled={!user || isLiking === selectedPhoto.id}
@@ -497,14 +497,27 @@ export default function LostCornwallPage() {
                   </div>
                 </div>
 
-                {/* Memories */}
-                <div className="mt-6 flex-1 overflow-hidden flex flex-col">
+                {/* Description */}
+                {selectedPhoto.description && (
+                  <p className="text-stone text-sm leading-relaxed mb-3">
+                    {selectedPhoto.description}
+                  </p>
+                )}
+
+                {selectedPhoto.source_credit && (
+                  <p className="text-silver text-xs italic mb-4">
+                    Source: {selectedPhoto.source_credit}
+                  </p>
+                )}
+
+                {/* Memories/Comments */}
+                <div className="pt-4 border-t border-bone">
                   <h4 className="font-medium text-granite mb-3 flex items-center gap-2">
                     <MessageCircle className="h-4 w-4" />
                     Shared Memories ({selectedPhoto.memories?.length || 0})
                   </h4>
 
-                  <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+                  <div className="space-y-3 max-h-48 overflow-y-auto pr-2">
                     {selectedPhoto.memories?.length === 0 ? (
                       <p className="text-stone text-sm italic">
                         No memories shared yet. Be the first!
@@ -533,43 +546,43 @@ export default function LostCornwallPage() {
                       ))
                     )}
                   </div>
-                </div>
 
-                {/* Add memory form */}
-                {user ? (
-                  <div className="mt-4 pt-4 border-t border-bone">
-                    <Textarea
-                      placeholder="Do you remember this place? Share your memory..."
-                      value={memoryText}
-                      onChange={(e) => setMemoryText(e.target.value)}
-                      className="border-bone bg-cream text-sm resize-none"
-                      rows={3}
-                    />
-                    <Button
-                      onClick={submitMemory}
-                      disabled={!memoryText.trim() || isSubmitting}
-                      className="w-full mt-2 bg-sepia text-parchment hover:bg-sepia/90"
-                    >
-                      {isSubmitting ? (
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      ) : (
-                        <Send className="h-4 w-4 mr-2" />
+                  {/* Add memory form */}
+                  {user ? (
+                    <div className="mt-4 pt-4 border-t border-bone">
+                      <Textarea
+                        placeholder="Do you remember this place? Share your memory..."
+                        value={memoryText}
+                        onChange={(e) => setMemoryText(e.target.value)}
+                        className="border-bone bg-cream text-sm resize-none"
+                        rows={2}
+                      />
+                      <Button
+                        onClick={submitMemory}
+                        disabled={!memoryText.trim() || isSubmitting}
+                        className="w-full mt-2 bg-sepia text-white hover:bg-sepia/90"
+                      >
+                        {isSubmitting ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        ) : (
+                          <Send className="h-4 w-4 mr-2" />
+                        )}
+                        Share Memory
+                      </Button>
+                      {submitMessage && (
+                        <p className={`mt-2 text-sm text-center ${submitMessage.type === "success" ? "text-green-600" : "text-red-600"}`}>
+                          {submitMessage.text}
+                        </p>
                       )}
-                      Share Memory
-                    </Button>
-                    {submitMessage && (
-                      <p className={`mt-2 text-sm text-center ${submitMessage.type === "success" ? "text-green-600" : "text-red-600"}`}>
-                        {submitMessage.text}
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="mt-4 pt-4 border-t border-bone text-center">
-                    <a href="/login" className="text-sm text-atlantic hover:underline">
-                      Login to share your memories
-                    </a>
-                  </div>
-                )}
+                    </div>
+                  ) : (
+                    <div className="mt-4 pt-4 border-t border-bone text-center">
+                      <a href="/login" className="text-sm text-atlantic hover:underline">
+                        Login to share your memories
+                      </a>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}

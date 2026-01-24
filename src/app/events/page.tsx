@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
@@ -134,7 +135,8 @@ const CORNISH_TOWNS = [
 type DateFilter = "anytime" | "today" | "this_week" | "next_weekend" | "this_month" | "custom";
 
 export default function EventsPage() {
-  const { user } = useUser();
+  const router = useRouter();
+  const { user, isAdmin, isLoading: authLoading } = useUser();
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"list" | "calendar" | "map">("list");
@@ -152,6 +154,13 @@ export default function EventsPage() {
   const [showChildFriendly, setShowChildFriendly] = useState(false);
   const [showVeganFriendly, setShowVeganFriendly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Temporarily admin-only while polishing
+  useEffect(() => {
+    if (!authLoading && !isAdmin) {
+      router.push("/");
+    }
+  }, [authLoading, isAdmin, router]);
 
   // Get date range from filter
   const getDateRange = useCallback(() => {
