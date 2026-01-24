@@ -79,6 +79,7 @@ interface Poll {
   voting_start_at: string | null;
   voting_end_at: string | null;
   winner_nomination_id: string | null;
+  show_nomination_location: boolean;
   nominations: Nomination[];
 }
 
@@ -879,17 +880,20 @@ export default function PollsPage() {
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="nom-location">Location</Label>
-                    <Input
-                      id="nom-location"
-                      value={nominationData.location_name}
-                      onChange={(e) => setNominationData({ ...nominationData, location_name: e.target.value })}
-                      placeholder="e.g., Newlyn, Penzance"
-                      className="border-bone"
-                      maxLength={100}
-                    />
-                  </div>
+                  {/* Only show location if poll allows it */}
+                  {activePolls.find(p => p.id === nominatePollId)?.show_nomination_location !== false && (
+                    <div className="space-y-2">
+                      <Label htmlFor="nom-location">Location</Label>
+                      <Input
+                        id="nom-location"
+                        value={nominationData.location_name}
+                        onChange={(e) => setNominationData({ ...nominationData, location_name: e.target.value })}
+                        placeholder="e.g., Newlyn, Penzance"
+                        className="border-bone"
+                        maxLength={100}
+                      />
+                    </div>
+                  )}
 
                   <div className="space-y-2">
                     <Label htmlFor="nom-desc">Why? (optional)</Label>

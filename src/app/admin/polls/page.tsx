@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -144,6 +145,7 @@ export default function AdminPollsPage() {
     nominations_end_at: "",
     voting_start_at: "",
     voting_end_at: "",
+    show_nomination_location: true,
   });
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -208,6 +210,7 @@ export default function AdminPollsPage() {
       description: newPoll.description.trim() || null,
       category: newPoll.category,
       location_name: newPoll.location_name.trim() || null,
+      show_nomination_location: newPoll.show_nomination_location,
       is_active: true,
       created_by: user?.id,
     };
@@ -252,6 +255,7 @@ export default function AdminPollsPage() {
         nominations_end_at: "",
         voting_start_at: "",
         voting_end_at: "",
+        show_nomination_location: true,
       });
       await loadPolls();
     }
@@ -442,6 +446,27 @@ export default function AdminPollsPage() {
                     className="border-bone"
                   />
                   <p className="text-xs text-stone">Leave empty for all of Cornwall</p>
+                </div>
+
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-parchment border border-bone">
+                  <Checkbox
+                    id="show_location"
+                    checked={newPoll.show_nomination_location}
+                    onCheckedChange={(checked) => setNewPoll({ 
+                      ...newPoll, 
+                      show_nomination_location: checked === true 
+                    })}
+                    className="mt-0.5"
+                  />
+                  <div className="space-y-1">
+                    <Label htmlFor="show_location" className="font-medium cursor-pointer">
+                      Show location field for nominations
+                    </Label>
+                    <p className="text-xs text-stone">
+                      Uncheck if poll is already location-specific (e.g., "Best Pub in Falmouth") — 
+                      users won't need to add a location to their nomination.
+                    </p>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
