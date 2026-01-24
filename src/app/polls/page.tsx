@@ -197,10 +197,12 @@ export default function PollsPage() {
     setIsLoading(true);
     const supabase = createClient();
 
+    // Active polls: is_active = true AND no winner declared yet
     const { data: pollsData, error } = await (supabase
       .from("polls") as any)
       .select("*")
       .eq("is_active", true)
+      .is("winner_nomination_id", null)  // Exclude polls with declared winners
       .order("created_at", { ascending: false });
 
     if (error || !pollsData) {
@@ -261,18 +263,18 @@ export default function PollsPage() {
   const loadWinners = async () => {
     const supabase = createClient();
 
-    // Get polls with declared winners OR inactive polls with nominations
+    // Hall of Fame: Polls with declared winners (winner_nomination_id is set)
     const { data: endedPolls, error } = await (supabase
       .from("polls") as any)
       .select("*")
-      .eq("is_active", false)
+      .not("winner_nomination_id", "is", null)  // Must have a declared winner
       .order("created_at", { ascending: false })
       .limit(20);
 
-    console.log("Ended polls for Hall of Fame:", endedPolls, error);
+    console.log("Polls with winners for Hall of Fame:", endedPolls, error);
 
     if (error || !endedPolls || endedPolls.length === 0) {
-      console.log("No ended polls found");
+      console.log("No polls with winners found");
       return;
     }
 

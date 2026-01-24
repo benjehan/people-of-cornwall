@@ -106,22 +106,25 @@ function formatDateForInput(dateStr: string | null): string {
 function getPollStatus(poll: Poll): { status: string; color: string; icon: React.ReactNode } {
   const now = new Date();
   
+  // Winner declared = Completed (in Hall of Fame)
   if (poll.winner_nomination_id) {
-    return { status: "Winner Declared", color: "bg-yellow-100 text-yellow-800", icon: <Trophy className="h-3 w-3" /> };
+    return { status: "✓ Completed", color: "bg-yellow-100 text-yellow-800", icon: <Trophy className="h-3 w-3" /> };
   }
+  // Inactive but no winner = Paused/Draft
   if (!poll.is_active) {
-    return { status: "Inactive", color: "bg-gray-100 text-gray-600", icon: <EyeOff className="h-3 w-3" /> };
+    return { status: "Paused", color: "bg-gray-100 text-gray-600", icon: <EyeOff className="h-3 w-3" /> };
   }
+  // Active poll states
   if (poll.voting_end_at && new Date(poll.voting_end_at) < now) {
     return { status: "Voting Ended", color: "bg-orange-100 text-orange-700", icon: <Clock className="h-3 w-3" /> };
   }
   if (poll.voting_start_at && new Date(poll.voting_start_at) <= now) {
-    return { status: "Voting", color: "bg-green-100 text-green-700", icon: <CheckCircle className="h-3 w-3" /> };
+    return { status: "Voting Open", color: "bg-green-100 text-green-700", icon: <CheckCircle className="h-3 w-3" /> };
   }
   if (poll.nominations_end_at && new Date(poll.nominations_end_at) < now) {
-    return { status: "Nominations Closed", color: "bg-blue-100 text-blue-700", icon: <Clock className="h-3 w-3" /> };
+    return { status: "Awaiting Voting", color: "bg-blue-100 text-blue-700", icon: <Clock className="h-3 w-3" /> };
   }
-  return { status: "Nominations Open", color: "bg-emerald-100 text-emerald-700", icon: <Users className="h-3 w-3" /> };
+  return { status: "Accepting Nominations", color: "bg-emerald-100 text-emerald-700", icon: <Users className="h-3 w-3" /> };
 }
 
 export default function AdminPollsPage() {
@@ -666,25 +669,29 @@ export default function AdminPollsPage() {
                           Nominations
                         </Button>
                         
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => togglePollActive(poll)}
-                          className="gap-1 justify-start"
-                        >
-                          {poll.is_active ? (
-                            <>
-                              <EyeOff className="h-4 w-4" />
-                              Deactivate
-                            </>
-                          ) : (
-                            <>
-                              <Eye className="h-4 w-4" />
-                              Activate
-                            </>
-                          )}
-                        </Button>
+                        {/* Only show activate/deactivate if NO winner declared */}
+                        {!poll.winner_nomination_id && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => togglePollActive(poll)}
+                            className="gap-1 justify-start"
+                          >
+                            {poll.is_active ? (
+                              <>
+                                <EyeOff className="h-4 w-4" />
+                                Deactivate
+                              </>
+                            ) : (
+                              <>
+                                <Eye className="h-4 w-4" />
+                                Activate
+                              </>
+                            )}
+                          </Button>
+                        )}
 
+                        {/* Show "Declare Winner" only if no winner yet and has nominations */}
                         {!poll.winner_nomination_id && poll.nomination_count! > 0 && (
                           <Button
                             variant="outline"
@@ -695,6 +702,14 @@ export default function AdminPollsPage() {
                             <Trophy className="h-4 w-4" />
                             Declare Winner
                           </Button>
+                        )}
+
+                        {/* Show "In Hall of Fame" indicator if winner declared */}
+                        {poll.winner_nomination_id && (
+                          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-yellow-100 text-yellow-800 text-sm">
+                            <Trophy className="h-4 w-4" />
+                            In Hall of Fame
+                          </div>
                         )}
                         
                         <Button
