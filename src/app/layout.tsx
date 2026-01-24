@@ -17,6 +17,9 @@ const inter = Inter({
   display: "swap",
 });
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://peopleofcornwall.com";
+const DEFAULT_OG_IMAGE = `${SITE_URL}/og-default.png`;
+
 export const metadata: Metadata = {
   title: {
     default: "People of Cornwall — A Living Archive of Cornish Voices",
@@ -35,6 +38,7 @@ export const metadata: Metadata = {
     "Cornwall heritage",
   ],
   authors: [{ name: "People of Cornwall" }],
+  metadataBase: new URL(SITE_URL),
   openGraph: {
     title: "People of Cornwall — A Living Archive of Cornish Voices",
     description:
@@ -42,12 +46,21 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_GB",
     siteName: "People of Cornwall",
+    images: [
+      {
+        url: DEFAULT_OG_IMAGE,
+        width: 1200,
+        height: 630,
+        alt: "People of Cornwall - Stories, Events & Community",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "People of Cornwall — A Living Archive of Cornish Voices",
     description:
       "A community-driven storytelling platform preserving the voices, memories, and lived experiences of Cornwall.",
+    images: [DEFAULT_OG_IMAGE],
   },
   robots: {
     index: true,
