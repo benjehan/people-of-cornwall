@@ -302,41 +302,14 @@ CREATE TRIGGER trigger_social_butterfly
 -- ================================================
 -- 8. RETROACTIVE BADGE AWARDS
 -- ================================================
+-- NOTE: Run migration 023 AFTER this one to award retroactive badges
+-- (PostgreSQL requires new enum values to be committed before use)
 
--- Award badges to users who already qualify
-
--- Location experts (already have wins)
-INSERT INTO user_badges (user_id, badge_type, awarded_reason)
-SELECT id, 'sharp_eye'::badge_type, 'Correctly identified 5 mystery locations'
-FROM users WHERE COALESCE(location_wins, 0) >= 5
-ON CONFLICT (user_id, badge_type) DO NOTHING;
-
-INSERT INTO user_badges (user_id, badge_type, awarded_reason)
-SELECT id, 'cornish_guide'::badge_type, 'Correctly identified 10 mystery locations - a true Cornish guide!'
-FROM users WHERE COALESCE(location_wins, 0) >= 10
-ON CONFLICT (user_id, badge_type) DO NOTHING;
-
--- Update memory counts and award badges
-UPDATE users u SET memories_count = (
+-- Update user counters for tracking
+UPDATE users u SET memories_count = COALESCE((
   SELECT COUNT(*) FROM lost_cornwall_memories m WHERE m.user_id = u.id
-);
+), 0);
 
-INSERT INTO user_badges (user_id, badge_type, awarded_reason)
-SELECT id, 'memory_keeper'::badge_type, 'Shared a memory on a Lost Cornwall photo'
-FROM users WHERE COALESCE(memories_count, 0) >= 1
-ON CONFLICT (user_id, badge_type) DO NOTHING;
-
-INSERT INTO user_badges (user_id, badge_type, awarded_reason)
-SELECT id, 'historian'::badge_type, 'Shared memories on 10+ Lost Cornwall photos - a true historian!'
-FROM users WHERE COALESCE(memories_count, 0) >= 10
-ON CONFLICT (user_id, badge_type) DO NOTHING;
-
--- Update comment counts and award social_butterfly
-UPDATE users u SET total_comments = (
+UPDATE users u SET total_comments = COALESCE((
   SELECT COUNT(*) FROM comments c WHERE c.user_id = u.id
-);
-
-INSERT INTO user_badges (user_id, badge_type, awarded_reason)
-SELECT id, 'social_butterfly'::badge_type, 'Left 10+ comments across the platform'
-FROM users WHERE COALESCE(total_comments, 0) >= 10
-ON CONFLICT (user_id, badge_type) DO NOTHING;
+), 0);
