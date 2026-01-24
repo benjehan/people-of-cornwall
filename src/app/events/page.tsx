@@ -208,7 +208,7 @@ export default function EventsPage() {
 
     // For past events, show from start to end (both dates in the past)
     // For future events, show from start onwards
-    if (isPast) {
+    if (isPast && end) {
       query = query
         .gte("starts_at", start.toISOString())
         .lt("starts_at", end.toISOString())
