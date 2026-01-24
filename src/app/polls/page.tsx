@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
@@ -42,6 +42,9 @@ import {
   ChevronRight,
   Sparkles,
   Timer,
+  Upload,
+  X,
+  Image as ImageIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -81,6 +84,7 @@ interface Poll {
   voting_end_at: string | null;
   winner_nomination_id: string | null;
   show_nomination_location: boolean;
+  allow_nomination_images: boolean;
   nominations: Nomination[];
 }
 
@@ -94,6 +98,7 @@ interface Nomination {
   website_url: string | null;
   facebook_url: string | null;
   instagram_url: string | null;
+  image_url: string | null;
   vote_count: number;
   user_has_voted: boolean;
   user_id: string;
@@ -173,8 +178,12 @@ export default function PollsPage() {
     instagram_url: "",
     facebook_url: "",
   });
+  const [nominationImage, setNominationImage] = useState<File | null>(null);
+  const [nominationImagePreview, setNominationImagePreview] = useState<string | null>(null);
   const [isNominating, setIsNominating] = useState(false);
   const [nominationSuccess, setNominationSuccess] = useState(false);
+  const [nominationError, setNominationError] = useState<string | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   // Category filter
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -340,15 +349,75 @@ export default function PollsPage() {
       instagram_url: "", 
       facebook_url: "" 
     });
+    setNominationImage(null);
+    setNominationImagePreview(null);
     setNominationSuccess(false);
+    setNominationError(null);
     setNominateDialogOpen(true);
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      setNominationError("Please select an image file");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setNominationError("Image must be less than 5MB");
+      return;
+    }
+
+    setNominationImage(file);
+    setNominationImagePreview(URL.createObjectURL(file));
+    setNominationError(null);
+  };
+
+  const clearImage = () => {
+    setNominationImage(null);
+    setNominationImagePreview(null);
+    if (imageInputRef.current) {
+      imageInputRef.current.value = "";
+    }
   };
 
   const handleNominate = async () => {
     if (!user || !nominatePollId || !nominationData.title.trim()) return;
     
     setIsNominating(true);
+    setNominationError(null);
     const supabase = createClient();
+
+    let imageUrl: string | null = null;
+
+    // Upload image if provided
+    if (nominationImage) {
+      const fileExt = nominationImage.name.split(".").pop();
+      const fileName = `nominations/${nominatePollId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("story-media")
+        .upload(fileName, nominationImage, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+
+      if (uploadError) {
+        setNominationError("Failed to upload image. Please try again.");
+        setIsNominating(false);
+        return;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("story-media")
+        .getPublicUrl(fileName);
+      
+      imageUrl = publicUrl;
+    }
 
     const nominationPayload: Record<string, any> = {
       poll_id: nominatePollId,
@@ -359,6 +428,7 @@ export default function PollsPage() {
       website_url: nominationData.website_url.trim() || null,
       instagram_url: nominationData.instagram_url.trim() || null,
       facebook_url: nominationData.facebook_url.trim() || null,
+      image_url: imageUrl,
       is_approved: false,
     };
 
@@ -372,7 +442,15 @@ export default function PollsPage() {
 
     const { error } = await (supabase.from("poll_nominations") as any).insert(nominationPayload);
 
-    if (!error) {
+    if (error) {
+      // Check if it's a duplicate error
+      if (error.message?.includes("similar nomination")) {
+        setNominationError(error.message);
+      } else {
+        setNominationError("Failed to submit nomination. Please try again.");
+      }
+      console.error("Nomination error:", error);
+    } else {
       setNominationSuccess(true);
       setTimeout(() => {
         setNominateDialogOpen(false);
@@ -889,7 +967,13 @@ export default function PollsPage() {
               </div>
             ) : (
               <>
-                <div className="space-y-4 py-4">
+                <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
+                  {nominationError && (
+                    <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+                      {nominationError}
+                    </div>
+                  )}
+
                   <div className="space-y-2">
                     <Label htmlFor="nom-title">Name *</Label>
                     <Input
@@ -915,6 +999,45 @@ export default function PollsPage() {
                           location_lng: loc.lng,
                         })}
                         placeholder="Search for a Cornish location..."
+                      />
+                    </div>
+                  )}
+
+                  {/* Only show image upload if poll allows it */}
+                  {activePolls.find(p => p.id === nominatePollId)?.allow_nomination_images && (
+                    <div className="space-y-2">
+                      <Label>Photo (optional)</Label>
+                      {nominationImagePreview ? (
+                        <div className="relative">
+                          <img 
+                            src={nominationImagePreview} 
+                            alt="Preview" 
+                            className="w-full h-40 object-cover rounded-lg border border-bone"
+                          />
+                          <button
+                            type="button"
+                            onClick={clearImage}
+                            className="absolute top-2 right-2 p-1.5 bg-white/90 rounded-full shadow hover:bg-white"
+                          >
+                            <X className="h-4 w-4 text-granite" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div 
+                          onClick={() => imageInputRef.current?.click()}
+                          className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-bone rounded-lg cursor-pointer hover:border-copper hover:bg-copper/5 transition-colors"
+                        >
+                          <ImageIcon className="h-8 w-8 text-stone" />
+                          <span className="text-sm text-stone">Click to add a photo</span>
+                          <span className="text-xs text-silver">Max 5MB</span>
+                        </div>
+                      )}
+                      <input
+                        ref={imageInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageSelect}
+                        className="hidden"
                       />
                     </div>
                   )}

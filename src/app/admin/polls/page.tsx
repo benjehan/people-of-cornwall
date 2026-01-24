@@ -40,6 +40,7 @@ import {
   Trophy,
   Calendar,
   Users,
+  Image as ImageIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -146,6 +147,7 @@ export default function AdminPollsPage() {
     voting_start_at: "",
     voting_end_at: "",
     show_nomination_location: true,
+    allow_nomination_images: false,
   });
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -211,6 +213,7 @@ export default function AdminPollsPage() {
       category: newPoll.category,
       location_name: newPoll.location_name.trim() || null,
       show_nomination_location: newPoll.show_nomination_location,
+      allow_nomination_images: newPoll.allow_nomination_images,
       is_active: true,
       created_by: user?.id,
     };
@@ -256,6 +259,7 @@ export default function AdminPollsPage() {
         voting_start_at: "",
         voting_end_at: "",
         show_nomination_location: true,
+        allow_nomination_images: false,
       });
       await loadPolls();
     }
@@ -448,24 +452,48 @@ export default function AdminPollsPage() {
                   <p className="text-xs text-stone">Leave empty for all of Cornwall</p>
                 </div>
 
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-parchment border border-bone">
-                  <Checkbox
-                    id="show_location"
-                    checked={newPoll.show_nomination_location}
-                    onCheckedChange={(checked) => setNewPoll({ 
-                      ...newPoll, 
-                      show_nomination_location: checked === true 
-                    })}
-                    className="mt-0.5"
-                  />
-                  <div className="space-y-1">
-                    <Label htmlFor="show_location" className="font-medium cursor-pointer">
-                      Show location field for nominations
-                    </Label>
-                    <p className="text-xs text-stone">
-                      Uncheck if poll is already location-specific (e.g., "Best Pub in Falmouth") — 
-                      users won't need to add a location to their nomination.
-                    </p>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-parchment border border-bone">
+                    <Checkbox
+                      id="show_location"
+                      checked={newPoll.show_nomination_location}
+                      onCheckedChange={(checked) => setNewPoll({ 
+                        ...newPoll, 
+                        show_nomination_location: checked === true 
+                      })}
+                      className="mt-0.5"
+                    />
+                    <div className="space-y-1">
+                      <Label htmlFor="show_location" className="font-medium cursor-pointer">
+                        Show location field for nominations
+                      </Label>
+                      <p className="text-xs text-stone">
+                        Uncheck if poll is already location-specific (e.g., "Best Pub in Falmouth") — 
+                        users won't need to add a location to their nomination.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-parchment border border-bone">
+                    <Checkbox
+                      id="allow_images"
+                      checked={newPoll.allow_nomination_images}
+                      onCheckedChange={(checked) => setNewPoll({ 
+                        ...newPoll, 
+                        allow_nomination_images: checked === true 
+                      })}
+                      className="mt-0.5"
+                    />
+                    <div className="space-y-1">
+                      <Label htmlFor="allow_images" className="font-medium cursor-pointer flex items-center gap-2">
+                        <ImageIcon className="h-4 w-4 text-copper" />
+                        Allow image uploads with nominations
+                      </Label>
+                      <p className="text-xs text-stone">
+                        Enable for visual polls like "Best Sunset Spot" or "Most Scenic View" 
+                        where photos enhance nominations.
+                      </p>
+                    </div>
                   </div>
                 </div>
 
