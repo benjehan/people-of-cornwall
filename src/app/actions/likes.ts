@@ -21,7 +21,7 @@ export async function toggleLikeAction(storyId: string) {
     .select("id")
     .eq("story_id", storyId)
     .eq("user_id", user.id)
-    .single();
+    .maybeSingle();
 
   if (existing) {
     // Unlike

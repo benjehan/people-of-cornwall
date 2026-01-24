@@ -82,7 +82,7 @@ export function CommentSection({ contentType, contentId, title = "Comments" }: C
             .eq("content_type", "comment")
             .eq("content_id", comment.id)
             .eq("user_id", user.id)
-            .single();
+            .maybeSingle();
           userHasLiked = !!like;
         }
 

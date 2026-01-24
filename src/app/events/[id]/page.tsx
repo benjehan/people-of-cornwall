@@ -112,7 +112,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
         .eq("content_type", "event")
         .eq("content_id", id)
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
       setUserHasLiked(!!like);
     }
 

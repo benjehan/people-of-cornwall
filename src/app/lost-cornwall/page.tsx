@@ -123,7 +123,7 @@ export default function LostCornwallPage() {
             .eq("content_type", "lost_cornwall")
             .eq("content_id", photo.id)
             .eq("user_id", user.id)
-            .single();
+            .maybeSingle();
           userHasLiked = !!like;
         }
         return {

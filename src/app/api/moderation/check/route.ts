@@ -126,6 +126,13 @@ export async function POST(request: NextRequest) {
     const label = typeLabels[body.type] || "New Submission";
     
     // Send admin notification
+    console.log("Moderation check:", {
+      type: body.type,
+      hasResendKey: !!process.env.RESEND_API_KEY,
+      adminEmail: ADMIN_EMAIL,
+      title: body.content.title,
+    });
+    
     if (process.env.RESEND_API_KEY) {
       const flagWarning = result.flags.length > 0 
         ? `<div style="background: #FEF2F2; border: 1px solid #FCA5A5; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
@@ -142,12 +149,12 @@ export async function POST(request: NextRequest) {
       const adminLinks: Record<string, string> = {
         event: `${SITE_URL}/admin/events`,
         poll_nomination: `${SITE_URL}/admin/polls`,
-        where_is_this: `${SITE_URL}/admin/challenges`,
+        where_is_this: `${SITE_URL}/admin/where-is-this`,
         lost_cornwall: `${SITE_URL}/admin/lost-cornwall`,
         comment: `${SITE_URL}/admin/comments`,
       };
       
-      await resend.emails.send({
+      const emailResponse = await resend.emails.send({
         from: "People of Cornwall <notifications@peopleofcornwall.com>",
         to: ADMIN_EMAIL,
         subject: `${result.flags.length > 0 ? "⚠️ FLAGGED: " : ""}${label}: ${body.content.title || "New submission"}`,
@@ -207,6 +214,10 @@ export async function POST(request: NextRequest) {
 </html>
         `,
       });
+      
+      console.log("Email sent:", emailResponse);
+    } else {
+      console.log("No RESEND_API_KEY found, skipping email");
     }
     
     return NextResponse.json({

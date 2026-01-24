@@ -185,8 +185,8 @@ export default function SubmitWhereIsThisPage() {
           body: JSON.stringify({
             type: "where_is_this",
             content: {
-              answerLocation: answerLocationName,
-              hint: hint,
+              title: `Location: ${answerLocationName}`,
+              description: hint ? `Hint: ${hint}` : "No hint provided",
               imageUrl,
             },
             submitterId: user.id,

@@ -532,9 +532,9 @@ export async function hasUserLikedStory(storyId: string, userId: string) {
     .select("id")
     .eq("story_id", storyId)
     .eq("user_id", userId)
-    .single();
+    .maybeSingle();
 
-  if (error && error.code !== "PGRST116") {
+  if (error) {
     console.error("Error checking like:", error);
   }
 
@@ -553,7 +553,7 @@ export async function toggleLike(storyId: string, userId: string) {
     .select("id")
     .eq("story_id", storyId)
     .eq("user_id", userId)
-    .single();
+    .maybeSingle();
 
   if (existing) {
     // Unlike

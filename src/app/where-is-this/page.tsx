@@ -135,7 +135,7 @@ export default function WhereIsThisPage() {
           .select("guess_location_name, is_correct")
           .eq("challenge_id", active.id)
           .eq("user_id", user.id)
-          .single();
+          .maybeSingle();
         
         if (existingGuess) {
           setUserGuess(existingGuess);
