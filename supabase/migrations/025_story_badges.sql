@@ -3,22 +3,15 @@
 -- ================================================
 
 -- ================================================
--- 1. ADD MISSING BADGE TYPES (if not exists)
+-- 1. ADD MISSING BADGE TYPES
 -- ================================================
 
--- These should already exist from original migration, but add IF NOT EXISTS for safety
-DO $$ 
-BEGIN
-  -- Check if types exist before trying to add
-  IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'voice_of_cornwall' AND enumtypid = 'badge_type'::regtype) THEN
-    ALTER TYPE badge_type ADD VALUE 'voice_of_cornwall';
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'prompt_responder' AND enumtypid = 'badge_type'::regtype) THEN
-    ALTER TYPE badge_type ADD VALUE 'prompt_responder';
-  END IF;
-EXCEPTION WHEN OTHERS THEN
-  NULL;
-END $$;
+-- Add all potentially missing badge types
+ALTER TYPE badge_type ADD VALUE IF NOT EXISTS 'voice_of_cornwall';
+ALTER TYPE badge_type ADD VALUE IF NOT EXISTS 'prompt_responder';
+ALTER TYPE badge_type ADD VALUE IF NOT EXISTS 'community_voter';
+ALTER TYPE badge_type ADD VALUE IF NOT EXISTS 'poll_winner';
+ALTER TYPE badge_type ADD VALUE IF NOT EXISTS 'early_supporter';
 
 -- ================================================
 -- 2. ENSURE award_badge_if_not_exists EXISTS
