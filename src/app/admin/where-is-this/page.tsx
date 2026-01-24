@@ -9,6 +9,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { LocationAutocomplete } from "@/components/ui/location-autocomplete";
 import {
   Dialog,
   DialogContent,
@@ -30,6 +40,9 @@ import {
   Trash2,
   Users,
   Award,
+  Plus,
+  Upload,
+  X,
 } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
 import { createClient } from "@/lib/supabase/client";
@@ -91,6 +104,21 @@ export default function AdminWhereIsThisPage() {
   const [guesses, setGuesses] = useState<Guess[]>([]);
   const [loadingGuesses, setLoadingGuesses] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Create challenge state
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    imageUrl: "",
+    hint: "",
+    difficulty: "medium" as "easy" | "medium" | "hard",
+    answerLocationName: "",
+    answerDescription: "",
+    answerLat: null as number | null,
+    answerLng: null as number | null,
+  });
+  const [isCreating, setIsCreating] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -147,6 +175,88 @@ export default function AdminWhereIsThisPage() {
       setGuesses(data);
     }
     setLoadingGuesses(false);
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image must be less than 5MB");
+      return;
+    }
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const uploadImage = async (): Promise<string | null> => {
+    if (!imageFile) return createForm.imageUrl || null;
+
+    const supabase = createClient();
+    const fileExt = imageFile.name.split(".").pop();
+    const fileName = `where-is-this/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("story-media")
+      .upload(fileName, imageFile, { cacheControl: "3600", upsert: false });
+
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from("story-media")
+      .getPublicUrl(fileName);
+
+    return publicUrl;
+  };
+
+  const createChallenge = async () => {
+    if (!createForm.answerLocationName || !createForm.answerLat || !createForm.answerLng) {
+      alert("Please select a location for the answer");
+      return;
+    }
+    if (!imageFile && !createForm.imageUrl) {
+      alert("Please upload an image or provide an image URL");
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      const imageUrl = await uploadImage();
+      if (!imageUrl) throw new Error("Failed to get image URL");
+
+      const supabase = createClient();
+      await (supabase.from("where_is_this") as any).insert({
+        image_url: imageUrl,
+        hint: createForm.hint || null,
+        difficulty: createForm.difficulty,
+        answer_location_name: createForm.answerLocationName,
+        answer_description: createForm.answerDescription || null,
+        answer_lat: createForm.answerLat,
+        answer_lng: createForm.answerLng,
+        created_by: user?.id,
+        is_active: false,
+        is_revealed: false,
+        is_pending: false, // Admin-created, no need for approval
+      });
+
+      setShowCreateDialog(false);
+      setCreateForm({
+        imageUrl: "",
+        hint: "",
+        difficulty: "medium",
+        answerLocationName: "",
+        answerDescription: "",
+        answerLat: null,
+        answerLng: null,
+      });
+      setImageFile(null);
+      setImagePreview(null);
+      await loadChallenges();
+    } catch (err) {
+      console.error("Error creating challenge:", err);
+      alert("Failed to create challenge");
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const viewGuesses = async (challenge: Challenge) => {
@@ -296,16 +406,25 @@ export default function AdminWhereIsThisPage() {
       <Header />
 
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <Link
-            href="/admin"
-            className="mb-4 inline-flex items-center gap-1 text-sm text-stone hover:text-granite"
+        <div className="mb-8 flex items-start justify-between">
+          <div>
+            <Link
+              href="/admin"
+              className="mb-4 inline-flex items-center gap-1 text-sm text-stone hover:text-granite"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Admin
+            </Link>
+            <h1 className="font-serif text-3xl text-granite">Where Is This? Management</h1>
+            <p className="text-stone mt-1">Review submissions and manage challenges</p>
+          </div>
+          <Button
+            onClick={() => setShowCreateDialog(true)}
+            className="bg-atlantic text-parchment hover:bg-atlantic/90"
           >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Admin
-          </Link>
-          <h1 className="font-serif text-3xl text-granite">Where Is This? Management</h1>
-          <p className="text-stone mt-1">Review submissions and manage challenges</p>
+            <Plus className="h-4 w-4 mr-2" />
+            Create Challenge
+          </Button>
         </div>
 
         {isLoading ? (
@@ -647,6 +766,143 @@ export default function AdminWhereIsThisPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowGuessesDialog(false)}>
               Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Challenge Dialog */}
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5" />
+              Create New Challenge
+            </DialogTitle>
+            <DialogDescription>
+              Create a new "Where Is This?" challenge for the community
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Image Upload */}
+            <div className="space-y-2">
+              <Label>Challenge Image *</Label>
+              {imagePreview ? (
+                <div className="relative">
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="w-full h-48 object-cover rounded-lg border border-bone"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    onClick={() => {
+                      setImageFile(null);
+                      setImagePreview(null);
+                    }}
+                    className="absolute top-2 right-2 h-8 w-8"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div
+                  onClick={() => document.getElementById("admin-image-upload")?.click()}
+                  className="border-2 border-dashed border-bone rounded-lg p-6 text-center cursor-pointer hover:border-atlantic transition-colors"
+                >
+                  <Upload className="h-8 w-8 text-stone mx-auto mb-2" />
+                  <p className="text-sm text-stone">Click to upload image</p>
+                </div>
+              )}
+              <input
+                id="admin-image-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
+                className="hidden"
+              />
+              <p className="text-xs text-stone">Or provide an image URL:</p>
+              <Input
+                value={createForm.imageUrl}
+                onChange={(e) => setCreateForm({ ...createForm, imageUrl: e.target.value })}
+                placeholder="https://example.com/image.jpg"
+                className="border-bone"
+              />
+            </div>
+
+            {/* Answer Location */}
+            <div className="space-y-2">
+              <Label>Correct Location *</Label>
+              <LocationAutocomplete
+                value={createForm.answerLocationName}
+                onChange={(location) => {
+                  setCreateForm({
+                    ...createForm,
+                    answerLocationName: location.name,
+                    answerLat: location.lat,
+                    answerLng: location.lng,
+                  });
+                }}
+                placeholder="Search for the location..."
+              />
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Label>About this place (shown after reveal)</Label>
+              <Textarea
+                value={createForm.answerDescription}
+                onChange={(e) => setCreateForm({ ...createForm, answerDescription: e.target.value })}
+                placeholder="What makes this place special?"
+                className="border-bone"
+                rows={3}
+              />
+            </div>
+
+            {/* Hint */}
+            <div className="space-y-2">
+              <Label>Hint (optional)</Label>
+              <Input
+                value={createForm.hint}
+                onChange={(e) => setCreateForm({ ...createForm, hint: e.target.value })}
+                placeholder="e.g., Near a famous lighthouse"
+                className="border-bone"
+              />
+            </div>
+
+            {/* Difficulty */}
+            <div className="space-y-2">
+              <Label>Difficulty</Label>
+              <Select
+                value={createForm.difficulty}
+                onValueChange={(v) => setCreateForm({ ...createForm, difficulty: v as any })}
+              >
+                <SelectTrigger className="border-bone">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="easy">🟢 Easy</SelectItem>
+                  <SelectItem value="medium">🟡 Medium</SelectItem>
+                  <SelectItem value="hard">🔴 Hard</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={createChallenge}
+              disabled={isCreating}
+              className="bg-atlantic text-parchment hover:bg-atlantic/90"
+            >
+              {isCreating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
+              Create Challenge
             </Button>
           </DialogFooter>
         </DialogContent>

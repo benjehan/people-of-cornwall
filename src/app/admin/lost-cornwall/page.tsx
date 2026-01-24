@@ -9,6 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { LocationAutocomplete } from "@/components/ui/location-autocomplete";
 import {
   Dialog,
   DialogContent,
@@ -28,6 +31,9 @@ import {
   Trash2,
   Eye,
   Calendar,
+  Plus,
+  Upload,
+  X,
 } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
 import { createClient } from "@/lib/supabase/client";
@@ -64,6 +70,22 @@ export default function AdminLostCornwallPage() {
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Create photo state
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    title: "",
+    description: "",
+    yearTaken: "",
+    locationName: "",
+    locationLat: null as number | null,
+    locationLng: null as number | null,
+    sourceCredit: "",
+    imageUrl: "",
+  });
+  const [isCreating, setIsCreating] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -99,6 +121,89 @@ export default function AdminLostCornwallPage() {
       loadPhotos();
     }
   }, [user, isAdmin]);
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert("Image must be less than 10MB");
+      return;
+    }
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const uploadImage = async (): Promise<string | null> => {
+    if (!imageFile) return createForm.imageUrl || null;
+
+    const supabase = createClient();
+    const fileExt = imageFile.name.split(".").pop();
+    const fileName = `lost-cornwall/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("story-media")
+      .upload(fileName, imageFile, { cacheControl: "3600", upsert: false });
+
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from("story-media")
+      .getPublicUrl(fileName);
+
+    return publicUrl;
+  };
+
+  const createPhoto = async () => {
+    if (!createForm.title.trim()) {
+      alert("Please enter a title");
+      return;
+    }
+    if (!imageFile && !createForm.imageUrl) {
+      alert("Please upload an image or provide an image URL");
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      const imageUrl = await uploadImage();
+      if (!imageUrl) throw new Error("Failed to get image URL");
+
+      const supabase = createClient();
+      await (supabase.from("lost_cornwall") as any).insert({
+        title: createForm.title.trim(),
+        description: createForm.description.trim() || null,
+        image_url: imageUrl,
+        year_taken: createForm.yearTaken.trim() || null,
+        location_name: createForm.locationName || null,
+        location_lat: createForm.locationLat,
+        location_lng: createForm.locationLng,
+        source_credit: createForm.sourceCredit.trim() || null,
+        created_by: user?.id,
+        is_published: true, // Admin-created, publish immediately
+        is_pending: false,
+      });
+
+      setShowCreateDialog(false);
+      setCreateForm({
+        title: "",
+        description: "",
+        yearTaken: "",
+        locationName: "",
+        locationLat: null,
+        locationLng: null,
+        sourceCredit: "",
+        imageUrl: "",
+      });
+      setImageFile(null);
+      setImagePreview(null);
+      await loadPhotos();
+    } catch (err) {
+      console.error("Error creating photo:", err);
+      alert("Failed to create photo");
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   const approvePhoto = async (photo: Photo) => {
     setIsProcessing(true);
@@ -183,16 +288,25 @@ export default function AdminLostCornwallPage() {
       <Header />
 
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <Link
-            href="/admin"
-            className="mb-4 inline-flex items-center gap-1 text-sm text-stone hover:text-granite"
+        <div className="mb-8 flex items-start justify-between">
+          <div>
+            <Link
+              href="/admin"
+              className="mb-4 inline-flex items-center gap-1 text-sm text-stone hover:text-granite"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Admin
+            </Link>
+            <h1 className="font-serif text-3xl text-granite">Lost Cornwall Management</h1>
+            <p className="text-stone mt-1">Review submissions and manage the historic photo gallery</p>
+          </div>
+          <Button
+            onClick={() => setShowCreateDialog(true)}
+            className="bg-sepia text-parchment hover:bg-sepia/90"
           >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Admin
-          </Link>
-          <h1 className="font-serif text-3xl text-granite">Lost Cornwall Management</h1>
-          <p className="text-stone mt-1">Review submissions and manage the historic photo gallery</p>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Photo
+          </Button>
         </div>
 
         {isLoading ? (
@@ -505,6 +619,149 @@ export default function AdminLostCornwallPage() {
               disabled={isProcessing}
             >
               {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Reject & Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Photo Dialog */}
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5" />
+              Add Historic Photo
+            </DialogTitle>
+            <DialogDescription>
+              Add a new photo to the Lost Cornwall gallery
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Image Upload */}
+            <div className="space-y-2">
+              <Label>Photo *</Label>
+              {imagePreview ? (
+                <div className="relative">
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="w-full h-48 object-cover rounded-lg border border-bone sepia-[0.2]"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    onClick={() => {
+                      setImageFile(null);
+                      setImagePreview(null);
+                    }}
+                    className="absolute top-2 right-2 h-8 w-8"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div
+                  onClick={() => document.getElementById("admin-photo-upload")?.click()}
+                  className="border-2 border-dashed border-sepia/30 rounded-lg p-6 text-center cursor-pointer hover:border-sepia transition-colors bg-sepia/5"
+                >
+                  <Upload className="h-8 w-8 text-sepia/60 mx-auto mb-2" />
+                  <p className="text-sm text-stone">Click to upload image</p>
+                </div>
+              )}
+              <input
+                id="admin-photo-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
+                className="hidden"
+              />
+              <p className="text-xs text-stone">Or provide an image URL:</p>
+              <Input
+                value={createForm.imageUrl}
+                onChange={(e) => setCreateForm({ ...createForm, imageUrl: e.target.value })}
+                placeholder="https://example.com/image.jpg"
+                className="border-bone"
+              />
+            </div>
+
+            {/* Title */}
+            <div className="space-y-2">
+              <Label>Title *</Label>
+              <Input
+                value={createForm.title}
+                onChange={(e) => setCreateForm({ ...createForm, title: e.target.value })}
+                placeholder="e.g., Newlyn Harbour, fishing boats"
+                className="border-bone"
+              />
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Textarea
+                value={createForm.description}
+                onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
+                placeholder="Tell us about this photo..."
+                className="border-bone"
+                rows={3}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              {/* Year */}
+              <div className="space-y-2">
+                <Label>Approximate Date/Year</Label>
+                <Input
+                  value={createForm.yearTaken}
+                  onChange={(e) => setCreateForm({ ...createForm, yearTaken: e.target.value })}
+                  placeholder="e.g., 1920s, circa 1950"
+                  className="border-bone"
+                />
+              </div>
+
+              {/* Source */}
+              <div className="space-y-2">
+                <Label>Source/Credit</Label>
+                <Input
+                  value={createForm.sourceCredit}
+                  onChange={(e) => setCreateForm({ ...createForm, sourceCredit: e.target.value })}
+                  placeholder="e.g., Cornwall Record Office"
+                  className="border-bone"
+                />
+              </div>
+            </div>
+
+            {/* Location */}
+            <div className="space-y-2">
+              <Label>Location (if known)</Label>
+              <LocationAutocomplete
+                value={createForm.locationName}
+                onChange={(location) => {
+                  setCreateForm({
+                    ...createForm,
+                    locationName: location.name,
+                    locationLat: location.lat,
+                    locationLng: location.lng,
+                  });
+                }}
+                placeholder="Search for location..."
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={createPhoto}
+              disabled={isCreating}
+              className="bg-sepia text-parchment hover:bg-sepia/90"
+            >
+              {isCreating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
+              Add Photo
             </Button>
           </DialogFooter>
         </DialogContent>
