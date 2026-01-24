@@ -486,7 +486,10 @@ export default function PollsPage() {
       nominationPayload.location_lng = nominationData.location_lng;
     }
 
-    const { error } = await (supabase.from("poll_nominations") as any).insert(nominationPayload);
+    const { data: nominationResult, error } = await (supabase.from("poll_nominations") as any)
+      .insert(nominationPayload)
+      .select()
+      .single();
 
     if (error) {
       // Check if it's a duplicate error
@@ -497,6 +500,31 @@ export default function PollsPage() {
       }
       console.error("Nomination error:", error);
     } else {
+      // Get poll title for notification
+      const poll = activePolls.find(p => p.id === nominatePollId);
+      
+      // Send admin notification
+      try {
+        await fetch("/api/moderation/check", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "poll_nomination",
+            content: {
+              title: nominationData.title.trim(),
+              description: `Poll: ${poll?.title || "Unknown"}\n${nominationData.description || ""}`,
+              imageUrl: imageUrl,
+            },
+            submitterId: user.id,
+            submitterEmail: user.email,
+            itemId: nominationResult?.id,
+          }),
+        });
+      } catch (notifyError) {
+        console.error("Failed to send admin notification:", notifyError);
+        // Don't fail the submission if notification fails
+      }
+
       setNominationSuccess(true);
       setTimeout(() => {
         setNominateDialogOpen(false);
