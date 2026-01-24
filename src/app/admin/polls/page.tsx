@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { LocationAutocomplete } from "@/components/ui/location-autocomplete";
 import Link from "next/link";
 
 const POLL_CATEGORIES = [
@@ -138,10 +139,13 @@ export default function AdminPollsPage() {
     description: "",
     category: "",
     location_name: "",
+    location_lat: null as number | null,
+    location_lng: null as number | null,
     nominations_end_at: "",
     voting_start_at: "",
     voting_end_at: "",
   });
+  const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !isAdmin) {
@@ -189,32 +193,62 @@ export default function AdminPollsPage() {
   };
 
   const createPoll = async () => {
-    if (!newPoll.title.trim() || !newPoll.category) return;
+    if (!newPoll.title.trim() || !newPoll.category) {
+      setFormError("Please fill in the title and select a category");
+      return;
+    }
 
     setIsSubmitting(true);
+    setFormError(null);
     const supabase = createClient();
 
-    const { error } = await (supabase.from("polls") as any).insert({
+    // Build the poll data object
+    const pollData: Record<string, any> = {
       title: newPoll.title.trim(),
       description: newPoll.description.trim() || null,
       category: newPoll.category,
       location_name: newPoll.location_name.trim() || null,
-      nominations_end_at: newPoll.nominations_end_at || null,
-      voting_start_at: newPoll.voting_start_at || null,
-      voting_end_at: newPoll.voting_end_at || null,
       is_active: true,
       created_by: user?.id,
-    });
+    };
+
+    // Only add optional fields if they have values
+    if (newPoll.location_lat !== null) {
+      pollData.location_lat = newPoll.location_lat;
+    }
+    if (newPoll.location_lng !== null) {
+      pollData.location_lng = newPoll.location_lng;
+    }
+    if (newPoll.nominations_end_at) {
+      pollData.nominations_end_at = new Date(newPoll.nominations_end_at).toISOString();
+    }
+    if (newPoll.voting_start_at) {
+      pollData.voting_start_at = new Date(newPoll.voting_start_at).toISOString();
+    }
+    if (newPoll.voting_end_at) {
+      pollData.voting_end_at = new Date(newPoll.voting_end_at).toISOString();
+    }
+
+    console.log("Creating poll with data:", pollData);
+
+    const { data, error } = await (supabase.from("polls") as any)
+      .insert(pollData)
+      .select()
+      .single();
 
     if (error) {
       console.error("Error creating poll:", error);
+      setFormError(`Failed to create poll: ${error.message || error.details || 'Unknown error'}`);
     } else {
+      console.log("Poll created successfully:", data);
       setCreateDialogOpen(false);
       setNewPoll({ 
         title: "", 
         description: "", 
         category: "", 
         location_name: "",
+        location_lat: null,
+        location_lng: null,
         nominations_end_at: "",
         voting_start_at: "",
         voting_end_at: "",
@@ -339,7 +373,10 @@ export default function AdminPollsPage() {
             <p className="text-stone mt-1">Create and manage community voting polls</p>
           </div>
           
-          <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+          <Dialog open={createDialogOpen} onOpenChange={(open) => {
+            setCreateDialogOpen(open);
+            if (!open) setFormError(null);
+          }}>
             <DialogTrigger asChild>
               <Button className="gap-2 bg-granite text-parchment hover:bg-slate">
                 <Plus className="h-4 w-4" />
@@ -355,6 +392,12 @@ export default function AdminPollsPage() {
               </DialogHeader>
               
               <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
+                {formError && (
+                  <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+                    {formError}
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <Label htmlFor="title">Poll Title *</Label>
                   <Input
@@ -386,14 +429,19 @@ export default function AdminPollsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="location">Location Filter (optional)</Label>
-                  <Input
-                    id="location"
+                  <Label>Location Filter (optional)</Label>
+                  <LocationAutocomplete
                     value={newPoll.location_name}
-                    onChange={(e) => setNewPoll({ ...newPoll, location_name: e.target.value })}
-                    placeholder="e.g., Falmouth, Truro, or leave empty for all Cornwall"
+                    onChange={(loc) => setNewPoll({ 
+                      ...newPoll, 
+                      location_name: loc.name,
+                      location_lat: loc.lat,
+                      location_lng: loc.lng,
+                    })}
+                    placeholder="Search for a Cornish location..."
                     className="border-bone"
                   />
+                  <p className="text-xs text-stone">Leave empty for all of Cornwall</p>
                 </div>
 
                 <div className="space-y-2">
@@ -417,35 +465,50 @@ export default function AdminPollsPage() {
                   <div className="grid gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="nominations_end">Nominations End</Label>
-                      <Input
-                        id="nominations_end"
-                        type="datetime-local"
-                        value={newPoll.nominations_end_at}
-                        onChange={(e) => setNewPoll({ ...newPoll, nominations_end_at: e.target.value })}
-                        className="border-bone"
-                      />
+                      <div 
+                        className="relative cursor-pointer"
+                        onClick={() => document.getElementById('nominations_end')?.showPicker?.()}
+                      >
+                        <Input
+                          id="nominations_end"
+                          type="datetime-local"
+                          value={newPoll.nominations_end_at}
+                          onChange={(e) => setNewPoll({ ...newPoll, nominations_end_at: e.target.value })}
+                          className="border-bone cursor-pointer"
+                        />
+                      </div>
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="voting_start">Voting Starts</Label>
-                      <Input
-                        id="voting_start"
-                        type="datetime-local"
-                        value={newPoll.voting_start_at}
-                        onChange={(e) => setNewPoll({ ...newPoll, voting_start_at: e.target.value })}
-                        className="border-bone"
-                      />
+                      <div 
+                        className="relative cursor-pointer"
+                        onClick={() => document.getElementById('voting_start')?.showPicker?.()}
+                      >
+                        <Input
+                          id="voting_start"
+                          type="datetime-local"
+                          value={newPoll.voting_start_at}
+                          onChange={(e) => setNewPoll({ ...newPoll, voting_start_at: e.target.value })}
+                          className="border-bone cursor-pointer"
+                        />
+                      </div>
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="voting_end">Voting Ends</Label>
-                      <Input
-                        id="voting_end"
-                        type="datetime-local"
-                        value={newPoll.voting_end_at}
-                        onChange={(e) => setNewPoll({ ...newPoll, voting_end_at: e.target.value })}
-                        className="border-bone"
-                      />
+                      <div 
+                        className="relative cursor-pointer"
+                        onClick={() => document.getElementById('voting_end')?.showPicker?.()}
+                      >
+                        <Input
+                          id="voting_end"
+                          type="datetime-local"
+                          value={newPoll.voting_end_at}
+                          onChange={(e) => setNewPoll({ ...newPoll, voting_end_at: e.target.value })}
+                          className="border-bone cursor-pointer"
+                        />
+                      </div>
                       <p className="text-xs text-stone">Winner will be automatically declared when voting ends</p>
                     </div>
                   </div>

@@ -482,25 +482,31 @@ export default function PollsPage() {
                 const phase = getPollPhase(poll);
 
                 return (
-                  <Card key={poll.id} className="bg-cream border-bone overflow-hidden shadow-sm">
-                    {/* Poll Header */}
-                    <div className="bg-gradient-to-r from-granite to-slate p-6">
-                      <div className="flex items-start justify-between gap-4">
+                  <Card key={poll.id} className="bg-cream border-bone overflow-hidden shadow-lg" id={`poll-${poll.id}`}>
+                    {/* Poll Header - using category gradient for visual interest */}
+                    <div className={`bg-gradient-to-br ${category.gradient} p-6 relative overflow-hidden`}>
+                      {/* Decorative background pattern */}
+                      <div className="absolute inset-0 opacity-10">
+                        <div className="absolute top-0 right-0 w-40 h-40 rounded-full bg-white/20 -translate-y-1/2 translate-x-1/2" />
+                        <div className="absolute bottom-0 left-0 w-32 h-32 rounded-full bg-black/10 translate-y-1/2 -translate-x-1/2" />
+                      </div>
+                      
+                      <div className="relative flex items-start justify-between gap-4">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="text-3xl">{category.emoji}</span>
-                            <Badge className="bg-parchment/20 text-parchment border-0">
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="text-4xl drop-shadow-lg">{category.emoji}</span>
+                            <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm font-medium">
                               {category.label}
                             </Badge>
                           </div>
-                          <h2 className="font-serif text-2xl md:text-3xl text-parchment font-bold mb-2">
+                          <h2 className="font-serif text-2xl md:text-3xl text-white font-bold mb-2 drop-shadow-md">
                             {poll.title}
                           </h2>
                           {poll.description && (
-                            <p className="text-parchment/80 text-sm">{poll.description}</p>
+                            <p className="text-white/90 text-sm">{poll.description}</p>
                           )}
                           {poll.location_name && (
-                            <div className="flex items-center gap-1.5 text-parchment/70 text-sm mt-2">
+                            <div className="flex items-center gap-1.5 text-white/80 text-sm mt-2">
                               <MapPin className="h-4 w-4" />
                               {poll.location_name}
                             </div>
@@ -511,28 +517,28 @@ export default function PollsPage() {
                           title={poll.title}
                           description={`Vote for the best ${category.label} in Cornwall!`}
                           variant="compact"
-                          className="[&_button]:text-parchment/80 [&_button]:hover:text-parchment [&_button]:hover:bg-parchment/10"
+                          className="[&_button]:text-white/80 [&_button]:hover:text-white [&_button]:hover:bg-white/10"
                         />
                       </div>
                       
                       {/* Phase & Countdown */}
-                      <div className="flex items-center gap-4 mt-4 pt-4 border-t border-parchment/20">
-                        <Badge className={`border-0 ${
-                          phase === "nominations" ? "bg-blue-500/30 text-blue-100" :
-                          phase === "voting" ? "bg-green-500/30 text-green-100" :
-                          "bg-parchment/20 text-parchment/80"
+                      <div className="relative flex items-center gap-4 mt-4 pt-4 border-t border-white/20">
+                        <Badge className={`border-0 font-medium ${
+                          phase === "nominations" ? "bg-white/30 text-white" :
+                          phase === "voting" ? "bg-white/30 text-white" :
+                          "bg-white/20 text-white/80"
                         }`}>
                           {phase === "nominations" ? "📝 Nominations Open" :
                            phase === "voting" ? "🗳️ Voting Now" :
                            "✅ Ended"}
                         </Badge>
                         {phase === "nominations" && poll.nominations_end_at && (
-                          <div className="text-parchment/70">
+                          <div className="text-white/80">
                             <CountdownTimer targetDate={poll.nominations_end_at} label="Nominations close" />
                           </div>
                         )}
                         {phase === "voting" && poll.voting_end_at && (
-                          <div className="text-parchment/70">
+                          <div className="text-white/80">
                             <CountdownTimer targetDate={poll.voting_end_at} label="Voting ends" />
                           </div>
                         )}
