@@ -8,6 +8,18 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   ArrowLeft,
   Calendar,
@@ -21,6 +33,13 @@ import {
   AlertTriangle,
   Star,
   Eye,
+  Pencil,
+  Globe,
+  Mail,
+  PoundSterling,
+  Baby,
+  Dog,
+  Accessibility,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/use-user";
@@ -37,6 +56,12 @@ interface Event {
   all_day: boolean;
   is_approved: boolean;
   is_featured: boolean;
+  is_free: boolean;
+  is_child_friendly: boolean;
+  is_dog_friendly: boolean;
+  is_accessible: boolean;
+  website_url: string | null;
+  contact_email: string | null;
   created_at: string;
   created_by: string;
   creator?: {
@@ -45,11 +70,46 @@ interface Event {
   };
 }
 
+interface EditForm {
+  title: string;
+  description: string;
+  location_name: string;
+  location_address: string;
+  starts_at: string;
+  ends_at: string;
+  is_free: boolean;
+  is_child_friendly: boolean;
+  is_dog_friendly: boolean;
+  is_accessible: boolean;
+  website_url: string;
+  contact_email: string;
+}
+
 export default function AdminEventsPage() {
   const { user, isAdmin, isLoading: userLoading } = useUser();
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  
+  // Edit dialog state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  const [editForm, setEditForm] = useState<EditForm>({
+    title: "",
+    description: "",
+    location_name: "",
+    location_address: "",
+    starts_at: "",
+    ends_at: "",
+    is_free: false,
+    is_child_friendly: false,
+    is_dog_friendly: false,
+    is_accessible: false,
+    website_url: "",
+    contact_email: "",
+  });
+  const [editError, setEditError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const loadEvents = useCallback(async () => {
     setIsLoading(true);
@@ -164,6 +224,75 @@ export default function AdminEventsPage() {
 
     await loadEvents();
     setActionLoading(null);
+  };
+
+  // Format datetime for input
+  const formatDateTimeForInput = (dateStr: string | null): string => {
+    if (!dateStr) return "";
+    const date = new Date(dateStr);
+    // Format as YYYY-MM-DDTHH:mm for datetime-local input
+    return date.toISOString().slice(0, 16);
+  };
+
+  // Open edit dialog
+  const openEditDialog = (event: Event) => {
+    setEditingEvent(event);
+    setEditForm({
+      title: event.title,
+      description: event.description || "",
+      location_name: event.location_name,
+      location_address: event.location_address || "",
+      starts_at: formatDateTimeForInput(event.starts_at),
+      ends_at: formatDateTimeForInput(event.ends_at),
+      is_free: event.is_free ?? false,
+      is_child_friendly: event.is_child_friendly ?? false,
+      is_dog_friendly: event.is_dog_friendly ?? false,
+      is_accessible: event.is_accessible ?? false,
+      website_url: event.website_url || "",
+      contact_email: event.contact_email || "",
+    });
+    setEditError(null);
+    setEditDialogOpen(true);
+  };
+
+  // Save edited event
+  const handleSaveEdit = async () => {
+    if (!editingEvent) return;
+    if (!editForm.title.trim() || !editForm.location_name.trim() || !editForm.starts_at) {
+      setEditError("Title, location, and start date are required");
+      return;
+    }
+
+    setIsSaving(true);
+    setEditError(null);
+    const supabase = createClient();
+
+    const { error } = await (supabase.from("events") as any)
+      .update({
+        title: editForm.title.trim(),
+        description: editForm.description.trim() || null,
+        location_name: editForm.location_name.trim(),
+        location_address: editForm.location_address.trim() || null,
+        starts_at: new Date(editForm.starts_at).toISOString(),
+        ends_at: editForm.ends_at ? new Date(editForm.ends_at).toISOString() : null,
+        is_free: editForm.is_free,
+        is_child_friendly: editForm.is_child_friendly,
+        is_dog_friendly: editForm.is_dog_friendly,
+        is_accessible: editForm.is_accessible,
+        website_url: editForm.website_url.trim() || null,
+        contact_email: editForm.contact_email.trim() || null,
+      })
+      .eq("id", editingEvent.id);
+
+    if (error) {
+      console.error("Error updating event:", error);
+      setEditError(`Failed to update: ${error.message}`);
+    } else {
+      setEditDialogOpen(false);
+      setEditingEvent(null);
+      await loadEvents();
+    }
+    setIsSaving(false);
   };
 
   const formatDate = (dateStr: string) => {
@@ -309,6 +438,15 @@ export default function AdminEventsPage() {
                   {event.is_featured ? "Unfeature" : "Feature"}
                 </Button>
               )}
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => openEditDialog(event)}
+                className="border-bone gap-1"
+              >
+                <Pencil className="h-3 w-3" />
+                Edit
+              </Button>
               <Link href={`/events/${event.id}`}>
                 <Button size="sm" variant="ghost" className="gap-1">
                   <Eye className="h-3 w-3" />
@@ -414,6 +552,202 @@ export default function AdminEventsPage() {
           </Tabs>
         </div>
       </main>
+
+      {/* Edit Event Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={(open) => {
+        setEditDialogOpen(open);
+        if (!open) {
+          setEditingEvent(null);
+          setEditError(null);
+        }
+      }}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Event</DialogTitle>
+            <DialogDescription>
+              Update the event details below.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {editError && (
+              <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+                {editError}
+              </div>
+            )}
+
+            {/* Title */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-title">Event Title *</Label>
+              <Input
+                id="edit-title"
+                value={editForm.title}
+                onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                className="border-bone"
+              />
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">Description</Label>
+              <Textarea
+                id="edit-description"
+                value={editForm.description}
+                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                className="border-bone"
+                rows={3}
+              />
+            </div>
+
+            {/* Location */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-location-name">Location Name *</Label>
+                <Input
+                  id="edit-location-name"
+                  value={editForm.location_name}
+                  onChange={(e) => setEditForm({ ...editForm, location_name: e.target.value })}
+                  className="border-bone"
+                  placeholder="e.g. Truro, St Ives"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-location-address">Full Address</Label>
+                <Input
+                  id="edit-location-address"
+                  value={editForm.location_address}
+                  onChange={(e) => setEditForm({ ...editForm, location_address: e.target.value })}
+                  className="border-bone"
+                  placeholder="e.g. High Street, Truro TR1 2AB"
+                />
+              </div>
+            </div>
+
+            {/* Dates */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-starts-at">Start Date & Time *</Label>
+                <Input
+                  id="edit-starts-at"
+                  type="datetime-local"
+                  value={editForm.starts_at}
+                  onChange={(e) => setEditForm({ ...editForm, starts_at: e.target.value })}
+                  className="border-bone"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-ends-at">End Date & Time</Label>
+                <Input
+                  id="edit-ends-at"
+                  type="datetime-local"
+                  value={editForm.ends_at}
+                  onChange={(e) => setEditForm({ ...editForm, ends_at: e.target.value })}
+                  className="border-bone"
+                />
+              </div>
+            </div>
+
+            {/* Links */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-website" className="flex items-center gap-2">
+                  <Globe className="h-4 w-4" />
+                  Website URL
+                </Label>
+                <Input
+                  id="edit-website"
+                  value={editForm.website_url}
+                  onChange={(e) => setEditForm({ ...editForm, website_url: e.target.value })}
+                  className="border-bone"
+                  placeholder="https://..."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-email" className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  Contact Email
+                </Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={editForm.contact_email}
+                  onChange={(e) => setEditForm({ ...editForm, contact_email: e.target.value })}
+                  className="border-bone"
+                  placeholder="info@example.com"
+                />
+              </div>
+            </div>
+
+            {/* Options */}
+            <div className="space-y-3 pt-4 border-t border-bone">
+              <h4 className="text-sm font-medium text-granite">Event Options</h4>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-parchment border border-bone">
+                  <Checkbox
+                    id="edit-free"
+                    checked={editForm.is_free}
+                    onCheckedChange={(checked) => setEditForm({ ...editForm, is_free: checked === true })}
+                  />
+                  <Label htmlFor="edit-free" className="cursor-pointer flex items-center gap-2">
+                    <PoundSterling className="h-4 w-4 text-green-600" />
+                    Free Event
+                  </Label>
+                </div>
+                
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-parchment border border-bone">
+                  <Checkbox
+                    id="edit-child"
+                    checked={editForm.is_child_friendly}
+                    onCheckedChange={(checked) => setEditForm({ ...editForm, is_child_friendly: checked === true })}
+                  />
+                  <Label htmlFor="edit-child" className="cursor-pointer flex items-center gap-2">
+                    <Baby className="h-4 w-4 text-blue-600" />
+                    Child Friendly
+                  </Label>
+                </div>
+                
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-parchment border border-bone">
+                  <Checkbox
+                    id="edit-dog"
+                    checked={editForm.is_dog_friendly}
+                    onCheckedChange={(checked) => setEditForm({ ...editForm, is_dog_friendly: checked === true })}
+                  />
+                  <Label htmlFor="edit-dog" className="cursor-pointer flex items-center gap-2">
+                    <Dog className="h-4 w-4 text-amber-600" />
+                    Dog Friendly
+                  </Label>
+                </div>
+                
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-parchment border border-bone">
+                  <Checkbox
+                    id="edit-accessible"
+                    checked={editForm.is_accessible}
+                    onCheckedChange={(checked) => setEditForm({ ...editForm, is_accessible: checked === true })}
+                  />
+                  <Label htmlFor="edit-accessible" className="cursor-pointer flex items-center gap-2">
+                    <Accessibility className="h-4 w-4 text-purple-600" />
+                    Accessible
+                  </Label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSaveEdit} 
+              disabled={!editForm.title.trim() || !editForm.location_name.trim() || !editForm.starts_at || isSaving}
+              className="bg-granite text-parchment hover:bg-slate"
+            >
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Footer />
     </div>
