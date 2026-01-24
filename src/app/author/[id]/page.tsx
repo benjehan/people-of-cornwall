@@ -43,22 +43,29 @@ interface UserBadge {
 
 // Badge display info
 const BADGE_INFO: Record<string, { emoji: string; name: string; color: string }> = {
-  first_story: { emoji: "📝", name: "First Story", color: "bg-blue-100 text-blue-700" },
-  storyteller_5: { emoji: "✍️", name: "Storyteller", color: "bg-green-100 text-green-700" },
-  storyteller_10: { emoji: "📚", name: "Prolific Writer", color: "bg-purple-100 text-purple-700" },
-  storyteller_25: { emoji: "🏆", name: "Master Storyteller", color: "bg-yellow-100 text-yellow-700" },
-  voice_keeper: { emoji: "🎙️", name: "Voice Keeper", color: "bg-red-100 text-red-700" },
-  memory_keeper: { emoji: "⏳", name: "Memory Keeper", color: "bg-amber-100 text-amber-700" },
-  local_legend: { emoji: "🗺️", name: "Local Legend", color: "bg-teal-100 text-teal-700" },
-  community_star: { emoji: "⭐", name: "Community Star", color: "bg-orange-100 text-orange-700" },
-  ambassador: { emoji: "🎖️", name: "Ambassador", color: "bg-indigo-100 text-indigo-700" },
-  founding_member: { emoji: "🌟", name: "Founding Member", color: "bg-pink-100 text-pink-700" },
-  helpful_voice: { emoji: "💬", name: "Helpful Voice", color: "bg-cyan-100 text-cyan-700" },
-  popular_story: { emoji: "❤️", name: "Popular Story", color: "bg-rose-100 text-rose-700" },
-  location_expert: { emoji: "📍", name: "Location Expert", color: "bg-atlantic/20 text-atlantic" },
+  // Stories
+  first_story: { emoji: "📝", name: "First Story", color: "bg-amber-100 text-amber-700" },
+  storyteller_5: { emoji: "✍️", name: "Storyteller", color: "bg-blue-100 text-blue-700" },
+  storyteller_10: { emoji: "🏆", name: "Master Storyteller", color: "bg-purple-100 text-purple-700" },
+  voice_of_cornwall: { emoji: "🎙️", name: "Voice of Cornwall", color: "bg-green-100 text-green-700" },
   prompt_responder: { emoji: "💡", name: "Prompt Responder", color: "bg-yellow-100 text-yellow-700" },
+  // Where Is This
+  location_expert: { emoji: "📍", name: "Location Expert", color: "bg-cyan-100 text-cyan-700" },
+  sharp_eye: { emoji: "🎯", name: "Sharp Eye", color: "bg-teal-100 text-teal-700" },
+  cornish_guide: { emoji: "🗺️", name: "Cornish Guide", color: "bg-emerald-100 text-emerald-700" },
+  challenge_creator: { emoji: "🔍", name: "Challenge Creator", color: "bg-sky-100 text-sky-700" },
+  // Lost Cornwall
+  memory_keeper: { emoji: "📷", name: "Memory Keeper", color: "bg-orange-100 text-orange-700" },
+  historian: { emoji: "📚", name: "Historian", color: "bg-amber-100 text-amber-800" },
+  photo_contributor: { emoji: "🖼️", name: "Photo Contributor", color: "bg-stone-100 text-stone-700" },
+  // Events
+  event_organizer: { emoji: "🗓️", name: "Event Organizer", color: "bg-violet-100 text-violet-700" },
+  community_builder: { emoji: "🎉", name: "Community Builder", color: "bg-fuchsia-100 text-fuchsia-700" },
+  // Polls
   community_voter: { emoji: "🗳️", name: "Community Voter", color: "bg-indigo-100 text-indigo-700" },
-  poll_winner: { emoji: "🥇", name: "Poll Winner", color: "bg-amber-100 text-amber-700" },
+  poll_winner: { emoji: "🥇", name: "Poll Winner", color: "bg-yellow-100 text-yellow-800" },
+  // General
+  social_butterfly: { emoji: "💬", name: "Social Butterfly", color: "bg-pink-100 text-pink-700" },
   early_supporter: { emoji: "⭐", name: "Early Supporter", color: "bg-rose-100 text-rose-700" },
 };
 
