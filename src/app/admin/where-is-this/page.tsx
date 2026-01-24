@@ -46,7 +46,6 @@ import {
 } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
 import { createClient } from "@/lib/supabase/client";
-import Image from "next/image";
 
 interface Challenge {
   id: string;
@@ -443,12 +442,11 @@ export default function AdminWhereIsThisPage() {
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {pendingChallenges.map((challenge) => (
                     <Card key={challenge.id} className="border-yellow-200 bg-yellow-50/50">
-                      <div className="relative aspect-video">
-                        <Image
+                      <div className="relative aspect-video overflow-hidden">
+                        <img
                           src={challenge.image_url}
                           alt="Challenge"
-                          fill
-                          className="object-cover rounded-t-lg"
+                          className="absolute inset-0 w-full h-full object-cover rounded-t-lg"
                         />
                         <Badge className={`absolute top-2 right-2 ${DIFFICULTY_COLORS[challenge.difficulty]}`}>
                           {challenge.difficulty}
@@ -513,12 +511,11 @@ export default function AdminWhereIsThisPage() {
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {activeChallenges.map((challenge) => (
                     <Card key={challenge.id} className="border-green-200 bg-green-50/50">
-                      <div className="relative aspect-video">
-                        <Image
+                      <div className="relative aspect-video overflow-hidden">
+                        <img
                           src={challenge.image_url}
                           alt="Challenge"
-                          fill
-                          className="object-cover rounded-t-lg"
+                          className="absolute inset-0 w-full h-full object-cover rounded-t-lg"
                         />
                         <Badge className="absolute top-2 left-2 bg-green-600 text-white">
                           LIVE
@@ -570,12 +567,11 @@ export default function AdminWhereIsThisPage() {
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {approvedChallenges.map((challenge) => (
                     <Card key={challenge.id} className="border-bone bg-cream">
-                      <div className="relative aspect-video">
-                        <Image
+                      <div className="relative aspect-video overflow-hidden">
+                        <img
                           src={challenge.image_url}
                           alt="Challenge"
-                          fill
-                          className="object-cover rounded-t-lg"
+                          className="absolute inset-0 w-full h-full object-cover rounded-t-lg"
                         />
                         <Badge className={`absolute top-2 right-2 ${DIFFICULTY_COLORS[challenge.difficulty]}`}>
                           {challenge.difficulty}
@@ -627,12 +623,11 @@ export default function AdminWhereIsThisPage() {
                       className="border-bone bg-cream/50 cursor-pointer hover:border-granite/30 transition-colors"
                       onClick={() => viewGuesses(challenge)}
                     >
-                      <div className="relative aspect-video">
-                        <Image
+                      <div className="relative aspect-video overflow-hidden">
+                        <img
                           src={challenge.image_url}
                           alt="Challenge"
-                          fill
-                          className="object-cover rounded-t-lg opacity-75"
+                          className="absolute inset-0 w-full h-full object-cover rounded-t-lg opacity-75"
                         />
                       </div>
                       <CardContent className="p-3">

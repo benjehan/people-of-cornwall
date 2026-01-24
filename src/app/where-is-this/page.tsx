@@ -32,7 +32,6 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import Image from "next/image";
 import Link from "next/link";
 import { CommentSection } from "@/components/comments/comment-section";
 
@@ -273,12 +272,11 @@ export default function WhereIsThisPage() {
 
             <CardContent className="p-0">
               {/* Mystery Image */}
-              <div className="relative aspect-[16/9] bg-black">
-                <Image
+              <div className="relative aspect-[16/9] bg-black overflow-hidden">
+                <img
                   src={activeChallenge.image_url}
                   alt="Mystery location"
-                  fill
-                  className="object-cover"
+                  className="absolute inset-0 w-full h-full object-cover"
                 />
                 <div className="absolute bottom-4 left-4">
                   <Badge className="bg-black/70 text-white border-0 text-sm">
@@ -389,12 +387,11 @@ export default function WhereIsThisPage() {
                   className="border-bone bg-cream overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
                   onClick={() => setSelectedPastChallenge(challenge)}
                 >
-                  <div className="relative aspect-video bg-stone/10">
-                    <Image
+                  <div className="relative aspect-video bg-stone/10 overflow-hidden">
+                    <img
                       src={challenge.image_url}
                       alt="Past challenge"
-                      fill
-                      className="object-cover"
+                      className="absolute inset-0 w-full h-full object-cover"
                     />
                     <Badge className={`absolute top-2 right-2 ${DIFFICULTY_COLORS[challenge.difficulty]} border`}>
                       {DIFFICULTY_LABELS[challenge.difficulty]}
@@ -543,11 +540,10 @@ export default function WhereIsThisPage() {
               <div className="space-y-4">
                 {/* Image */}
                 <div className="relative aspect-video rounded-lg overflow-hidden bg-stone/10">
-                  <Image
+                  <img
                     src={selectedPastChallenge.image_url}
                     alt={selectedPastChallenge.answer_location_name || "Challenge location"}
-                    fill
-                    className="object-cover"
+                    className="absolute inset-0 w-full h-full object-cover"
                   />
                   <Badge className={`absolute top-2 right-2 ${DIFFICULTY_COLORS[selectedPastChallenge.difficulty]} border`}>
                     {DIFFICULTY_LABELS[selectedPastChallenge.difficulty]}

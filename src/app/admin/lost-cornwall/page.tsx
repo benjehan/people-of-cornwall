@@ -37,7 +37,6 @@ import {
 } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
 import { createClient } from "@/lib/supabase/client";
-import Image from "next/image";
 
 interface Photo {
   id: string;
@@ -326,17 +325,16 @@ export default function AdminLostCornwallPage() {
                   {pendingPhotos.map((photo) => (
                     <Card key={photo.id} className="border-yellow-200 bg-yellow-50/50">
                       <div 
-                        className="relative aspect-[4/3] cursor-pointer"
+                        className="relative aspect-[4/3] cursor-pointer overflow-hidden"
                         onClick={() => {
                           setSelectedPhoto(photo);
                           setShowDetailDialog(true);
                         }}
                       >
-                        <Image
+                        <img
                           src={photo.image_url}
                           alt={photo.title}
-                          fill
-                          className="object-cover rounded-t-lg sepia-[0.2]"
+                          className="absolute inset-0 w-full h-full object-cover rounded-t-lg sepia-[0.2]"
                         />
                         {photo.year_taken && (
                           <Badge className="absolute top-2 right-2 bg-sepia/90 text-parchment">
@@ -399,17 +397,16 @@ export default function AdminLostCornwallPage() {
                   {publishedPhotos.map((photo) => (
                     <Card key={photo.id} className="border-bone bg-cream">
                       <div 
-                        className="relative aspect-[4/3] cursor-pointer"
+                        className="relative aspect-[4/3] cursor-pointer overflow-hidden"
                         onClick={() => {
                           setSelectedPhoto(photo);
                           setShowDetailDialog(true);
                         }}
                       >
-                        <Image
+                        <img
                           src={photo.image_url}
                           alt={photo.title}
-                          fill
-                          className="object-cover rounded-t-lg sepia-[0.2]"
+                          className="absolute inset-0 w-full h-full object-cover rounded-t-lg sepia-[0.2]"
                         />
                         {photo.year_taken && (
                           <Badge className="absolute top-2 right-2 bg-sepia/90 text-parchment text-xs">
@@ -464,12 +461,11 @@ export default function AdminLostCornwallPage() {
                 <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                   {unpublishedPhotos.map((photo) => (
                     <Card key={photo.id} className="border-bone bg-cream/50 opacity-75">
-                      <div className="relative aspect-[4/3]">
-                        <Image
+                      <div className="relative aspect-[4/3] overflow-hidden">
+                        <img
                           src={photo.image_url}
                           alt={photo.title}
-                          fill
-                          className="object-cover rounded-t-lg sepia-[0.3]"
+                          className="absolute inset-0 w-full h-full object-cover rounded-t-lg sepia-[0.3]"
                         />
                       </div>
                       <CardContent className="p-3">
@@ -527,12 +523,11 @@ export default function AdminLostCornwallPage() {
                 <DialogTitle className="font-serif">{selectedPhoto.title}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
-                <div className="relative aspect-video rounded-lg overflow-hidden">
-                  <Image
+                <div className="relative aspect-video rounded-lg overflow-hidden bg-black">
+                  <img
                     src={selectedPhoto.image_url}
                     alt={selectedPhoto.title}
-                    fill
-                    className="object-contain bg-black"
+                    className="absolute inset-0 w-full h-full object-contain"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4 text-sm">

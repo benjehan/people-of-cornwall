@@ -32,7 +32,6 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import Image from "next/image";
 import Link from "next/link";
 
 interface LostCornwallPhoto {
@@ -326,12 +325,11 @@ export default function LostCornwallPage() {
                 className="border-bone bg-cream overflow-hidden cursor-pointer group hover:shadow-lg transition-all"
                 onClick={() => openPhoto(photo)}
               >
-                <div className="relative aspect-[4/3] bg-stone/10">
-                  <Image
+                <div className="relative aspect-[4/3] bg-stone/10 overflow-hidden">
+                  <img
                     src={photo.image_url}
                     alt={photo.title}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-500 sepia-[0.3]"
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 sepia-[0.3]"
                   />
                   {/* Vintage overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
@@ -415,12 +413,11 @@ export default function LostCornwallPage() {
           {selectedPhoto && (
             <div className="flex flex-col md:flex-row">
               {/* Image section */}
-              <div className="relative md:w-2/3 aspect-[4/3] md:aspect-auto md:min-h-[500px] bg-black">
-                <Image
+              <div className="relative md:w-2/3 aspect-[4/3] md:aspect-auto md:min-h-[500px] bg-black overflow-hidden">
+                <img
                   src={selectedPhoto.image_url}
                   alt={selectedPhoto.title}
-                  fill
-                  className="object-contain sepia-[0.2]"
+                  className="absolute inset-0 w-full h-full object-contain sepia-[0.2]"
                 />
                 
                 {/* Navigation */}

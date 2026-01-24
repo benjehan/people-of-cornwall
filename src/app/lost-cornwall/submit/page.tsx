@@ -407,14 +407,23 @@ export default function SubmitLostCornwallPage() {
                     <div>
                       <Label htmlFor="yearTaken" className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        Approximate Date/Year
+                        Year (e.g., 1920)
                       </Label>
                       <Input
                         id="yearTaken"
                         value={yearTaken}
-                        onChange={(e) => setYearTaken(e.target.value)}
-                        placeholder="e.g., 1920s, circa 1950"
+                        onChange={(e) => {
+                          // Only allow numbers
+                          const value = e.target.value.replace(/[^0-9]/g, '');
+                          if (value.length <= 4) {
+                            setYearTaken(value);
+                          }
+                        }}
+                        placeholder="e.g., 1920"
                         className="border-bone"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={4}
                       />
                     </div>
 
