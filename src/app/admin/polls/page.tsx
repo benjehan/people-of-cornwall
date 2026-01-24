@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,13 +34,18 @@ import {
   XCircle,
   Eye,
   EyeOff,
+  Clock,
+  MapPin,
+  Trophy,
+  Calendar,
+  Users,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import Link from "next/link";
 
 const POLL_CATEGORIES = [
-  { value: "best_joke", label: "🤣 Best Cornish Joke" },
+  { value: "best_joke", label: "😂 Best Cornish Joke" },
   { value: "best_pub", label: "🍺 Best Pub" },
   { value: "best_cafe", label: "☕ Best Café" },
   { value: "best_restaurant", label: "🍽️ Best Restaurant" },
@@ -64,7 +69,12 @@ interface Poll {
   location_name: string | null;
   is_active: boolean;
   created_at: string;
+  nominations_end_at: string | null;
+  voting_start_at: string | null;
+  voting_end_at: string | null;
+  winner_nomination_id: string | null;
   nomination_count?: number;
+  vote_count?: number;
 }
 
 interface Nomination {
@@ -73,9 +83,42 @@ interface Nomination {
   title: string;
   description: string | null;
   location_name: string | null;
+  website_url: string | null;
+  instagram_url: string | null;
+  facebook_url: string | null;
   is_approved: boolean;
   created_at: string;
   user_id: string;
+  vote_count?: number;
+}
+
+// Helper to format date for datetime-local input
+function formatDateForInput(dateStr: string | null): string {
+  if (!dateStr) return "";
+  const date = new Date(dateStr);
+  return date.toISOString().slice(0, 16);
+}
+
+// Helper to get poll status
+function getPollStatus(poll: Poll): { status: string; color: string; icon: React.ReactNode } {
+  const now = new Date();
+  
+  if (poll.winner_nomination_id) {
+    return { status: "Winner Declared", color: "bg-yellow-100 text-yellow-800", icon: <Trophy className="h-3 w-3" /> };
+  }
+  if (!poll.is_active) {
+    return { status: "Inactive", color: "bg-gray-100 text-gray-600", icon: <EyeOff className="h-3 w-3" /> };
+  }
+  if (poll.voting_end_at && new Date(poll.voting_end_at) < now) {
+    return { status: "Voting Ended", color: "bg-orange-100 text-orange-700", icon: <Clock className="h-3 w-3" /> };
+  }
+  if (poll.voting_start_at && new Date(poll.voting_start_at) <= now) {
+    return { status: "Voting", color: "bg-green-100 text-green-700", icon: <CheckCircle className="h-3 w-3" /> };
+  }
+  if (poll.nominations_end_at && new Date(poll.nominations_end_at) < now) {
+    return { status: "Nominations Closed", color: "bg-blue-100 text-blue-700", icon: <Clock className="h-3 w-3" /> };
+  }
+  return { status: "Nominations Open", color: "bg-emerald-100 text-emerald-700", icon: <Users className="h-3 w-3" /> };
 }
 
 export default function AdminPollsPage() {
@@ -89,12 +132,15 @@ export default function AdminPollsPage() {
   const [nominations, setNominations] = useState<Nomination[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Form state
+  // Form state with all fields
   const [newPoll, setNewPoll] = useState({
     title: "",
     description: "",
-    category: "best_pub",
+    category: "",
     location_name: "",
+    nominations_end_at: "",
+    voting_start_at: "",
+    voting_end_at: "",
   });
 
   useEffect(() => {
@@ -121,14 +167,20 @@ export default function AdminPollsPage() {
     if (error) {
       console.error("Error loading polls:", error);
     } else {
-      // Get nomination counts
+      // Get nomination and vote counts
       const pollsWithCounts = await Promise.all(
         (data || []).map(async (poll: Poll) => {
-          const { count } = await (supabase
+          const { count: nomCount } = await (supabase
             .from("poll_nominations") as any)
             .select("*", { count: "exact", head: true })
             .eq("poll_id", poll.id);
-          return { ...poll, nomination_count: count || 0 };
+          
+          const { count: voteCount } = await (supabase
+            .from("poll_votes") as any)
+            .select("*", { count: "exact", head: true })
+            .eq("poll_id", poll.id);
+            
+          return { ...poll, nomination_count: nomCount || 0, vote_count: voteCount || 0 };
         })
       );
       setPolls(pollsWithCounts);
@@ -137,7 +189,7 @@ export default function AdminPollsPage() {
   };
 
   const createPoll = async () => {
-    if (!newPoll.title.trim()) return;
+    if (!newPoll.title.trim() || !newPoll.category) return;
 
     setIsSubmitting(true);
     const supabase = createClient();
@@ -147,6 +199,9 @@ export default function AdminPollsPage() {
       description: newPoll.description.trim() || null,
       category: newPoll.category,
       location_name: newPoll.location_name.trim() || null,
+      nominations_end_at: newPoll.nominations_end_at || null,
+      voting_start_at: newPoll.voting_start_at || null,
+      voting_end_at: newPoll.voting_end_at || null,
       is_active: true,
       created_by: user?.id,
     });
@@ -155,7 +210,15 @@ export default function AdminPollsPage() {
       console.error("Error creating poll:", error);
     } else {
       setCreateDialogOpen(false);
-      setNewPoll({ title: "", description: "", category: "best_pub", location_name: "" });
+      setNewPoll({ 
+        title: "", 
+        description: "", 
+        category: "", 
+        location_name: "",
+        nominations_end_at: "",
+        voting_start_at: "",
+        voting_end_at: "",
+      });
       await loadPolls();
     }
     setIsSubmitting(false);
@@ -188,7 +251,18 @@ export default function AdminPollsPage() {
       .eq("poll_id", poll.id)
       .order("created_at", { ascending: false });
 
-    setNominations(data || []);
+    // Get vote counts for each nomination
+    const nominationsWithVotes = await Promise.all(
+      (data || []).map(async (nom: Nomination) => {
+        const { count } = await (supabase
+          .from("poll_votes") as any)
+          .select("*", { count: "exact", head: true })
+          .eq("nomination_id", nom.id);
+        return { ...nom, vote_count: count || 0 };
+      })
+    );
+
+    setNominations(nominationsWithVotes.sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0)));
     setNominationsDialogOpen(true);
   };
 
@@ -201,13 +275,49 @@ export default function AdminPollsPage() {
 
     // Refresh nominations
     if (selectedPoll) {
-      const { data } = await (supabase
-        .from("poll_nominations") as any)
-        .select("*")
-        .eq("poll_id", selectedPoll.id)
-        .order("created_at", { ascending: false });
-      setNominations(data || []);
+      await loadNominations(selectedPoll);
     }
+  };
+
+  const declareWinner = async (poll: Poll) => {
+    if (!confirm("Declare the top nomination as the winner? This will close the poll.")) return;
+    
+    const supabase = createClient();
+    
+    // Find nomination with most votes
+    const { data: nominations } = await (supabase
+      .from("poll_nominations") as any)
+      .select("id")
+      .eq("poll_id", poll.id)
+      .eq("is_approved", true);
+
+    if (!nominations?.length) {
+      alert("No approved nominations to declare winner from.");
+      return;
+    }
+
+    // Get vote counts
+    const withVotes = await Promise.all(
+      nominations.map(async (nom: { id: string }) => {
+        const { count } = await (supabase
+          .from("poll_votes") as any)
+          .select("*", { count: "exact", head: true })
+          .eq("nomination_id", nom.id);
+        return { id: nom.id, votes: count || 0 };
+      })
+    );
+
+    const winner = withVotes.sort((a, b) => b.votes - a.votes)[0];
+
+    await (supabase.from("polls") as any)
+      .update({ 
+        winner_nomination_id: winner.id, 
+        is_active: false,
+        winner_declared_at: new Date().toISOString(),
+      })
+      .eq("id", poll.id);
+
+    await loadPolls();
   };
 
   if (authLoading || !isAdmin) {
@@ -236,7 +346,7 @@ export default function AdminPollsPage() {
                 Create Poll
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-[600px]">
               <DialogHeader>
                 <DialogTitle>Create New Poll</DialogTitle>
                 <DialogDescription>
@@ -244,26 +354,26 @@ export default function AdminPollsPage() {
                 </DialogDescription>
               </DialogHeader>
               
-              <div className="space-y-4 py-4">
+              <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
                 <div className="space-y-2">
-                  <Label htmlFor="title">Poll Title</Label>
+                  <Label htmlFor="title">Poll Title *</Label>
                   <Input
                     id="title"
                     value={newPoll.title}
                     onChange={(e) => setNewPoll({ ...newPoll, title: e.target.value })}
-                    placeholder="e.g., Best Pub in Falmouth"
+                    placeholder="e.g., Best Pub in Falmouth 2025"
                     className="border-bone"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
+                  <Label htmlFor="category">Category *</Label>
                   <Select
                     value={newPoll.category}
                     onValueChange={(value: string) => setNewPoll({ ...newPoll, category: value })}
                   >
                     <SelectTrigger className="border-bone">
-                      <SelectValue />
+                      <SelectValue placeholder="Select a category..." />
                     </SelectTrigger>
                     <SelectContent>
                       {POLL_CATEGORIES.map((cat) => (
@@ -276,12 +386,12 @@ export default function AdminPollsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="location">Location (optional)</Label>
+                  <Label htmlFor="location">Location Filter (optional)</Label>
                   <Input
                     id="location"
                     value={newPoll.location_name}
                     onChange={(e) => setNewPoll({ ...newPoll, location_name: e.target.value })}
-                    placeholder="e.g., Falmouth, Truro, All of Cornwall"
+                    placeholder="e.g., Falmouth, Truro, or leave empty for all Cornwall"
                     className="border-bone"
                   />
                 </div>
@@ -294,8 +404,51 @@ export default function AdminPollsPage() {
                     onChange={(e) => setNewPoll({ ...newPoll, description: e.target.value })}
                     placeholder="What are we looking for? Any criteria?"
                     className="border-bone"
-                    rows={3}
+                    rows={2}
                   />
+                </div>
+
+                <div className="pt-4 border-t border-bone">
+                  <h4 className="text-sm font-medium text-granite mb-3 flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Schedule (optional - leave empty for open-ended)
+                  </h4>
+                  
+                  <div className="grid gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="nominations_end">Nominations End</Label>
+                      <Input
+                        id="nominations_end"
+                        type="datetime-local"
+                        value={newPoll.nominations_end_at}
+                        onChange={(e) => setNewPoll({ ...newPoll, nominations_end_at: e.target.value })}
+                        className="border-bone"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="voting_start">Voting Starts</Label>
+                      <Input
+                        id="voting_start"
+                        type="datetime-local"
+                        value={newPoll.voting_start_at}
+                        onChange={(e) => setNewPoll({ ...newPoll, voting_start_at: e.target.value })}
+                        className="border-bone"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="voting_end">Voting Ends</Label>
+                      <Input
+                        id="voting_end"
+                        type="datetime-local"
+                        value={newPoll.voting_end_at}
+                        onChange={(e) => setNewPoll({ ...newPoll, voting_end_at: e.target.value })}
+                        className="border-bone"
+                      />
+                      <p className="text-xs text-stone">Winner will be automatically declared when voting ends</p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -305,7 +458,7 @@ export default function AdminPollsPage() {
                 </Button>
                 <Button 
                   onClick={createPoll} 
-                  disabled={!newPoll.title.trim() || isSubmitting}
+                  disabled={!newPoll.title.trim() || !newPoll.category || isSubmitting}
                   className="bg-granite text-parchment hover:bg-slate"
                 >
                   {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create Poll"}
@@ -330,61 +483,114 @@ export default function AdminPollsPage() {
           <div className="grid gap-4">
             {polls.map((poll) => {
               const category = POLL_CATEGORIES.find((c) => c.value === poll.category);
+              const status = getPollStatus(poll);
+              
               return (
-                <Card key={poll.id} className="border-bone bg-cream">
-                  <CardContent className="flex items-center justify-between p-6">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-1">
-                        <h3 className="font-medium text-granite">{poll.title}</h3>
-                        <Badge variant={poll.is_active ? "default" : "secondary"}>
-                          {poll.is_active ? "Active" : "Inactive"}
-                        </Badge>
-                        <Badge variant="outline">{category?.label || poll.category}</Badge>
-                      </div>
-                      {poll.description && (
-                        <p className="text-sm text-stone mb-1">{poll.description}</p>
-                      )}
-                      <p className="text-xs text-silver">
-                        {poll.nomination_count} nominations • Created {new Date(poll.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => loadNominations(poll)}
-                        className="gap-1"
-                      >
-                        <Eye className="h-4 w-4" />
-                        Nominations
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => togglePollActive(poll)}
-                        className="gap-1"
-                      >
-                        {poll.is_active ? (
-                          <>
-                            <EyeOff className="h-4 w-4" />
-                            Deactivate
-                          </>
-                        ) : (
-                          <>
-                            <Eye className="h-4 w-4" />
-                            Activate
-                          </>
+                <Card key={poll.id} className="border-bone bg-cream overflow-hidden">
+                  <CardContent className="p-0">
+                    <div className="flex items-stretch">
+                      {/* Main content */}
+                      <div className="flex-1 p-6">
+                        <div className="flex items-start justify-between gap-4 mb-3">
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                              <h3 className="font-medium text-granite text-lg">{poll.title}</h3>
+                              <Badge className={`${status.color} gap-1`}>
+                                {status.icon}
+                                {status.status}
+                              </Badge>
+                            </div>
+                            <Badge variant="outline" className="text-xs">
+                              {category?.label || poll.category}
+                            </Badge>
+                          </div>
+                        </div>
+                        
+                        {poll.description && (
+                          <p className="text-sm text-stone mb-3">{poll.description}</p>
                         )}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => deletePoll(poll.id)}
-                        className="gap-1 text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                        
+                        {/* Stats */}
+                        <div className="flex items-center gap-4 text-sm text-stone">
+                          {poll.location_name && (
+                            <span className="flex items-center gap-1">
+                              <MapPin className="h-3.5 w-3.5" />
+                              {poll.location_name}
+                            </span>
+                          )}
+                          <span>{poll.nomination_count} nominations</span>
+                          <span>{poll.vote_count} votes</span>
+                        </div>
+
+                        {/* Schedule */}
+                        {(poll.nominations_end_at || poll.voting_start_at || poll.voting_end_at) && (
+                          <div className="mt-3 pt-3 border-t border-bone flex flex-wrap gap-4 text-xs text-silver">
+                            {poll.nominations_end_at && (
+                              <span>Nominations end: {new Date(poll.nominations_end_at).toLocaleDateString()}</span>
+                            )}
+                            {poll.voting_start_at && (
+                              <span>Voting starts: {new Date(poll.voting_start_at).toLocaleDateString()}</span>
+                            )}
+                            {poll.voting_end_at && (
+                              <span>Voting ends: {new Date(poll.voting_end_at).toLocaleDateString()}</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Actions sidebar */}
+                      <div className="border-l border-bone bg-parchment p-4 flex flex-col gap-2 min-w-[140px]">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => loadNominations(poll)}
+                          className="gap-1 justify-start"
+                        >
+                          <Eye className="h-4 w-4" />
+                          Nominations
+                        </Button>
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => togglePollActive(poll)}
+                          className="gap-1 justify-start"
+                        >
+                          {poll.is_active ? (
+                            <>
+                              <EyeOff className="h-4 w-4" />
+                              Deactivate
+                            </>
+                          ) : (
+                            <>
+                              <Eye className="h-4 w-4" />
+                              Activate
+                            </>
+                          )}
+                        </Button>
+
+                        {!poll.winner_nomination_id && poll.nomination_count! > 0 && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => declareWinner(poll)}
+                            className="gap-1 justify-start text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                          >
+                            <Trophy className="h-4 w-4" />
+                            Declare Winner
+                          </Button>
+                        )}
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => deletePoll(poll.id)}
+                          className="gap-1 justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Delete
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -397,7 +603,7 @@ export default function AdminPollsPage() {
         <Dialog open={nominationsDialogOpen} onOpenChange={setNominationsDialogOpen}>
           <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Nominations for: {selectedPoll?.title}</DialogTitle>
+              <DialogTitle>Nominations: {selectedPoll?.title}</DialogTitle>
               <DialogDescription>
                 Approve or reject nominations. Only approved nominations appear in voting.
               </DialogDescription>
@@ -407,22 +613,46 @@ export default function AdminPollsPage() {
               {nominations.length === 0 ? (
                 <p className="text-center text-stone py-4">No nominations yet</p>
               ) : (
-                nominations.map((nom) => (
+                nominations.map((nom, index) => (
                   <div
                     key={nom.id}
                     className={`flex items-center gap-4 p-4 rounded-lg border ${
                       nom.is_approved ? "border-green-200 bg-green-50" : "border-bone bg-parchment"
                     }`}
                   >
+                    {/* Rank */}
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                      index === 0 && nom.is_approved ? "bg-yellow-500 text-white" :
+                      index === 1 && nom.is_approved ? "bg-gray-400 text-white" :
+                      index === 2 && nom.is_approved ? "bg-amber-600 text-white" :
+                      "bg-bone text-stone"
+                    }`}>
+                      {index + 1}
+                    </div>
+                    
                     <div className="flex-1">
-                      <h4 className="font-medium text-granite">{nom.title}</h4>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium text-granite">{nom.title}</h4>
+                        <Badge variant="secondary" className="text-xs">
+                          {nom.vote_count} votes
+                        </Badge>
+                      </div>
                       {nom.description && (
                         <p className="text-sm text-stone">{nom.description}</p>
                       )}
-                      {nom.location_name && (
-                        <p className="text-xs text-silver mt-1">📍 {nom.location_name}</p>
-                      )}
+                      <div className="flex items-center gap-3 mt-1 text-xs text-silver">
+                        {nom.location_name && (
+                          <span className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {nom.location_name}
+                          </span>
+                        )}
+                        {nom.website_url && <span>🔗 Website</span>}
+                        {nom.instagram_url && <span>📷 Instagram</span>}
+                        {nom.facebook_url && <span>📘 Facebook</span>}
+                      </div>
                     </div>
+                    
                     <Button
                       variant={nom.is_approved ? "default" : "outline"}
                       size="sm"

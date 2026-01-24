@@ -122,7 +122,7 @@ export default function ProfilePage() {
           </Card>
 
           {/* Quick Links */}
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-3">
             <Link href="/profile/stories">
               <Card className="h-full border-chalk-white-dark transition-colors hover:border-atlantic-blue/30 hover:bg-chalk-white-dark/30">
                 <CardHeader>
@@ -134,6 +134,22 @@ export default function ProfilePage() {
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
                     View and manage your drafts, submitted, and published stories.
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
+
+            <Link href="/profile/badges">
+              <Card className="h-full border-chalk-white-dark transition-colors hover:border-atlantic-blue/30 hover:bg-chalk-white-dark/30">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Award className="h-5 w-5 text-atlantic-blue" />
+                    My Badges
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    View your earned badges and track progress toward new ones.
                   </p>
                 </CardContent>
               </Card>
