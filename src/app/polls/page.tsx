@@ -373,40 +373,40 @@ export default function PollsPage() {
   }, [activePolls, winners]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
+    <div className="min-h-screen bg-parchment">
       <Header />
       
       <main className="container mx-auto px-4 py-8 md:py-12">
         {/* Hero */}
         <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 text-amber-300 text-sm font-medium mb-6">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-copper/10 border border-copper/20 text-copper text-sm font-medium mb-6">
             <Trophy className="h-4 w-4" />
             The Best of Cornwall
           </div>
-          <h1 className="font-serif text-4xl md:text-6xl text-white mb-4 tracking-tight">
-            Community <span className="bg-gradient-to-r from-amber-400 to-yellow-300 bg-clip-text text-transparent">Polls</span>
+          <h1 className="font-serif text-4xl md:text-6xl text-granite mb-4 tracking-tight">
+            Community <span className="text-copper">Polls</span>
           </h1>
-          <p className="text-slate-400 max-w-xl mx-auto text-lg">
+          <p className="text-stone max-w-xl mx-auto text-lg">
             Vote for your favourites, nominate local gems, and celebrate the best of Cornwall.
           </p>
         </div>
 
         {/* View Toggle */}
         <div className="flex justify-center mb-8">
-          <div className="inline-flex bg-slate-800/50 rounded-xl p-1.5 border border-slate-700">
+          <div className="inline-flex bg-cream rounded-xl p-1.5 border border-bone">
             <button
               onClick={() => setView("active")}
               className={`px-6 py-2.5 rounded-lg font-medium transition-all flex items-center gap-2 ${
                 view === "active"
-                  ? "bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-900 shadow-lg"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-granite text-parchment shadow-md"
+                  : "text-stone hover:text-granite"
               }`}
             >
               <Vote className="h-4 w-4" />
               Active Polls
               {activePolls.length > 0 && (
                 <span className={`text-xs px-2 py-0.5 rounded-full ${
-                  view === "active" ? "bg-slate-900/20 text-slate-900" : "bg-slate-700 text-slate-300"
+                  view === "active" ? "bg-parchment/20 text-parchment" : "bg-bone text-stone"
                 }`}>
                   {activePolls.length}
                 </span>
@@ -416,8 +416,8 @@ export default function PollsPage() {
               onClick={() => setView("hall-of-fame")}
               className={`px-6 py-2.5 rounded-lg font-medium transition-all flex items-center gap-2 ${
                 view === "hall-of-fame"
-                  ? "bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-900 shadow-lg"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-granite text-parchment shadow-md"
+                  : "text-stone hover:text-granite"
               }`}
             >
               <Crown className="h-4 w-4" />
@@ -434,8 +434,8 @@ export default function PollsPage() {
                 onClick={() => setCategoryFilter("all")}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                   categoryFilter === "all"
-                    ? "bg-white text-slate-900"
-                    : "bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white border border-slate-700"
+                    ? "bg-granite text-parchment"
+                    : "bg-cream text-stone hover:bg-bone hover:text-granite border border-bone"
                 }`}
               >
                 All
@@ -448,8 +448,8 @@ export default function PollsPage() {
                     onClick={() => setCategoryFilter(cat)}
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                       categoryFilter === cat
-                        ? "bg-white text-slate-900"
-                        : "bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white border border-slate-700"
+                        ? "bg-granite text-parchment"
+                        : "bg-cream text-stone hover:bg-bone hover:text-granite border border-bone"
                     }`}
                   >
                     {catInfo.emoji} {catInfo.label}
@@ -463,17 +463,17 @@ export default function PollsPage() {
         {/* Content */}
         {isLoading ? (
           <div className="flex justify-center py-20">
-            <Loader2 className="h-10 w-10 animate-spin text-amber-400" />
+            <Loader2 className="h-10 w-10 animate-spin text-copper" />
           </div>
         ) : view === "active" ? (
           /* Active Polls */
           <div className="space-y-8 max-w-4xl mx-auto">
             {filteredPolls.length === 0 ? (
-              <Card className="bg-slate-800/50 border-slate-700 text-center py-16">
+              <Card className="bg-cream border-bone text-center py-16">
                 <CardContent>
-                  <Vote className="h-16 w-16 text-slate-600 mx-auto mb-4" />
-                  <h3 className="font-serif text-2xl text-white mb-2">No Active Polls</h3>
-                  <p className="text-slate-400">Check back soon for new voting opportunities!</p>
+                  <Vote className="h-16 w-16 text-stone/40 mx-auto mb-4" />
+                  <h3 className="font-serif text-2xl text-granite mb-2">No Active Polls</h3>
+                  <p className="text-stone">Check back soon for new voting opportunities!</p>
                 </CardContent>
               </Card>
             ) : (
@@ -482,25 +482,25 @@ export default function PollsPage() {
                 const phase = getPollPhase(poll);
 
                 return (
-                  <Card key={poll.id} className="bg-slate-800/50 border-slate-700 overflow-hidden">
+                  <Card key={poll.id} className="bg-cream border-bone overflow-hidden shadow-sm">
                     {/* Poll Header */}
-                    <div className={`bg-gradient-to-r ${category.gradient} p-6`}>
+                    <div className="bg-gradient-to-r from-granite to-slate p-6">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
                             <span className="text-3xl">{category.emoji}</span>
-                            <Badge className="bg-white/20 text-white border-0 backdrop-blur-sm">
+                            <Badge className="bg-parchment/20 text-parchment border-0">
                               {category.label}
                             </Badge>
                           </div>
-                          <h2 className="font-serif text-2xl md:text-3xl text-white font-bold mb-2">
+                          <h2 className="font-serif text-2xl md:text-3xl text-parchment font-bold mb-2">
                             {poll.title}
                           </h2>
                           {poll.description && (
-                            <p className="text-white/80 text-sm">{poll.description}</p>
+                            <p className="text-parchment/80 text-sm">{poll.description}</p>
                           )}
                           {poll.location_name && (
-                            <div className="flex items-center gap-1.5 text-white/70 text-sm mt-2">
+                            <div className="flex items-center gap-1.5 text-parchment/70 text-sm mt-2">
                               <MapPin className="h-4 w-4" />
                               {poll.location_name}
                             </div>
@@ -511,28 +511,28 @@ export default function PollsPage() {
                           title={poll.title}
                           description={`Vote for the best ${category.label} in Cornwall!`}
                           variant="compact"
-                          className="[&_button]:text-white/80 [&_button]:hover:text-white [&_button]:hover:bg-white/10"
+                          className="[&_button]:text-parchment/80 [&_button]:hover:text-parchment [&_button]:hover:bg-parchment/10"
                         />
                       </div>
                       
                       {/* Phase & Countdown */}
-                      <div className="flex items-center gap-4 mt-4 pt-4 border-t border-white/20">
+                      <div className="flex items-center gap-4 mt-4 pt-4 border-t border-parchment/20">
                         <Badge className={`border-0 ${
                           phase === "nominations" ? "bg-blue-500/30 text-blue-100" :
                           phase === "voting" ? "bg-green-500/30 text-green-100" :
-                          "bg-gray-500/30 text-gray-100"
+                          "bg-parchment/20 text-parchment/80"
                         }`}>
                           {phase === "nominations" ? "📝 Nominations Open" :
                            phase === "voting" ? "🗳️ Voting Now" :
                            "✅ Ended"}
                         </Badge>
                         {phase === "nominations" && poll.nominations_end_at && (
-                          <div className="text-white/70">
+                          <div className="text-parchment/70">
                             <CountdownTimer targetDate={poll.nominations_end_at} label="Nominations close" />
                           </div>
                         )}
                         {phase === "voting" && poll.voting_end_at && (
-                          <div className="text-white/70">
+                          <div className="text-parchment/70">
                             <CountdownTimer targetDate={poll.voting_end_at} label="Voting ends" />
                           </div>
                         )}
@@ -543,8 +543,8 @@ export default function PollsPage() {
                     <CardContent className="p-6">
                       {poll.nominations.length === 0 ? (
                         <div className="text-center py-8">
-                          <Sparkles className="h-10 w-10 text-slate-600 mx-auto mb-3" />
-                          <p className="text-slate-400">No nominations yet. Be the first!</p>
+                          <Sparkles className="h-10 w-10 text-stone/40 mx-auto mb-3" />
+                          <p className="text-stone">No nominations yet. Be the first!</p>
                         </div>
                       ) : (
                         <div className="space-y-3">
@@ -553,29 +553,29 @@ export default function PollsPage() {
                               key={nom.id}
                               className={`flex items-center gap-4 p-4 rounded-xl transition-all ${
                                 nom.user_has_voted 
-                                  ? "bg-amber-500/10 border-2 border-amber-500/30" 
-                                  : "bg-slate-700/50 border border-slate-600 hover:border-slate-500"
+                                  ? "bg-copper/10 border-2 border-copper/30" 
+                                  : "bg-parchment border border-bone hover:border-stone/30"
                               }`}
                             >
                               {/* Rank */}
                               <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${
-                                index === 0 ? "bg-gradient-to-br from-yellow-400 to-amber-500 text-slate-900" :
-                                index === 1 ? "bg-gradient-to-br from-gray-300 to-gray-400 text-slate-900" :
-                                index === 2 ? "bg-gradient-to-br from-amber-600 to-amber-700 text-white" :
-                                "bg-slate-600 text-slate-300"
+                                index === 0 ? "bg-yellow-500 text-white" :
+                                index === 1 ? "bg-gray-400 text-white" :
+                                index === 2 ? "bg-amber-700 text-white" :
+                                "bg-bone text-stone"
                               }`}>
                                 {index + 1}
                               </div>
 
                               {/* Content */}
                               <div className="flex-1 min-w-0">
-                                <h4 className="font-semibold text-white truncate">{nom.title}</h4>
+                                <h4 className="font-semibold text-granite truncate">{nom.title}</h4>
                                 {nom.description && (
-                                  <p className="text-sm text-slate-400 line-clamp-1">{nom.description}</p>
+                                  <p className="text-sm text-stone line-clamp-1">{nom.description}</p>
                                 )}
                                 <div className="flex items-center gap-3 mt-1">
                                   {nom.location_name && (
-                                    <span className="flex items-center gap-1 text-xs text-slate-500">
+                                    <span className="flex items-center gap-1 text-xs text-silver">
                                       <MapPin className="h-3 w-3" />
                                       {nom.location_name}
                                     </span>
@@ -583,17 +583,17 @@ export default function PollsPage() {
                                   {(nom.website_url || nom.instagram_url || nom.facebook_url) && (
                                     <div className="flex items-center gap-1">
                                       {nom.website_url && (
-                                        <a href={nom.website_url} target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-amber-400">
+                                        <a href={nom.website_url} target="_blank" rel="noopener noreferrer" className="text-silver hover:text-copper">
                                           <Globe className="h-3.5 w-3.5" />
                                         </a>
                                       )}
                                       {nom.instagram_url && (
-                                        <a href={nom.instagram_url} target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-pink-400">
+                                        <a href={nom.instagram_url} target="_blank" rel="noopener noreferrer" className="text-silver hover:text-pink-500">
                                           <Instagram className="h-3.5 w-3.5" />
                                         </a>
                                       )}
                                       {nom.facebook_url && (
-                                        <a href={nom.facebook_url} target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-blue-400">
+                                        <a href={nom.facebook_url} target="_blank" rel="noopener noreferrer" className="text-silver hover:text-blue-500">
                                           <Facebook className="h-3.5 w-3.5" />
                                         </a>
                                       )}
@@ -603,8 +603,8 @@ export default function PollsPage() {
                               </div>
 
                               {/* Vote count */}
-                              <div className="flex items-center gap-2 text-slate-400">
-                                <ThumbsUp className={`h-5 w-5 ${nom.user_has_voted ? "fill-amber-400 text-amber-400" : ""}`} />
+                              <div className="flex items-center gap-2 text-stone">
+                                <ThumbsUp className={`h-5 w-5 ${nom.user_has_voted ? "fill-copper text-copper" : ""}`} />
                                 <span className="font-bold text-lg">{nom.vote_count}</span>
                               </div>
 
@@ -617,8 +617,8 @@ export default function PollsPage() {
                                     onClick={() => handleVote(poll.id, nom.id)}
                                     disabled={votingId === nom.id}
                                     className={nom.user_has_voted 
-                                      ? "bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-900 border-0 hover:from-amber-600 hover:to-yellow-600" 
-                                      : "border-slate-500 text-white hover:bg-slate-600"
+                                      ? "bg-copper text-parchment hover:bg-copper/90" 
+                                      : "border-granite text-granite hover:bg-granite hover:text-parchment"
                                     }
                                   >
                                     {votingId === nom.id ? (
@@ -631,7 +631,7 @@ export default function PollsPage() {
                                   </Button>
                                 ) : (
                                   <Link href="/login">
-                                    <Button variant="outline" size="sm" className="border-slate-500 text-white hover:bg-slate-600">
+                                    <Button variant="outline" size="sm" className="border-granite text-granite hover:bg-granite hover:text-parchment">
                                       Login to Vote
                                     </Button>
                                   </Link>
@@ -644,10 +644,10 @@ export default function PollsPage() {
 
                       {/* Nominate button */}
                       {user && phase === "nominations" && (
-                        <div className="mt-6 pt-4 border-t border-slate-700 text-center">
+                        <div className="mt-6 pt-4 border-t border-bone text-center">
                           <Button 
                             onClick={() => openNominateDialog(poll.id)}
-                            className="gap-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-900 hover:from-amber-600 hover:to-yellow-600"
+                            className="gap-2 bg-granite text-parchment hover:bg-slate"
                           >
                             <Plus className="h-4 w-4" />
                             Nominate Something
@@ -664,11 +664,11 @@ export default function PollsPage() {
           /* Hall of Fame */
           <div className="space-y-8 max-w-5xl mx-auto">
             {filteredWinners.length === 0 ? (
-              <Card className="bg-slate-800/50 border-slate-700 text-center py-16">
+              <Card className="bg-cream border-bone text-center py-16">
                 <CardContent>
-                  <Trophy className="h-16 w-16 text-amber-500/50 mx-auto mb-4" />
-                  <h3 className="font-serif text-2xl text-white mb-2">Hall of Fame</h3>
-                  <p className="text-slate-400">Past poll winners will appear here once polls close.</p>
+                  <Trophy className="h-16 w-16 text-copper/50 mx-auto mb-4" />
+                  <h3 className="font-serif text-2xl text-granite mb-2">Hall of Fame</h3>
+                  <p className="text-stone">Past poll winners will appear here once polls close.</p>
                 </CardContent>
               </Card>
             ) : (
@@ -677,21 +677,21 @@ export default function PollsPage() {
                 const [first, second, third] = winner.top3;
 
                 return (
-                  <Card key={winner.poll.id} className="bg-slate-800/50 border-slate-700 overflow-hidden">
+                  <Card key={winner.poll.id} className="bg-cream border-bone overflow-hidden shadow-sm">
                     {/* Header */}
-                    <div className="bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border-b border-amber-500/30 px-6 py-4">
+                    <div className="bg-gradient-to-r from-copper/10 to-yellow-500/10 border-b border-copper/20 px-6 py-4">
                       <div className="flex items-center gap-3">
                         <span className="text-2xl">{category.emoji}</span>
                         <div className="flex-1">
-                          <h3 className="font-serif text-xl text-white font-bold">{winner.poll.title}</h3>
+                          <h3 className="font-serif text-xl text-granite font-bold">{winner.poll.title}</h3>
                           {winner.poll.location_name && (
-                            <p className="text-slate-400 text-sm flex items-center gap-1">
+                            <p className="text-stone text-sm flex items-center gap-1">
                               <MapPin className="h-3 w-3" />
                               {winner.poll.location_name}
                             </p>
                           )}
                         </div>
-                        <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30">
+                        <Badge className="bg-copper/10 text-copper border-copper/20">
                           {category.label}
                         </Badge>
                       </div>
@@ -703,33 +703,33 @@ export default function PollsPage() {
                         {/* 🥇 First Place - Large */}
                         {first && (
                           <div className="md:col-span-3 md:max-w-md md:mx-auto">
-                            <div className="relative bg-gradient-to-br from-amber-500/20 via-yellow-500/20 to-amber-600/20 rounded-2xl p-8 text-center border-2 border-amber-500/50 shadow-lg shadow-amber-500/10">
+                            <div className="relative bg-gradient-to-br from-yellow-50 to-amber-50 rounded-2xl p-8 text-center border-2 border-yellow-400 shadow-md">
                               <div className="absolute -top-5 left-1/2 -translate-x-1/2">
-                                <div className="bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-900 rounded-full p-3 shadow-lg">
+                                <div className="bg-yellow-500 text-white rounded-full p-3 shadow-lg">
                                   <Crown className="h-6 w-6" />
                                 </div>
                               </div>
                               <div className="text-6xl mt-4 mb-4">🥇</div>
-                              <h4 className="font-serif font-bold text-3xl text-white mb-2">{first.title}</h4>
+                              <h4 className="font-serif font-bold text-3xl text-granite mb-2">{first.title}</h4>
                               {first.location_name && (
-                                <p className="text-slate-400 flex items-center justify-center gap-1 mb-3">
+                                <p className="text-stone flex items-center justify-center gap-1 mb-3">
                                   <MapPin className="h-4 w-4" />
                                   {first.location_name}
                                 </p>
                               )}
                               {first.description && (
-                                <p className="text-slate-300 text-sm mb-4 max-w-sm mx-auto">{first.description}</p>
+                                <p className="text-stone text-sm mb-4 max-w-sm mx-auto">{first.description}</p>
                               )}
-                              <p className="text-amber-400 font-bold text-2xl mb-4">
+                              <p className="text-yellow-700 font-bold text-2xl mb-4">
                                 {first.vote_count} {first.vote_count === 1 ? "vote" : "votes"}
                               </p>
                               
                               {/* Social Links */}
                               {(first.website_url || first.instagram_url || first.facebook_url) && (
-                                <div className="flex items-center justify-center gap-3 pt-4 border-t border-amber-500/30">
+                                <div className="flex items-center justify-center gap-3 pt-4 border-t border-yellow-300">
                                   {first.website_url && (
                                     <a href={first.website_url} target="_blank" rel="noopener noreferrer" 
-                                      className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-700 text-white hover:bg-slate-600 transition-colors">
+                                      className="flex items-center gap-2 px-4 py-2 rounded-full bg-granite text-parchment hover:bg-slate transition-colors">
                                       <Globe className="h-4 w-4" />
                                       Website
                                     </a>
@@ -753,7 +753,7 @@ export default function PollsPage() {
                               
                               {/* Winner's name */}
                               {first.user?.display_name && (
-                                <p className="text-slate-500 text-sm mt-4">
+                                <p className="text-silver text-sm mt-4">
                                   Nominated by {first.user.display_name}
                                 </p>
                               )}
@@ -764,33 +764,33 @@ export default function PollsPage() {
                         {/* 🥈 Second & 🥉 Third */}
                         <div className="md:col-span-3 grid md:grid-cols-2 gap-4 max-w-2xl mx-auto w-full">
                           {second && (
-                            <div className="relative bg-slate-700/50 rounded-xl p-5 text-center border border-slate-600">
+                            <div className="relative bg-gray-50 rounded-xl p-5 text-center border border-gray-200">
                               <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                                <div className="bg-gradient-to-r from-gray-300 to-gray-400 text-slate-900 rounded-full p-2 shadow">
+                                <div className="bg-gray-400 text-white rounded-full p-2 shadow">
                                   <Medal className="h-4 w-4" />
                                 </div>
                               </div>
                               <div className="text-4xl mt-2 mb-3">🥈</div>
-                              <h4 className="font-serif font-bold text-xl text-white mb-1">{second.title}</h4>
+                              <h4 className="font-serif font-bold text-xl text-granite mb-1">{second.title}</h4>
                               {second.location_name && (
-                                <p className="text-slate-500 text-sm flex items-center justify-center gap-1 mb-2">
+                                <p className="text-stone text-sm flex items-center justify-center gap-1 mb-2">
                                   <MapPin className="h-3 w-3" />
                                   {second.location_name}
                                 </p>
                               )}
-                              <p className="text-slate-400 font-semibold">
+                              <p className="text-gray-600 font-semibold">
                                 {second.vote_count} {second.vote_count === 1 ? "vote" : "votes"}
                               </p>
                               {(second.website_url || second.instagram_url || second.facebook_url) && (
                                 <div className="flex items-center justify-center gap-2 mt-3">
                                   {second.website_url && (
-                                    <a href={second.website_url} target="_blank" className="text-slate-500 hover:text-white"><Globe className="h-4 w-4" /></a>
+                                    <a href={second.website_url} target="_blank" className="text-stone hover:text-granite"><Globe className="h-4 w-4" /></a>
                                   )}
                                   {second.instagram_url && (
-                                    <a href={second.instagram_url} target="_blank" className="text-slate-500 hover:text-pink-400"><Instagram className="h-4 w-4" /></a>
+                                    <a href={second.instagram_url} target="_blank" className="text-stone hover:text-pink-500"><Instagram className="h-4 w-4" /></a>
                                   )}
                                   {second.facebook_url && (
-                                    <a href={second.facebook_url} target="_blank" className="text-slate-500 hover:text-blue-400"><Facebook className="h-4 w-4" /></a>
+                                    <a href={second.facebook_url} target="_blank" className="text-stone hover:text-blue-500"><Facebook className="h-4 w-4" /></a>
                                   )}
                                 </div>
                               )}
@@ -798,33 +798,33 @@ export default function PollsPage() {
                           )}
 
                           {third && (
-                            <div className="relative bg-slate-700/50 rounded-xl p-5 text-center border border-slate-600">
+                            <div className="relative bg-amber-50 rounded-xl p-5 text-center border border-amber-200">
                               <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                                <div className="bg-gradient-to-r from-amber-600 to-amber-700 text-white rounded-full p-2 shadow">
+                                <div className="bg-amber-600 text-white rounded-full p-2 shadow">
                                   <Medal className="h-4 w-4" />
                                 </div>
                               </div>
                               <div className="text-4xl mt-2 mb-3">🥉</div>
-                              <h4 className="font-serif font-bold text-xl text-white mb-1">{third.title}</h4>
+                              <h4 className="font-serif font-bold text-xl text-granite mb-1">{third.title}</h4>
                               {third.location_name && (
-                                <p className="text-slate-500 text-sm flex items-center justify-center gap-1 mb-2">
+                                <p className="text-stone text-sm flex items-center justify-center gap-1 mb-2">
                                   <MapPin className="h-3 w-3" />
                                   {third.location_name}
                                 </p>
                               )}
-                              <p className="text-slate-400 font-semibold">
+                              <p className="text-amber-700 font-semibold">
                                 {third.vote_count} {third.vote_count === 1 ? "vote" : "votes"}
                               </p>
                               {(third.website_url || third.instagram_url || third.facebook_url) && (
                                 <div className="flex items-center justify-center gap-2 mt-3">
                                   {third.website_url && (
-                                    <a href={third.website_url} target="_blank" className="text-slate-500 hover:text-white"><Globe className="h-4 w-4" /></a>
+                                    <a href={third.website_url} target="_blank" className="text-stone hover:text-granite"><Globe className="h-4 w-4" /></a>
                                   )}
                                   {third.instagram_url && (
-                                    <a href={third.instagram_url} target="_blank" className="text-slate-500 hover:text-pink-400"><Instagram className="h-4 w-4" /></a>
+                                    <a href={third.instagram_url} target="_blank" className="text-stone hover:text-pink-500"><Instagram className="h-4 w-4" /></a>
                                   )}
                                   {third.facebook_url && (
-                                    <a href={third.facebook_url} target="_blank" className="text-slate-500 hover:text-blue-400"><Facebook className="h-4 w-4" /></a>
+                                    <a href={third.facebook_url} target="_blank" className="text-stone hover:text-blue-500"><Facebook className="h-4 w-4" /></a>
                                   )}
                                 </div>
                               )}
@@ -842,19 +842,19 @@ export default function PollsPage() {
 
         {/* Nomination Dialog */}
         <Dialog open={nominateDialogOpen} onOpenChange={setNominateDialogOpen}>
-          <DialogContent className="sm:max-w-[500px] bg-slate-800 border-slate-700 text-white">
+          <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
-              <DialogTitle className="text-white">Nominate Something</DialogTitle>
-              <DialogDescription className="text-slate-400">
+              <DialogTitle>Nominate Something</DialogTitle>
+              <DialogDescription>
                 Suggest something for this poll. Include social links to help promote the winner!
               </DialogDescription>
             </DialogHeader>
 
             {nominationSuccess ? (
               <div className="py-10 text-center">
-                <CheckCircle className="h-16 w-16 text-green-400 mx-auto mb-4" />
-                <h3 className="font-medium text-white text-xl mb-2">Nomination Submitted!</h3>
-                <p className="text-slate-400">
+                <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
+                <h3 className="font-medium text-granite text-xl mb-2">Nomination Submitted!</h3>
+                <p className="text-stone">
                   Thank you! Your nomination will appear once reviewed.
                 </p>
               </div>
@@ -862,76 +862,76 @@ export default function PollsPage() {
               <>
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
-                    <Label htmlFor="nom-title" className="text-white">Name *</Label>
+                    <Label htmlFor="nom-title">Name *</Label>
                     <Input
                       id="nom-title"
                       value={nominationData.title}
                       onChange={(e) => setNominationData({ ...nominationData, title: e.target.value })}
                       placeholder="e.g., The Fisherman's Arms"
-                      className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500"
+                      className="border-bone"
                       maxLength={100}
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="nom-location" className="text-white">Location</Label>
+                    <Label htmlFor="nom-location">Location</Label>
                     <Input
                       id="nom-location"
                       value={nominationData.location_name}
                       onChange={(e) => setNominationData({ ...nominationData, location_name: e.target.value })}
                       placeholder="e.g., Newlyn, Penzance"
-                      className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500"
+                      className="border-bone"
                       maxLength={100}
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="nom-desc" className="text-white">Why? (optional)</Label>
+                    <Label htmlFor="nom-desc">Why? (optional)</Label>
                     <Textarea
                       id="nom-desc"
                       value={nominationData.description}
                       onChange={(e) => setNominationData({ ...nominationData, description: e.target.value.slice(0, 500) })}
                       placeholder="What makes this special?"
-                      className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500"
+                      className="border-bone"
                       rows={3}
                     />
-                    <p className="text-xs text-slate-500 text-right">
+                    <p className="text-xs text-silver text-right">
                       {nominationData.description.length}/500
                     </p>
                   </div>
 
-                  <div className="pt-4 border-t border-slate-700">
-                    <p className="text-sm text-slate-400 mb-3 flex items-center gap-2">
+                  <div className="pt-4 border-t border-bone">
+                    <p className="text-sm text-stone mb-3 flex items-center gap-2">
                       <ExternalLink className="h-4 w-4" />
                       Add links to promote this nomination if it wins:
                     </p>
                     
                     <div className="grid gap-3">
                       <div className="flex items-center gap-2">
-                        <Globe className="h-4 w-4 text-slate-500" />
+                        <Globe className="h-4 w-4 text-stone" />
                         <Input
                           value={nominationData.website_url}
                           onChange={(e) => setNominationData({ ...nominationData, website_url: e.target.value })}
                           placeholder="https://example.com"
-                          className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500"
+                          className="border-bone"
                         />
                       </div>
                       <div className="flex items-center gap-2">
-                        <Instagram className="h-4 w-4 text-pink-400" />
+                        <Instagram className="h-4 w-4 text-pink-500" />
                         <Input
                           value={nominationData.instagram_url}
                           onChange={(e) => setNominationData({ ...nominationData, instagram_url: e.target.value })}
                           placeholder="https://instagram.com/username"
-                          className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500"
+                          className="border-bone"
                         />
                       </div>
                       <div className="flex items-center gap-2">
-                        <Facebook className="h-4 w-4 text-blue-400" />
+                        <Facebook className="h-4 w-4 text-blue-500" />
                         <Input
                           value={nominationData.facebook_url}
                           onChange={(e) => setNominationData({ ...nominationData, facebook_url: e.target.value })}
                           placeholder="https://facebook.com/page"
-                          className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-500"
+                          className="border-bone"
                         />
                       </div>
                     </div>
@@ -942,14 +942,13 @@ export default function PollsPage() {
                   <Button
                     variant="outline"
                     onClick={() => setNominateDialogOpen(false)}
-                    className="border-slate-600 text-white hover:bg-slate-700"
                   >
                     Cancel
                   </Button>
                   <Button
                     onClick={handleNominate}
                     disabled={!nominationData.title.trim() || isNominating}
-                    className="bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-900 hover:from-amber-600 hover:to-yellow-600"
+                    className="bg-granite text-parchment hover:bg-slate"
                   >
                     {isNominating ? (
                       <>
