@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
 import { createClient } from "@/lib/supabase/client";
+import { ImageCropDialog } from "@/components/story/image-crop-dialog";
 
 interface Photo {
   id: string;
@@ -85,6 +86,8 @@ export default function AdminLostCornwallPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [showCropDialog, setShowCropDialog] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -124,12 +127,28 @@ export default function AdminLostCornwallPage() {
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file");
+      return;
+    }
+    
     if (file.size > 10 * 1024 * 1024) {
       alert("Image must be less than 10MB");
       return;
     }
-    setImageFile(file);
-    setImagePreview(URL.createObjectURL(file));
+    
+    const objectUrl = URL.createObjectURL(file);
+    setImageToCrop(objectUrl);
+    setShowCropDialog(true);
+  };
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    const croppedFile = new File([croppedBlob], "admin-photo.jpg", { type: "image/jpeg" });
+    setImageFile(croppedFile);
+    setImagePreview(URL.createObjectURL(croppedBlob));
+    setShowCropDialog(false);
+    setImageToCrop(null);
   };
 
   const uploadImage = async (): Promise<string | null> => {
@@ -761,6 +780,20 @@ export default function AdminLostCornwallPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Image Crop Dialog */}
+      <ImageCropDialog
+        open={showCropDialog && !!imageToCrop}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowCropDialog(false);
+            setImageToCrop(null);
+          }
+        }}
+        imageSrc={imageToCrop || ""}
+        onCropComplete={handleCropComplete}
+        aspectRatio={4 / 3}
+      />
 
       <Footer />
     </div>
