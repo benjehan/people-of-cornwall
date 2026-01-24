@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MapPin, Clock, Menu, X, User, LogOut, FileText, Settings, PenLine, Search, ChevronDown, Camera, HelpCircle, Calendar } from "lucide-react";
+import { MapPin, Clock, Menu, X, User, LogOut, FileText, Settings, PenLine, Search, ChevronDown, Camera, HelpCircle, Calendar, Vote, Lightbulb } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useUser, getDisplayName, getAvatarUrl } from "@/hooks/use-user";
 
@@ -105,6 +105,25 @@ export function Header() {
                     <div>
                       <p className="font-medium">Events</p>
                       <p className="text-xs text-stone">Local happenings</p>
+                    </div>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/community" className="flex items-center gap-2 cursor-pointer">
+                    <Vote className="h-4 w-4 text-granite" />
+                    <div>
+                      <p className="font-medium">Community</p>
+                      <p className="text-xs text-stone">Polls & voting</p>
+                    </div>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/prompts" className="flex items-center gap-2 cursor-pointer">
+                    <Lightbulb className="h-4 w-4 text-yellow-600" />
+                    <div>
+                      <p className="font-medium">Writing Prompts</p>
+                      <p className="text-xs text-stone">Spark your creativity</p>
                     </div>
                   </Link>
                 </DropdownMenuItem>
@@ -308,6 +327,22 @@ export function Header() {
                 >
                   <Calendar className="h-4 w-4 text-copper" />
                   Events
+                </Link>
+                <Link
+                  href="/community"
+                  className="rounded-md px-3 py-2.5 text-sm font-medium text-granite hover:bg-cream flex items-center gap-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Vote className="h-4 w-4 text-granite" />
+                  Community Polls
+                </Link>
+                <Link
+                  href="/prompts"
+                  className="rounded-md px-3 py-2.5 text-sm font-medium text-granite hover:bg-cream flex items-center gap-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Lightbulb className="h-4 w-4 text-yellow-600" />
+                  Writing Prompts
                 </Link>
               </div>
             )}
