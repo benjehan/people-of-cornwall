@@ -2,14 +2,34 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-// Master style prompt for Cornish heritage aesthetic
-const STYLE_PROMPT = `Style: Cornish heritage illustration, reminiscent of works found in a digital museum archive. 
-The image should have a painterly quality with subtle grain texture, like a cherished photograph from a family album or a watercolor painting from a local gallery.
-Color palette: muted earth tones, sea greens, slate grays, and warm copper accents reflecting Cornwall's landscape.
-NOT photorealistic, NOT cartoon, NOT anime. Think: British heritage illustration, museum archive quality, nostalgic and timeless.
-The image should evoke the feeling of Kernow (Cornwall) - the rugged coastline, fishing villages, mining heritage, and community spirit.`;
+// Base context for Cornwall-themed images
+const CORNWALL_CONTEXT = `Setting: Cornwall, UK (Kernow) - evoke the feeling of rugged coastline, fishing villages, mining heritage, and community spirit.
+Color palette inspiration: muted earth tones, sea greens, slate grays, and warm copper accents reflecting Cornwall's landscape.`;
 
 const FREE_CREDITS = 5; // Free AI image generations per user
+
+// Style-specific prompts that completely define the look
+const STYLE_PROMPTS: Record<string, string> = {
+  heritage: `Art style: British heritage illustration, museum archive quality, nostalgic and timeless.
+The image should have a painterly quality with subtle grain texture.
+NOT photorealistic, NOT cartoon, NOT anime. Think: classic illustration from a local history book.`,
+  
+  painting: `Art style: Traditional oil painting with clearly visible brushstrokes and rich impasto textures.
+Rich, saturated colors with depth. Canvas texture visible. Classical painting technique like the Newlyn School artists.
+Must look like an actual oil painting, NOT digital art, NOT illustration.`,
+  
+  watercolor: `Art style: Delicate watercolor painting with soft, flowing edges and transparent color washes.
+Visible paper texture, colors bleeding into each other naturally. Wet-on-wet technique.
+Light and airy feel. Must look like a genuine watercolor painting, NOT digital.`,
+  
+  vintage: `Art style: Authentic vintage photograph from the 1920s-1950s era.
+Sepia or faded color tones, slight vignetting, aged paper texture with subtle scratches and wear.
+Grainy film quality, slightly soft focus. Must look like a real old photograph, NOT a painting or illustration.`,
+  
+  sketch: `Art style: Hand-drawn pencil or charcoal sketch on textured paper.
+Detailed line work, cross-hatching for shading, visible pencil strokes.
+Artistic illustration style like a field sketch or artist's study. NOT digital, NOT clean lines.`,
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -58,7 +78,7 @@ export async function POST(request: NextRequest) {
     
     // Support both old and new param names
     const actualPrompt = customPrompt || prompt;
-    const actualStyle = imageStyle || style;
+    const actualStyle = imageStyle || style || "heritage";
     const actualContent = storyContent || (storyTitle ? `Title: ${storyTitle}` : null);
 
     // Build the prompt
@@ -107,27 +127,22 @@ Do NOT include any style instructions - just describe WHAT should be in the imag
       );
     }
 
-    // Determine style modifier based on user selection
-    let styleModifier = "";
-    switch (actualStyle) {
-      case "painting":
-        styleModifier = "Oil painting style, visible brushstrokes, rich textures.";
-        break;
-      case "watercolor":
-        styleModifier = "Watercolor illustration style, soft edges, flowing colors.";
-        break;
-      case "vintage":
-        styleModifier = "Vintage photograph style, sepia tones, aged paper texture, early 20th century feel.";
-        break;
-      case "sketch":
-        styleModifier = "Pencil or charcoal sketch style, detailed line work, artistic illustration.";
-        break;
-      default:
-        styleModifier = "Heritage illustration style, classic and timeless.";
-    }
+    // Get the style-specific prompt (defaults to heritage)
+    const stylePrompt = STYLE_PROMPTS[actualStyle] || STYLE_PROMPTS.heritage;
 
-    // Combine user prompt with master style
-    const fullPrompt = `${userPrompt}\n\n${STYLE_PROMPT}\n${styleModifier}`;
+    // Build full prompt: Style instructions FIRST (most important), then subject, then context
+    const fullPrompt = `${stylePrompt}
+
+Subject: ${userPrompt}
+
+${CORNWALL_CONTEXT}`;
+
+    console.log("Generating image with style:", actualStyle);
+    console.log("Full prompt:", fullPrompt);
+
+    // Choose DALL-E style parameter based on selected style
+    // "natural" is better for vintage photos and sketches, "vivid" for paintings
+    const dalleStyle = (actualStyle === "vintage" || actualStyle === "sketch") ? "natural" : "vivid";
 
     // Generate image using DALL-E 3
     const response = await fetch("https://api.openai.com/v1/images/generations", {
@@ -142,7 +157,7 @@ Do NOT include any style instructions - just describe WHAT should be in the imag
         n: 1,
         size: "1792x1024", // Landscape format for stories
         quality: "standard",
-        style: "vivid",
+        style: dalleStyle,
       }),
     });
 
