@@ -222,8 +222,8 @@ RETURNS TRIGGER AS $$
 DECLARE
   event_count INTEGER;
 BEGIN
-  -- When event is approved (status changes to approved)
-  IF NEW.status = 'approved' AND (OLD.status IS NULL OR OLD.status != 'approved') AND NEW.created_by IS NOT NULL THEN
+  -- When event is approved (is_approved changes from false to true)
+  IF NEW.is_approved = TRUE AND (OLD.is_approved IS NULL OR OLD.is_approved = FALSE) AND NEW.created_by IS NOT NULL THEN
     -- Increment counter
     UPDATE users SET events_submitted = COALESCE(events_submitted, 0) + 1
     WHERE id = NEW.created_by
@@ -252,15 +252,16 @@ $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trigger_event_badges ON events;
 CREATE TRIGGER trigger_event_badges
-  AFTER UPDATE OF status ON events
+  AFTER UPDATE OF is_approved ON events
   FOR EACH ROW
   EXECUTE FUNCTION check_event_badges();
 
 -- Also trigger on INSERT if already approved (admin-created events)
+DROP TRIGGER IF EXISTS trigger_event_badges_insert ON events;
 CREATE TRIGGER trigger_event_badges_insert
   AFTER INSERT ON events
   FOR EACH ROW
-  WHEN (NEW.status = 'approved' AND NEW.created_by IS NOT NULL)
+  WHEN (NEW.is_approved = TRUE AND NEW.created_by IS NOT NULL)
   EXECUTE FUNCTION check_event_badges();
 
 -- ================================================
