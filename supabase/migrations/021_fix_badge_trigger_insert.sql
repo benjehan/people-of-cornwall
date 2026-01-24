@@ -26,7 +26,7 @@ BEGIN
       INSERT INTO user_badges (user_id, badge_type, awarded_reason)
       VALUES (
         NEW.user_id, 
-        'location_expert', 
+        'location_expert'::badge_type, 
         'Correctly identified a mystery location in the Where Is This challenge'
       )
       ON CONFLICT (user_id, badge_type) DO NOTHING;
@@ -64,14 +64,14 @@ CREATE TRIGGER trigger_award_location_badge_update
 
 -- Award badges to any users who already have correct guesses but no badge
 INSERT INTO user_badges (user_id, badge_type, awarded_reason)
-SELECT DISTINCT g.user_id, 'location_expert', 'Correctly identified a mystery location in the Where Is This challenge'
+SELECT DISTINCT g.user_id, 'location_expert'::badge_type, 'Correctly identified a mystery location in the Where Is This challenge'
 FROM where_is_this_guesses g
 WHERE g.is_correct = TRUE 
   AND g.user_id IS NOT NULL
   AND NOT EXISTS (
     SELECT 1 FROM user_badges ub 
     WHERE ub.user_id = g.user_id 
-    AND ub.badge_type = 'location_expert'
+    AND ub.badge_type = 'location_expert'::badge_type
   )
 ON CONFLICT (user_id, badge_type) DO NOTHING;
 

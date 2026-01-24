@@ -110,6 +110,14 @@ export async function addCommentAction(
     insertData.status = 'flagged';
   }
 
+  // If comment has an image, hold for manual review (no free image moderation API)
+  // This protects against inappropriate images being posted
+  const hasImage = !!imageUrl;
+  if (hasImage) {
+    insertData.status = 'pending_review';
+    insertData.pending_reason = 'Contains image - awaiting manual review';
+  }
+
   const { data, error } = await (supabase
     .from("comments") as any)
     .insert(insertData)
@@ -122,6 +130,29 @@ export async function addCommentAction(
   if (error) {
     console.error("Error adding comment:", error);
     return { error: error.message, data: null };
+  }
+
+  // Notify admin if comment has an image and needs review
+  if (hasImage && story) {
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/moderation/check`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "comment",
+          content: {
+            title: `Comment on: ${story.title}`,
+            description: body.trim(),
+            imageUrl: imageUrl,
+          },
+          submitterId: user.id,
+          submitterEmail: user.email,
+          itemId: data.id,
+        }),
+      });
+    } catch (e) {
+      console.error("Failed to notify admin about image comment:", e);
+    }
   }
 
   // Send email notification to story author (non-blocking)
