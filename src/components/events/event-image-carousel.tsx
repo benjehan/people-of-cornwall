@@ -102,11 +102,10 @@ export function EventImageCarousel({
           className
         )}
       >
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-white/90">
-          <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mb-2 backdrop-blur-sm">
+        <div className="absolute inset-0 flex items-center justify-center text-white/90">
+          <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
             <Icon className="w-8 h-8" />
           </div>
-          <span className="text-4xl mb-1">{style.emoji}</span>
         </div>
         {/* Decorative pattern */}
         <div className="absolute inset-0 opacity-10">

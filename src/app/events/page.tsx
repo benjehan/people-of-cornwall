@@ -130,6 +130,7 @@ interface Event {
   is_child_friendly: boolean;
   is_vegan_friendly: boolean;
   is_featured: boolean;
+  primary_image?: string | null;
 }
 
 const CORNISH_TOWNS = [
@@ -212,8 +213,15 @@ export default function EventsPage() {
     const supabase = createClient();
     const { start, end, isPast } = getDateRange();
 
+    // Query events with their primary image from event_images
     let query = (supabase.from("events") as any)
-      .select("*")
+      .select(`
+        *,
+        event_images!left (
+          image_url,
+          is_primary
+        )
+      `)
       .eq("is_approved", true);
 
     // For past events, show from start to end (both dates in the past)
@@ -247,17 +255,29 @@ export default function EventsPage() {
     if (error) {
       console.error("Error loading events:", error);
     } else {
-      let filtered = data || [];
+      // Process events to extract primary image
+      let processed = (data || []).map((event: any) => {
+        const images = event.event_images || [];
+        const primaryImage = images.find((img: any) => img.is_primary)?.image_url 
+          || images[0]?.image_url 
+          || event.image_url; // Fallback to legacy image_url
+        return {
+          ...event,
+          primary_image: primaryImage,
+          event_images: undefined, // Remove the nested array
+        };
+      });
+      
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
-        filtered = filtered.filter(
+        processed = processed.filter(
           (e: Event) =>
             e.title.toLowerCase().includes(q) ||
             e.description?.toLowerCase().includes(q) ||
             e.location_name.toLowerCase().includes(q)
         );
       }
-      setEvents(filtered);
+      setEvents(processed);
     }
     setIsLoading(false);
   }, [locationFilter, showFreeOnly, showAccessible, showDogFriendly, showChildFriendly, showVeganFriendly, searchQuery, getDateRange]);
@@ -381,9 +401,9 @@ export default function EventsPage() {
           <div className={`flex ${compact ? "flex-col" : "flex-col sm:flex-row"}`}>
             {/* Image or Placeholder */}
             <div className={`relative ${compact ? "h-32" : "sm:w-48 h-32 sm:h-auto flex-shrink-0"} ${compact ? "rounded-t-lg" : "rounded-t-lg sm:rounded-l-lg sm:rounded-tr-none"} overflow-hidden`}>
-              {event.image_url ? (
+              {(event.primary_image || event.image_url) ? (
                 <img
-                  src={event.image_url}
+                  src={event.primary_image || event.image_url || ""}
                   alt={event.title}
                   className={`w-full h-full object-cover ${isPast ? "grayscale" : ""}`}
                 />
@@ -838,12 +858,19 @@ export default function EventsPage() {
           onClick={() => setSelectedEvent(null)}
         >
           <Card 
-            className="max-w-lg w-full max-h-[90vh] overflow-y-auto border-bone bg-cream"
+            className={`max-w-lg w-full max-h-[90vh] overflow-y-auto border-bone bg-cream relative ${isEventPast(selectedEvent) ? "opacity-90" : ""}`}
             onClick={(e) => e.stopPropagation()}
           >
-            <CardContent className="p-0 relative">
+            {/* Past Event Ribbon */}
+            {isEventPast(selectedEvent) && (
+              <div className="absolute top-4 -left-8 z-20 rotate-[-45deg] bg-stone text-white text-xs font-bold py-1 px-10 shadow-md">
+                PAST
+              </div>
+            )}
+            
+            <CardContent className="p-0 relative overflow-hidden">
               {/* Image Carousel / Placeholder */}
-              <div className="relative">
+              <div className={`relative ${isEventPast(selectedEvent) ? "grayscale" : ""}`}>
                 {isLoadingImages ? (
                   <div className="h-48 bg-gradient-to-br from-slate-600 to-slate-500 flex items-center justify-center">
                     <Loader2 className="h-8 w-8 animate-spin text-white/70" />
@@ -869,6 +896,9 @@ export default function EventsPage() {
               <div className="p-6">
 
                 <div className="flex items-center gap-2 mb-3 flex-wrap">
+                  {isEventPast(selectedEvent) && (
+                    <Badge className="bg-stone text-white">Past Event</Badge>
+                  )}
                   <Badge className="bg-copper text-parchment">
                     {formatDate(selectedEvent.starts_at)}
                   </Badge>

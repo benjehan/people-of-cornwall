@@ -184,6 +184,12 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
     });
   };
 
+  // Check if event is in the past
+  const isEventPast = event ? (() => {
+    const endDate = event.ends_at ? new Date(event.ends_at) : new Date(event.starts_at);
+    return endDate < new Date();
+  })() : false;
+
   if (isLoading) {
     return (
       <div className="flex min-h-screen flex-col bg-parchment">
@@ -238,8 +244,27 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
             Back to events
           </Link>
 
+          {/* Past Event Notice */}
+          {isEventPast && (
+            <div className="mb-4 p-4 bg-stone/10 border border-stone/20 rounded-lg flex items-center gap-3">
+              <Calendar className="h-5 w-5 text-stone" />
+              <div>
+                <p className="font-medium text-granite">This event has ended</p>
+                <p className="text-sm text-stone">
+                  Browse our <Link href="/events" className="text-atlantic hover:underline">upcoming events</Link> for more to explore.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Hero image carousel */}
-          <div className="mb-8 rounded-xl overflow-hidden">
+          <div className={`mb-8 rounded-xl overflow-hidden relative ${isEventPast ? "grayscale" : ""}`}>
+            {/* Past Event Ribbon */}
+            {isEventPast && (
+              <div className="absolute top-6 -left-12 z-20 rotate-[-45deg] bg-stone text-white text-sm font-bold py-2 px-14 shadow-lg">
+                PAST EVENT
+              </div>
+            )}
             <EventImageCarousel
               images={eventImages}
               eventTitle={event.title}
@@ -256,6 +281,9 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               {/* Title & badges */}
               <div>
                 <div className="flex items-center gap-2 mb-3 flex-wrap">
+                  {isEventPast && (
+                    <Badge className="bg-stone text-white">Past Event</Badge>
+                  )}
                   <Badge className="bg-copper text-parchment">
                     {formatDate(event.starts_at)}
                   </Badge>
