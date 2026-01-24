@@ -260,21 +260,25 @@ export default function PollsPage() {
 
   const loadWinners = async () => {
     const supabase = createClient();
-    const now = new Date().toISOString();
 
-    // Get ended polls
+    // Get polls with declared winners OR inactive polls with nominations
     const { data: endedPolls, error } = await (supabase
       .from("polls") as any)
       .select("*")
-      .or(`voting_end_at.lt.${now},is_active.eq.false`)
-      .order("voting_end_at", { ascending: false })
+      .eq("is_active", false)
+      .order("created_at", { ascending: false })
       .limit(20);
 
-    if (error || !endedPolls) return;
+    console.log("Ended polls for Hall of Fame:", endedPolls, error);
+
+    if (error || !endedPolls || endedPolls.length === 0) {
+      console.log("No ended polls found");
+      return;
+    }
 
     const winnersData = await Promise.all(
       endedPolls.map(async (poll: Poll) => {
-        const { data: nominations } = await (supabase
+        const { data: nominations, error: nomError } = await (supabase
           .from("poll_nominations") as any)
           .select(`
             *,
@@ -283,26 +287,52 @@ export default function PollsPage() {
           .eq("poll_id", poll.id)
           .eq("is_approved", true);
 
+        console.log(`Nominations for poll ${poll.title}:`, nominations, nomError);
+
+        if (!nominations || nominations.length === 0) {
+          return { poll: { ...poll, nominations: [] }, top3: [] };
+        }
+
         const nominationsWithVotes = await Promise.all(
-          (nominations || []).map(async (nom: any) => {
+          nominations.map(async (nom: any) => {
             const { count } = await (supabase
               .from("poll_votes") as any)
               .select("*", { count: "exact", head: true })
               .eq("nomination_id", nom.id);
 
-            return { ...nom, user: nom.users, vote_count: count || 0, user_has_voted: false };
+            return { 
+              ...nom, 
+              user: nom.users, 
+              vote_count: count || 0, 
+              user_has_voted: false,
+              image_url: nom.image_url || null,
+            };
           })
         );
 
-        const top3 = nominationsWithVotes
-          .sort((a: Nomination, b: Nomination) => b.vote_count - a.vote_count)
-          .slice(0, 3);
+        // If poll has a declared winner, put that nomination first
+        let sortedNominations = nominationsWithVotes;
+        if (poll.winner_nomination_id) {
+          const winner = nominationsWithVotes.find((n: any) => n.id === poll.winner_nomination_id);
+          const others = nominationsWithVotes
+            .filter((n: any) => n.id !== poll.winner_nomination_id)
+            .sort((a: Nomination, b: Nomination) => b.vote_count - a.vote_count);
+          sortedNominations = winner ? [winner, ...others] : others;
+        } else {
+          sortedNominations = nominationsWithVotes
+            .sort((a: Nomination, b: Nomination) => b.vote_count - a.vote_count);
+        }
+
+        const top3 = sortedNominations.slice(0, 3);
+        console.log(`Top 3 for ${poll.title}:`, top3);
 
         return { poll: { ...poll, nominations: [] }, top3 };
       })
     );
 
-    setWinners(winnersData.filter(w => w.top3.length > 0));
+    const filteredWinners = winnersData.filter(w => w.top3.length > 0);
+    console.log("Final winners data:", filteredWinners);
+    setWinners(filteredWinners);
   };
 
   const handleVote = async (pollId: string, nominationId: string) => {
@@ -806,17 +836,31 @@ export default function PollsPage() {
 
                     {/* Winners Podium */}
                     <CardContent className="p-8">
-                      <div className="grid md:grid-cols-3 gap-6">
-                        {/* 🥇 First Place - Large */}
+                      <div className="space-y-6">
+                        {/* 🥇 WINNER - Big and prominent */}
                         {first && (
-                          <div className="md:col-span-3 md:max-w-md md:mx-auto">
-                            <div className="relative bg-gradient-to-br from-yellow-50 to-amber-50 rounded-2xl p-8 text-center border-2 border-yellow-400 shadow-md">
-                              <div className="absolute -top-5 left-1/2 -translate-x-1/2">
-                                <div className="bg-yellow-500 text-white rounded-full p-3 shadow-lg">
-                                  <Crown className="h-6 w-6" />
-                                </div>
+                          <div className="relative bg-gradient-to-br from-yellow-50 to-amber-50 rounded-2xl overflow-hidden border-2 border-yellow-400 shadow-lg">
+                            {/* Winner Image */}
+                            {first.image_url && (
+                              <div className="w-full h-64 relative">
+                                <img 
+                                  src={first.image_url} 
+                                  alt={first.title}
+                                  className="w-full h-full object-cover"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                               </div>
-                              <div className="text-6xl mt-4 mb-4">🥇</div>
+                            )}
+                            
+                            {/* Crown badge */}
+                            <div className={`absolute ${first.image_url ? 'top-4' : '-top-5'} left-1/2 -translate-x-1/2`}>
+                              <div className="bg-yellow-500 text-white rounded-full p-3 shadow-lg">
+                                <Crown className="h-6 w-6" />
+                              </div>
+                            </div>
+
+                            <div className={`p-8 text-center ${first.image_url ? 'pt-4' : 'pt-10'}`}>
+                              <div className="text-5xl mb-3">🥇</div>
                               <h4 className="font-serif font-bold text-3xl text-granite mb-2">{first.title}</h4>
                               {first.location_name && (
                                 <p className="text-stone flex items-center justify-center gap-1 mb-3">
@@ -825,32 +869,32 @@ export default function PollsPage() {
                                 </p>
                               )}
                               {first.description && (
-                                <p className="text-stone text-sm mb-4 max-w-sm mx-auto">{first.description}</p>
+                                <p className="text-stone text-sm mb-4 max-w-md mx-auto">{first.description}</p>
                               )}
                               <p className="text-yellow-700 font-bold text-2xl mb-4">
                                 {first.vote_count} {first.vote_count === 1 ? "vote" : "votes"}
                               </p>
                               
-                              {/* Social Links */}
+                              {/* Social Links - Prominent */}
                               {(first.website_url || first.instagram_url || first.facebook_url) && (
-                                <div className="flex items-center justify-center gap-3 pt-4 border-t border-yellow-300">
+                                <div className="flex flex-wrap items-center justify-center gap-3 pt-4 border-t border-yellow-300">
                                   {first.website_url && (
                                     <a href={first.website_url} target="_blank" rel="noopener noreferrer" 
-                                      className="flex items-center gap-2 px-4 py-2 rounded-full bg-granite text-parchment hover:bg-slate transition-colors">
+                                      className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-granite text-parchment hover:bg-slate transition-colors font-medium">
                                       <Globe className="h-4 w-4" />
-                                      Website
+                                      Visit Website
                                     </a>
                                   )}
                                   {first.instagram_url && (
                                     <a href={first.instagram_url} target="_blank" rel="noopener noreferrer" 
-                                      className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-colors">
+                                      className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-colors font-medium">
                                       <Instagram className="h-4 w-4" />
                                       Instagram
                                     </a>
                                   )}
                                   {first.facebook_url && (
                                     <a href={first.facebook_url} target="_blank" rel="noopener noreferrer" 
-                                      className="flex items-center gap-2 px-4 py-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors">
+                                      className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium">
                                       <Facebook className="h-4 w-4" />
                                       Facebook
                                     </a>
@@ -858,7 +902,6 @@ export default function PollsPage() {
                                 </div>
                               )}
                               
-                              {/* Winner's name */}
                               {first.user?.display_name && (
                                 <p className="text-silver text-sm mt-4">
                                   Nominated by {first.user.display_name}
@@ -868,76 +911,29 @@ export default function PollsPage() {
                           </div>
                         )}
 
-                        {/* 🥈 Second & 🥉 Third */}
-                        <div className="md:col-span-3 grid md:grid-cols-2 gap-4 max-w-2xl mx-auto w-full">
-                          {second && (
-                            <div className="relative bg-gray-50 rounded-xl p-5 text-center border border-gray-200">
-                              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                                <div className="bg-gray-400 text-white rounded-full p-2 shadow">
-                                  <Medal className="h-4 w-4" />
+                        {/* 🥈🥉 Runners Up - Simple list */}
+                        {(second || third) && (
+                          <div className="flex items-center justify-center gap-8 pt-4">
+                            {second && (
+                              <div className="flex items-center gap-3 text-stone">
+                                <span className="text-2xl">🥈</span>
+                                <div>
+                                  <p className="font-medium text-granite">{second.title}</p>
+                                  <p className="text-sm">{second.vote_count} votes</p>
                                 </div>
                               </div>
-                              <div className="text-4xl mt-2 mb-3">🥈</div>
-                              <h4 className="font-serif font-bold text-xl text-granite mb-1">{second.title}</h4>
-                              {second.location_name && (
-                                <p className="text-stone text-sm flex items-center justify-center gap-1 mb-2">
-                                  <MapPin className="h-3 w-3" />
-                                  {second.location_name}
-                                </p>
-                              )}
-                              <p className="text-gray-600 font-semibold">
-                                {second.vote_count} {second.vote_count === 1 ? "vote" : "votes"}
-                              </p>
-                              {(second.website_url || second.instagram_url || second.facebook_url) && (
-                                <div className="flex items-center justify-center gap-2 mt-3">
-                                  {second.website_url && (
-                                    <a href={second.website_url} target="_blank" className="text-stone hover:text-granite"><Globe className="h-4 w-4" /></a>
-                                  )}
-                                  {second.instagram_url && (
-                                    <a href={second.instagram_url} target="_blank" className="text-stone hover:text-pink-500"><Instagram className="h-4 w-4" /></a>
-                                  )}
-                                  {second.facebook_url && (
-                                    <a href={second.facebook_url} target="_blank" className="text-stone hover:text-blue-500"><Facebook className="h-4 w-4" /></a>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {third && (
-                            <div className="relative bg-amber-50 rounded-xl p-5 text-center border border-amber-200">
-                              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                                <div className="bg-amber-600 text-white rounded-full p-2 shadow">
-                                  <Medal className="h-4 w-4" />
+                            )}
+                            {third && (
+                              <div className="flex items-center gap-3 text-stone">
+                                <span className="text-2xl">🥉</span>
+                                <div>
+                                  <p className="font-medium text-granite">{third.title}</p>
+                                  <p className="text-sm">{third.vote_count} votes</p>
                                 </div>
                               </div>
-                              <div className="text-4xl mt-2 mb-3">🥉</div>
-                              <h4 className="font-serif font-bold text-xl text-granite mb-1">{third.title}</h4>
-                              {third.location_name && (
-                                <p className="text-stone text-sm flex items-center justify-center gap-1 mb-2">
-                                  <MapPin className="h-3 w-3" />
-                                  {third.location_name}
-                                </p>
-                              )}
-                              <p className="text-amber-700 font-semibold">
-                                {third.vote_count} {third.vote_count === 1 ? "vote" : "votes"}
-                              </p>
-                              {(third.website_url || third.instagram_url || third.facebook_url) && (
-                                <div className="flex items-center justify-center gap-2 mt-3">
-                                  {third.website_url && (
-                                    <a href={third.website_url} target="_blank" className="text-stone hover:text-granite"><Globe className="h-4 w-4" /></a>
-                                  )}
-                                  {third.instagram_url && (
-                                    <a href={third.instagram_url} target="_blank" className="text-stone hover:text-pink-500"><Instagram className="h-4 w-4" /></a>
-                                  )}
-                                  {third.facebook_url && (
-                                    <a href={third.facebook_url} target="_blank" className="text-stone hover:text-blue-500"><Facebook className="h-4 w-4" /></a>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
