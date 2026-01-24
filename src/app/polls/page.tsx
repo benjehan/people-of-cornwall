@@ -51,6 +51,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { LocationAutocomplete } from "@/components/ui/location-autocomplete";
 import Link from "next/link";
 import { ShareButtons } from "@/components/ui/share-buttons";
+import { ImageCropDialog } from "@/components/story/image-crop-dialog";
 
 // Category configuration
 const POLL_CATEGORIES: Record<string, { emoji: string; label: string; gradient: string }> = {
@@ -180,6 +181,8 @@ export default function PollsPage() {
   });
   const [nominationImage, setNominationImage] = useState<File | null>(null);
   const [nominationImagePreview, setNominationImagePreview] = useState<string | null>(null);
+  const [showCropDialog, setShowCropDialog] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   const [isNominating, setIsNominating] = useState(false);
   const [nominationSuccess, setNominationSuccess] = useState(false);
   const [nominationError, setNominationError] = useState<string | null>(null);
@@ -404,9 +407,20 @@ export default function PollsPage() {
       return;
     }
 
-    setNominationImage(file);
-    setNominationImagePreview(URL.createObjectURL(file));
+    // Open crop dialog
+    const objectUrl = URL.createObjectURL(file);
+    setImageToCrop(objectUrl);
+    setShowCropDialog(true);
     setNominationError(null);
+  };
+
+  const handleCropComplete = (croppedBlob: Blob) => {
+    const croppedFile = new File([croppedBlob], "nomination-image.jpg", { type: "image/jpeg" });
+    setNominationImage(croppedFile);
+    setNominationImagePreview(URL.createObjectURL(croppedBlob));
+    setShowCropDialog(false);
+    setImageToCrop(null);
+    if (imageInputRef.current) imageInputRef.current.value = "";
   };
 
   const clearImage = () => {
@@ -645,13 +659,16 @@ export default function PollsPage() {
                             </div>
                           )}
                         </div>
-                        <ShareButtons
-                          url={`/polls#poll-${poll.id}`}
-                          title={poll.title}
-                          description={`Vote for the best ${category.label} in Cornwall!`}
-                          variant="compact"
-                          className="[&_button]:text-white/80 [&_button]:hover:text-white [&_button]:hover:bg-white/10"
-                        />
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-white/60 hidden sm:inline">Invite friends to vote →</span>
+                          <ShareButtons
+                            url={`/polls#poll-${poll.id}`}
+                            title={poll.title}
+                            description={`Vote for the best ${category.label} in Cornwall!`}
+                            variant="compact"
+                            className="[&_button]:text-white/80 [&_button]:hover:text-white [&_button]:hover:bg-white/10"
+                          />
+                        </div>
                       </div>
                       
                       {/* Phase & Countdown */}
@@ -1119,6 +1136,23 @@ export default function PollsPage() {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Image Crop Dialog */}
+        {imageToCrop && (
+          <ImageCropDialog
+            open={showCropDialog}
+            onOpenChange={(open) => {
+              setShowCropDialog(open);
+              if (!open) {
+                setImageToCrop(null);
+                if (imageInputRef.current) imageInputRef.current.value = "";
+              }
+            }}
+            imageSrc={imageToCrop}
+            onCropComplete={handleCropComplete}
+            aspectRatio={16 / 9}
+          />
+        )}
       </main>
 
       <Footer />

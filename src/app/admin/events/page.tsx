@@ -48,6 +48,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/use-user";
+import { ImageCropDialog } from "@/components/story/image-crop-dialog";
 
 interface EventImage {
   id: string;
@@ -128,6 +129,8 @@ export default function AdminEventsPage() {
   const [eventImages, setEventImages] = useState<EventImage[]>([]);
   const [isLoadingImages, setIsLoadingImages] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [showCropDialog, setShowCropDialog] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadEvents = useCallback(async () => {
@@ -272,8 +275,8 @@ export default function AdminEventsPage() {
     setIsLoadingImages(false);
   };
 
-  // Upload new image
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle file selection - open crop dialog
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !editingEvent) return;
 
@@ -287,17 +290,31 @@ export default function AdminEventsPage() {
       return;
     }
 
+    // Open crop dialog
+    const objectUrl = URL.createObjectURL(file);
+    setImageToCrop(objectUrl);
+    setShowCropDialog(true);
+    setEditError(null);
+  };
+
+  // Upload cropped image
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    if (!editingEvent) return;
+
+    setShowCropDialog(false);
+    setImageToCrop(null);
     setIsUploadingImage(true);
     const supabase = createClient();
 
     try {
+      const croppedFile = new File([croppedBlob], "event-image.jpg", { type: "image/jpeg" });
+      
       // Upload to storage
-      const fileExt = file.name.split(".").pop();
-      const fileName = `events/${editingEvent.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const fileName = `events/${editingEvent.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
 
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from("story-media")
-        .upload(fileName, file, { cacheControl: "3600", upsert: false });
+        .upload(fileName, croppedFile, { cacheControl: "3600", upsert: false });
 
       if (uploadError) throw uploadError;
 
@@ -821,7 +838,7 @@ export default function AdminEventsPage() {
                   ref={fileInputRef}
                   type="file"
                   accept="image/*"
-                  onChange={handleImageUpload}
+                  onChange={handleImageSelect}
                   className="hidden"
                 />
                 <Button
@@ -965,6 +982,23 @@ export default function AdminEventsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Image Crop Dialog */}
+      {imageToCrop && (
+        <ImageCropDialog
+          open={showCropDialog}
+          onOpenChange={(open) => {
+            setShowCropDialog(open);
+            if (!open) {
+              setImageToCrop(null);
+              if (fileInputRef.current) fileInputRef.current.value = "";
+            }
+          }}
+          imageSrc={imageToCrop}
+          onCropComplete={handleCropComplete}
+          aspectRatio={16 / 9}
+        />
+      )}
 
       <Footer />
     </div>
