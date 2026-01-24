@@ -12,7 +12,7 @@ import Link from "next/link";
 
 interface Comment {
   id: string;
-  text: string;
+  body: string;
   created_at: string;
   user: {
     id: string;
@@ -45,9 +45,9 @@ export function CommentSection({ contentType, contentId, title = "Comments" }: C
       .from("comments") as any)
       .select(`
         id,
-        text,
+        body,
         created_at,
-        user:users (
+        user:users!user_id (
           id,
           display_name,
           avatar_url
@@ -130,7 +130,7 @@ export function CommentSection({ contentType, contentId, title = "Comments" }: C
         content_type: contentType,
         content_id: contentId,
         user_id: user.id,
-        text: newComment.trim(),
+        body: newComment.trim(),
       });
 
     if (error) {
@@ -284,7 +284,7 @@ export function CommentSection({ contentType, contentId, title = "Comments" }: C
                   </span>
                 </div>
                 <p className="text-stone text-sm whitespace-pre-wrap break-words">
-                  {comment.text}
+                  {comment.body}
                 </p>
                 <div className="flex items-center gap-4 mt-2">
                   <button

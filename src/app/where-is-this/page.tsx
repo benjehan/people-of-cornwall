@@ -36,6 +36,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useUser } from "@/hooks/use-user";
 import Link from "next/link";
 import { CommentSection } from "@/components/comments/comment-section";
+import { LocationAutocomplete } from "@/components/ui/location-autocomplete";
 
 interface Challenge {
   id: string;
@@ -48,6 +49,9 @@ interface Challenge {
   total_guesses: number;
   correct_guesses: number;
   created_at: string;
+  // Answer location (used for distance calculation)
+  answer_lat?: number;
+  answer_lng?: number;
   // Only shown after reveal
   answer_location_name?: string;
   answer_description?: string;
@@ -91,6 +95,8 @@ export default function WhereIsThisPage() {
   const [pastChallenges, setPastChallenges] = useState<Challenge[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [guessLocation, setGuessLocation] = useState("");
+  const [guessLat, setGuessLat] = useState<number | null>(null);
+  const [guessLng, setGuessLng] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userGuess, setUserGuess] = useState<UserGuess | null>(null);
   const [showResult, setShowResult] = useState(false);
@@ -152,20 +158,59 @@ export default function WhereIsThisPage() {
     loadChallenges();
   }, [loadChallenges]);
 
+  // Calculate distance between two points using Haversine formula
+  const calculateDistanceKm = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
   const submitGuess = async () => {
-    if (!activeChallenge || !guessLocation.trim()) return;
+    if (!activeChallenge || !guessLocation.trim() || !guessLat || !guessLng) {
+      setGuessError("Please select a location from the suggestions");
+      return;
+    }
+    
+    // Must be logged in to play
+    if (!user) {
+      setGuessError("Please log in to submit a guess");
+      return;
+    }
     
     setIsSubmitting(true);
     const supabase = createClient();
+
+    // Calculate distance if challenge has answer coordinates
+    let isCorrect = false;
+    let distanceKm: number | null = null;
+    
+    if (activeChallenge.answer_lat && activeChallenge.answer_lng) {
+      distanceKm = calculateDistanceKm(
+        guessLat, 
+        guessLng, 
+        activeChallenge.answer_lat, 
+        activeChallenge.answer_lng
+      );
+      // Within 2 miles (~3.2 km) counts as correct
+      isCorrect = distanceKm <= 3.2;
+    }
 
     const { data, error } = await (supabase
       .from("where_is_this_guesses") as any)
       .insert({
         challenge_id: activeChallenge.id,
-        user_id: user?.id || null,
-        guest_name: user ? null : "Anonymous",
+        user_id: user.id,
         guess_location_name: guessLocation.trim(),
-        is_correct: false, // Admin will mark correct
+        guess_lat: guessLat,
+        guess_lng: guessLng,
+        distance_km: distanceKm,
+        is_correct: isCorrect,
       })
       .select()
       .single();
@@ -181,16 +226,24 @@ export default function WhereIsThisPage() {
       setGuessError(null);
       setUserGuess({
         guess_location_name: guessLocation.trim(),
-        is_correct: false,
+        is_correct: isCorrect,
       });
-      setResultCorrect(false);
+      setResultCorrect(isCorrect);
       setShowResult(true);
       setGuessLocation("");
+      setGuessLat(null);
+      setGuessLng(null);
       
-      // Update total guesses count
+      // Update total guesses count (and correct count if applicable)
+      const updateData: any = { 
+        total_guesses: (activeChallenge.total_guesses || 0) + 1 
+      };
+      if (isCorrect) {
+        updateData.correct_guesses = (activeChallenge.correct_guesses || 0) + 1;
+      }
       await (supabase
         .from("where_is_this") as any)
-        .update({ total_guesses: (activeChallenge.total_guesses || 0) + 1 })
+        .update(updateData)
         .eq("id", activeChallenge.id);
     }
     setIsSubmitting(false);
@@ -311,14 +364,29 @@ export default function WhereIsThisPage() {
               <div className="p-6">
                 {userGuess ? (
                   <div className="text-center py-4">
-                    <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-4" />
-                    <h3 className="font-serif text-xl text-granite mb-2">Guess Submitted!</h3>
-                    <p className="text-stone mb-2">
-                      Your guess: <span className="font-medium text-granite">{userGuess.guess_location_name}</span>
-                    </p>
-                    <p className="text-sm text-silver">
-                      The answer will be revealed soon. Check back later!
-                    </p>
+                    {userGuess.is_correct ? (
+                      <>
+                        <div className="h-12 w-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Trophy className="h-6 w-6 text-green-600" />
+                        </div>
+                        <h3 className="font-serif text-xl text-green-700 mb-2">🎉 You got it!</h3>
+                        <p className="text-stone mb-2">
+                          Your guess <span className="font-medium text-granite">{userGuess.guess_location_name}</span> was within 2 miles!
+                        </p>
+                        <Badge className="bg-green-600 text-white">Location Expert Badge Earned!</Badge>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="h-12 w-12 text-atlantic mx-auto mb-4" />
+                        <h3 className="font-serif text-xl text-granite mb-2">Guess Submitted!</h3>
+                        <p className="text-stone mb-2">
+                          Your guess: <span className="font-medium text-granite">{userGuess.guess_location_name}</span>
+                        </p>
+                        <p className="text-sm text-silver">
+                          The answer will be revealed soon. Check back to see how close you were!
+                        </p>
+                      </>
+                    )}
                   </div>
                 ) : user ? (
                   <div className="space-y-4">
@@ -326,21 +394,21 @@ export default function WhereIsThisPage() {
                       Your Guess
                     </Label>
                     <div className="flex gap-3">
-                      <div className="relative flex-1">
-                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone" />
-                        <Input
-                          id="guess"
-                          placeholder="e.g., Porthcurno, St Ives Harbour..."
+                      <div className="flex-1">
+                        <LocationAutocomplete
                           value={guessLocation}
-                          onChange={(e) => setGuessLocation(e.target.value)}
-                          className="pl-9 border-bone bg-parchment"
-                          onKeyDown={(e) => e.key === "Enter" && submitGuess()}
+                          onChange={(location) => {
+                            setGuessLocation(location.name);
+                            setGuessLat(location.lat);
+                            setGuessLng(location.lng);
+                          }}
+                          placeholder="Search for a location in Cornwall..."
                         />
                       </div>
                       <Button
                         onClick={submitGuess}
-                        disabled={!guessLocation.trim() || isSubmitting}
-                        className="bg-atlantic text-parchment hover:bg-atlantic/90"
+                        disabled={!guessLocation.trim() || !guessLat || !guessLng || isSubmitting}
+                        className="bg-atlantic text-white hover:bg-atlantic/90"
                       >
                         {isSubmitting ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -353,7 +421,7 @@ export default function WhereIsThisPage() {
                       </Button>
                     </div>
                     <p className="text-xs text-silver">
-                      Be as specific as possible (village name, landmark, beach name, etc.)
+                      Select a location from the suggestions. Guesses within 2 miles of the correct answer win!
                     </p>
                     {guessError && (
                       <p className="mt-2 text-sm text-red-600">{guessError}</p>
