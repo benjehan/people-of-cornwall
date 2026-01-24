@@ -235,8 +235,8 @@ export default function EventsMap({ events, onEventSelect, selectedEvent }: Even
   }, [selectedEvent]);
 
   return (
-    <div className="relative">
-      <div ref={mapContainerRef} className="h-[600px] w-full" />
+    <div className="relative z-0">
+      <div ref={mapContainerRef} className="h-[600px] w-full" style={{ zIndex: 0 }} />
       
       {/* Events count overlay */}
       <div className="absolute top-4 left-4 z-[1000] bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-md">

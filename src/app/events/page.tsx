@@ -133,7 +133,7 @@ const CORNISH_TOWNS = [
   "St Just", "Tintagel", "Truro", "Wadebridge",
 ];
 
-type DateFilter = "anytime" | "today" | "this_week" | "next_weekend" | "this_month" | "custom";
+type DateFilter = "anytime" | "today" | "this_week" | "next_weekend" | "this_month" | "past" | "custom";
 
 export default function EventsPage() {
   const router = useRouter();
@@ -170,41 +170,59 @@ export default function EventsPage() {
     
     switch (dateFilter) {
       case "today":
-        return { start: now, end: addDays(now, 1) };
+        return { start: now, end: addDays(now, 1), isPast: false };
       case "this_week":
-        return { start: now, end: endOfWeek(now) };
+        return { start: now, end: endOfWeek(now), isPast: false };
       case "next_weekend": {
         const saturday = nextSaturday(now);
         const sunday = nextSunday(now);
-        return { start: saturday, end: addDays(sunday, 1) };
+        return { start: saturday, end: addDays(sunday, 1), isPast: false };
       }
       case "this_month":
-        return { start: now, end: endOfMonth(now) };
+        return { start: now, end: endOfMonth(now), isPast: false };
+      case "past": {
+        // Show events from the past year up to now
+        const pastYear = new Date(now);
+        pastYear.setFullYear(pastYear.getFullYear() - 1);
+        return { start: pastYear, end: now, isPast: true };
+      }
       case "custom":
         if (customDateFrom) {
           const endDate = customDateTo ? addDays(customDateTo, 1) : null;
-          return { start: customDateFrom, end: endDate };
+          return { start: customDateFrom, end: endDate, isPast: false };
         }
-        return { start: now, end: null };
+        return { start: now, end: null, isPast: false };
       default:
-        return { start: now, end: null };
+        return { start: now, end: null, isPast: false };
     }
   }, [dateFilter, customDateFrom, customDateTo]);
 
   const loadEvents = useCallback(async () => {
     setIsLoading(true);
     const supabase = createClient();
-    const { start, end } = getDateRange();
+    const { start, end, isPast } = getDateRange();
 
     let query = (supabase.from("events") as any)
       .select("*")
-      .eq("is_approved", true)
-      .gte("starts_at", start.toISOString())
-      .order("starts_at", { ascending: true });
+      .eq("is_approved", true);
 
-    if (end) {
-      query = query.lte("starts_at", end.toISOString());
+    // For past events, show from start to end (both dates in the past)
+    // For future events, show from start onwards
+    if (isPast) {
+      query = query
+        .gte("starts_at", start.toISOString())
+        .lt("starts_at", end.toISOString())
+        .order("starts_at", { ascending: false }); // Most recent first for past
+    } else {
+      query = query
+        .gte("starts_at", start.toISOString())
+        .order("starts_at", { ascending: true });
+      
+      if (end) {
+        query = query.lte("starts_at", end.toISOString());
+      }
     }
+
     if (locationFilter !== "All Cornwall") {
       query = query.ilike("location_name", `%${locationFilter}%`);
     }
@@ -458,11 +476,12 @@ export default function EventsPage() {
               <div className="flex flex-wrap gap-2 mb-4">
                 <span className="text-sm font-medium text-granite flex items-center mr-2">When:</span>
                 {[
-                  { value: "anytime" as DateFilter, label: "Anytime" },
+                  { value: "anytime" as DateFilter, label: "Upcoming" },
                   { value: "today" as DateFilter, label: "Today" },
                   { value: "this_week" as DateFilter, label: "This Week" },
                   { value: "next_weekend" as DateFilter, label: "Next Weekend" },
                   { value: "this_month" as DateFilter, label: "This Month" },
+                  { value: "past" as DateFilter, label: "Past Events" },
                 ].map((option) => (
                   <Button
                     key={option.value}
@@ -781,7 +800,7 @@ export default function EventsPage() {
       {/* Event Detail Modal */}
       {selectedEvent && (
         <div 
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4"
           onClick={() => setSelectedEvent(null)}
         >
           <Card 

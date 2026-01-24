@@ -69,10 +69,8 @@ export default function CreateEventPage() {
   const [locationLat, setLocationLat] = useState<number | null>(null);
   const [locationLng, setLocationLng] = useState<number | null>(null);
   const [locationAddress, setLocationAddress] = useState("");
-  const [imageMode, setImageMode] = useState<"url" | "upload">("url");
-  const [imageUrl, setImageUrl] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  // Multiple images support
+  const [images, setImages] = useState<Array<{ file: File | null; preview: string; url?: string }>>([]);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [hasImageRights, setHasImageRights] = useState(false);
   const [showCropDialog, setShowCropDialog] = useState(false);
@@ -109,6 +107,12 @@ export default function CreateEventPage() {
       return;
     }
 
+    // Validate max images (5)
+    if (images.length >= 5) {
+      setError("Maximum 5 images allowed");
+      return;
+    }
+
     // Open crop dialog
     const objectUrl = URL.createObjectURL(file);
     setImageToCrop(objectUrl);
@@ -117,49 +121,68 @@ export default function CreateEventPage() {
   };
 
   const handleCropComplete = async (croppedBlob: Blob) => {
-    const croppedFile = new File([croppedBlob], "event-image.jpg", { type: "image/jpeg" });
-    setImageFile(croppedFile);
-    setImagePreview(URL.createObjectURL(croppedBlob));
+    const croppedFile = new File([croppedBlob], `event-image-${Date.now()}.jpg`, { type: "image/jpeg" });
+    const preview = URL.createObjectURL(croppedBlob);
+    setImages(prev => [...prev, { file: croppedFile, preview }]);
     setShowCropDialog(false);
     setImageToCrop(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const clearImage = () => {
-    setImageFile(null);
-    setImagePreview(null);
-    setImageUrl("");
+  const removeImage = (index: number) => {
+    setImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const clearAllImages = () => {
+    setImages([]);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
 
-  const uploadImage = async (): Promise<string | null> => {
-    if (!imageFile) return imageUrl || null;
+  const uploadImages = async (eventId: string): Promise<void> => {
+    if (images.length === 0) return;
 
     setIsUploadingImage(true);
     const supabase = createClient();
 
     try {
-      const fileExt = imageFile.name.split(".").pop();
-      const fileName = `events/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      for (let i = 0; i < images.length; i++) {
+        const img = images[i];
+        let imageUrl = img.url;
 
-      const { data, error: uploadError } = await supabase.storage
-        .from("story-media")
-        .upload(fileName, imageFile, {
-          cacheControl: "3600",
-          upsert: false,
+        // Upload file if it's a new upload
+        if (img.file) {
+          const fileExt = img.file.name.split(".").pop();
+          const fileName = `events/${eventId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from("story-media")
+            .upload(fileName, img.file, {
+              cacheControl: "3600",
+              upsert: false,
+            });
+
+          if (uploadError) throw uploadError;
+
+          const { data: { publicUrl } } = supabase.storage
+            .from("story-media")
+            .getPublicUrl(fileName);
+
+          imageUrl = publicUrl;
+        }
+
+        // Insert into event_images table
+        await (supabase.from("event_images") as any).insert({
+          event_id: eventId,
+          image_url: imageUrl,
+          is_primary: i === 0, // First image is primary
+          display_order: i,
         });
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from("story-media")
-        .getPublicUrl(fileName);
-
-      return publicUrl;
+      }
     } catch (err) {
-      console.error("Error uploading image:", err);
-      throw new Error("Failed to upload image");
+      console.error("Error uploading images:", err);
+      throw new Error("Failed to upload images");
     } finally {
       setIsUploadingImage(false);
     }
@@ -179,11 +202,6 @@ export default function CreateEventPage() {
     setError(null);
 
     try {
-      // Upload image if needed
-      const finalImageUrl = imageMode === "upload" && imageFile 
-        ? await uploadImage()
-        : imageUrl || null;
-
       const supabase = createClient();
 
       // Combine date and time
@@ -195,6 +213,7 @@ export default function CreateEventPage() {
         ? (allDay ? `${endDate}T23:59:59` : `${endDate}T${endTime || "23:59"}:00`)
         : null;
 
+      // Create event first (without image_url - images go to event_images table)
       const { data: eventData, error: insertError } = await (supabase.from("events") as any)
         .insert({
           title: title.trim(),
@@ -203,7 +222,7 @@ export default function CreateEventPage() {
           location_lat: locationLat,
           location_lng: locationLng,
           location_address: locationAddress.trim() || null,
-          image_url: finalImageUrl,
+          image_url: null, // Images now stored in event_images table
           starts_at: startsAt,
           ends_at: endsAt,
           all_day: allDay,
@@ -227,6 +246,11 @@ export default function CreateEventPage() {
         throw insertError;
       }
 
+      // Upload images to event_images table
+      if (images.length > 0) {
+        await uploadImages(eventData.id);
+      }
+
       // Run moderation check and notify admin
       try {
         await fetch("/api/moderation/check", {
@@ -237,7 +261,7 @@ export default function CreateEventPage() {
             content: {
               title: title.trim(),
               description: description.trim(),
-              imageUrl: finalImageUrl,
+              imageCount: images.length,
             },
             submitterId: user.id,
             submitterEmail: user.email,
@@ -326,7 +350,7 @@ export default function CreateEventPage() {
                     setStartTime("");
                     setEndDate("");
                     setEndTime("");
-                    clearImage();
+                    clearAllImages();
                   }}
                   className="bg-granite text-parchment hover:bg-slate"
                 >
@@ -406,71 +430,65 @@ export default function CreateEventPage() {
                     />
                   </div>
 
-                  {/* Image Upload */}
+                  {/* Image Upload - Multiple Images */}
                   <div>
-                    <Label>Event Image (optional)</Label>
-                    <Tabs value={imageMode} onValueChange={(v) => setImageMode(v as "url" | "upload")} className="mt-2">
-                      <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="url" className="gap-2">
-                          <LinkIcon className="h-4 w-4" />
-                          Image URL
-                        </TabsTrigger>
-                        <TabsTrigger value="upload" className="gap-2">
-                          <Upload className="h-4 w-4" />
-                          Upload
-                        </TabsTrigger>
-                      </TabsList>
-                      
-                      <TabsContent value="url" className="mt-3">
-                        <Input
-                          value={imageUrl}
-                          onChange={(e) => setImageUrl(e.target.value)}
-                          placeholder="https://..."
-                          className="border-bone"
-                        />
-                      </TabsContent>
-                      
-                      <TabsContent value="upload" className="mt-3">
-                        {imagePreview ? (
-                          <div className="relative">
+                    <div className="flex items-center justify-between mb-2">
+                      <Label>Event Images (optional)</Label>
+                      <span className="text-xs text-stone">{images.length}/5 images</span>
+                    </div>
+                    
+                    {/* Image Gallery */}
+                    {images.length > 0 && (
+                      <div className="grid grid-cols-3 gap-3 mb-3">
+                        {images.map((img, index) => (
+                          <div key={index} className="relative group aspect-video">
                             <img
-                              src={imagePreview}
-                              alt="Preview"
-                              className="w-full h-48 object-cover rounded-lg border border-bone"
+                              src={img.preview}
+                              alt={`Event image ${index + 1}`}
+                              className="w-full h-full object-cover rounded-lg border border-bone"
                             />
+                            {index === 0 && (
+                              <span className="absolute top-1 left-1 bg-copper text-parchment text-xs px-2 py-0.5 rounded">
+                                Primary
+                              </span>
+                            )}
                             <Button
                               type="button"
                               variant="destructive"
                               size="icon"
-                              onClick={clearImage}
-                              className="absolute top-2 right-2"
+                              onClick={() => removeImage(index)}
+                              className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
                             >
-                              <X className="h-4 w-4" />
+                              <X className="h-3 w-3" />
                             </Button>
                           </div>
-                        ) : (
-                          <div
-                            onClick={() => fileInputRef.current?.click()}
-                            className="border-2 border-dashed border-bone rounded-lg p-8 text-center cursor-pointer hover:border-granite transition-colors"
-                          >
-                            <ImageIcon className="h-8 w-8 text-stone mx-auto mb-2" />
-                            <p className="text-sm text-stone">
-                              Click to upload an image
-                            </p>
-                            <p className="text-xs text-silver mt-1">
-                              Max 5MB, JPG/PNG
-                            </p>
-                          </div>
-                        )}
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept="image/*"
-                          onChange={handleFileSelect}
-                          className="hidden"
-                        />
-                      </TabsContent>
-                    </Tabs>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Add Image Button */}
+                    {images.length < 5 && (
+                      <div
+                        onClick={() => fileInputRef.current?.click()}
+                        className="border-2 border-dashed border-bone rounded-lg p-6 text-center cursor-pointer hover:border-granite transition-colors"
+                      >
+                        <ImageIcon className="h-8 w-8 text-stone mx-auto mb-2" />
+                        <p className="text-sm text-stone">
+                          {images.length === 0 ? "Click to add images" : "Add another image"}
+                        </p>
+                        <p className="text-xs text-silver mt-1">
+                          Max 5MB per image, JPG/PNG. First image will be the primary.
+                        </p>
+                      </div>
+                    )}
+                    
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
                   </div>
                 </div>
 
