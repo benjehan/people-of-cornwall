@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CommentSection } from "@/components/comments/comment-section";
+import { EventImageCarousel } from "@/components/events/event-image-carousel";
 import {
   ArrowLeft,
   Calendar,
@@ -28,6 +29,13 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/use-user";
+
+interface EventImage {
+  id: string;
+  image_url: string;
+  caption: string | null;
+  is_primary: boolean;
+}
 
 interface Event {
   id: string;
@@ -60,6 +68,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const { id } = use(params);
   const { user } = useUser();
   const [event, setEvent] = useState<Event | null>(null);
+  const [eventImages, setEventImages] = useState<EventImage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userHasLiked, setUserHasLiked] = useState(false);
@@ -85,6 +94,15 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
 
     setEvent(data);
     setLikeCount(data.like_count || 0);
+
+    // Load event images
+    const { data: images } = await (supabase
+      .from("event_images") as any)
+      .select("*")
+      .eq("event_id", id)
+      .order("display_order", { ascending: true });
+    
+    setEventImages(images || []);
 
     // Check if user has liked
     if (user) {
@@ -220,16 +238,17 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
             Back to events
           </Link>
 
-          {/* Hero image */}
-          {event.image_url && (
-            <div className="mb-8 rounded-xl overflow-hidden">
-              <img
-                src={event.image_url}
-                alt={event.title}
-                className="w-full h-64 md:h-96 object-cover"
-              />
-            </div>
-          )}
+          {/* Hero image carousel */}
+          <div className="mb-8 rounded-xl overflow-hidden">
+            <EventImageCarousel
+              images={eventImages}
+              eventTitle={event.title}
+              className="h-64 md:h-96"
+              showDots={true}
+              autoPlay={eventImages.length > 1}
+              autoPlayInterval={6000}
+            />
+          </div>
 
           <div className="grid md:grid-cols-3 gap-8">
             {/* Main content */}

@@ -43,6 +43,14 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/use-user";
 import { ShareButtons } from "@/components/ui/share-buttons";
+import { EventImageCarousel } from "@/components/events/event-image-carousel";
+
+interface EventImage {
+  id: string;
+  image_url: string;
+  caption: string | null;
+  is_primary: boolean;
+}
 
 // Date helper functions (replacing date-fns)
 const addDays = (date: Date, days: number): Date => {
@@ -143,6 +151,8 @@ export default function EventsPage() {
   const [viewMode, setViewMode] = useState<"list" | "calendar" | "map">("list");
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [selectedEventImages, setSelectedEventImages] = useState<EventImage[]>([]);
+  const [isLoadingImages, setIsLoadingImages] = useState(false);
   
   // Filters
   const [locationFilter, setLocationFilter] = useState("All Cornwall");
@@ -285,6 +295,24 @@ export default function EventsPage() {
     }
   };
 
+  // Select event and load its images
+  const selectEvent = async (event: Event | null) => {
+    setSelectedEvent(event);
+    if (event) {
+      setIsLoadingImages(true);
+      const supabase = createClient();
+      const { data: images } = await (supabase
+        .from("event_images") as any)
+        .select("*")
+        .eq("event_id", event.id)
+        .order("display_order", { ascending: true });
+      setSelectedEventImages(images || []);
+      setIsLoadingImages(false);
+    } else {
+      setSelectedEventImages([]);
+    }
+  };
+
   // Calendar helpers
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
@@ -340,7 +368,7 @@ export default function EventsPage() {
     return (
       <Card 
         className={`border-bone bg-cream hover:shadow-md transition-shadow cursor-pointer relative overflow-hidden ${compact ? "" : ""} ${isPast ? "opacity-75" : ""}`}
-        onClick={() => setSelectedEvent(event)}
+        onClick={() => selectEvent(event)}
       >
         {/* Past Event Ribbon */}
         {isPast && (
@@ -351,16 +379,22 @@ export default function EventsPage() {
         
         <CardContent className="p-0">
           <div className={`flex ${compact ? "flex-col" : "flex-col sm:flex-row"}`}>
-            {/* Image */}
-            {event.image_url && (
-              <div className={`relative ${compact ? "h-32" : "sm:w-48 h-32 sm:h-auto flex-shrink-0"}`}>
+            {/* Image or Placeholder */}
+            <div className={`relative ${compact ? "h-32" : "sm:w-48 h-32 sm:h-auto flex-shrink-0"} ${compact ? "rounded-t-lg" : "rounded-t-lg sm:rounded-l-lg sm:rounded-tr-none"} overflow-hidden`}>
+              {event.image_url ? (
                 <img
                   src={event.image_url}
                   alt={event.title}
-                  className={`w-full h-full object-cover ${compact ? "rounded-t-lg" : "rounded-t-lg sm:rounded-l-lg sm:rounded-tr-none"} ${isPast ? "grayscale" : ""}`}
+                  className={`w-full h-full object-cover ${isPast ? "grayscale" : ""}`}
                 />
-              </div>
-            )}
+              ) : (
+                <EventImageCarousel
+                  images={[]}
+                  eventTitle={event.title}
+                  className="w-full h-full"
+                />
+              )}
+            </div>
           
           {/* Content */}
           <div className="flex-1 p-4">
@@ -769,7 +803,7 @@ export default function EventsPage() {
                               key={event.id}
                               className="text-xs truncate bg-granite text-parchment rounded px-1 cursor-pointer hover:bg-slate"
                               title={event.title}
-                              onClick={() => setSelectedEvent(event)}
+                              onClick={() => selectEvent(event)}
                             >
                               {event.title}
                             </div>
@@ -789,7 +823,7 @@ export default function EventsPage() {
             <div className="rounded-lg overflow-hidden border border-bone">
               <EventsMap 
                 events={events} 
-                onEventSelect={setSelectedEvent}
+                onEventSelect={selectEvent}
                 selectedEvent={selectedEvent}
               />
             </div>
@@ -807,36 +841,32 @@ export default function EventsPage() {
             className="max-w-lg w-full max-h-[90vh] overflow-y-auto border-bone bg-cream"
             onClick={(e) => e.stopPropagation()}
           >
-            <CardContent className="p-0">
-              {selectedEvent.image_url && (
-                <div className="h-48 relative">
-                  <img
-                    src={selectedEvent.image_url}
-                    alt={selectedEvent.title}
-                    className="w-full h-full object-cover"
+            <CardContent className="p-0 relative">
+              {/* Image Carousel / Placeholder */}
+              <div className="relative">
+                {isLoadingImages ? (
+                  <div className="h-48 bg-gradient-to-br from-slate-600 to-slate-500 flex items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-white/70" />
+                  </div>
+                ) : (
+                  <EventImageCarousel
+                    images={selectedEventImages}
+                    eventTitle={selectedEvent.title}
+                    className="h-48"
+                    showDots={true}
                   />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setSelectedEvent(null)}
-                    className="absolute top-2 right-2 bg-black/50 text-white hover:bg-black/70"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
+                )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setSelectedEvent(null)}
+                  className="absolute top-2 right-2 bg-black/50 text-white hover:bg-black/70 z-10"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
               
               <div className="p-6">
-                {!selectedEvent.image_url && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setSelectedEvent(null)}
-                    className="absolute top-2 right-2"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
 
                 <div className="flex items-center gap-2 mb-3 flex-wrap">
                   <Badge className="bg-copper text-parchment">
@@ -933,21 +963,31 @@ export default function EventsPage() {
                   </div>
                 )}
 
-                <div className="flex gap-2 mt-6">
-                  <Button
-                    onClick={() => shareEvent(selectedEvent)}
-                    variant="outline"
-                    className="flex-1 border-granite text-granite"
-                  >
-                    <Share2 className="h-4 w-4 mr-2" />
-                    Share
-                  </Button>
-                  <Button
-                    onClick={() => setSelectedEvent(null)}
-                    className="flex-1 bg-granite text-parchment hover:bg-slate"
-                  >
-                    Close
-                  </Button>
+                <div className="flex flex-col gap-3 mt-6">
+                  <Link href={`/events/${selectedEvent.id}`}>
+                    <Button
+                      className="w-full bg-copper text-parchment hover:bg-copper/90"
+                    >
+                      View Full Details & Comments
+                    </Button>
+                  </Link>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => shareEvent(selectedEvent)}
+                      variant="outline"
+                      className="flex-1 border-granite text-granite"
+                    >
+                      <Share2 className="h-4 w-4 mr-2" />
+                      Share
+                    </Button>
+                    <Button
+                      onClick={() => setSelectedEvent(null)}
+                      variant="outline"
+                      className="flex-1 border-bone text-stone hover:bg-stone/10"
+                    >
+                      Close
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardContent>
