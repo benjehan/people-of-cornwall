@@ -477,7 +477,7 @@ export default function SubmitLostCornwallPage() {
                 <Button
                   type="submit"
                   disabled={isSubmitting || isUploadingImage}
-                  className="w-full bg-sepia text-parchment hover:bg-sepia/90 gap-2"
+                  className="w-full bg-sepia text-white hover:bg-sepia/90 gap-2 shadow-md"
                 >
                   {isSubmitting || isUploadingImage ? (
                     <>

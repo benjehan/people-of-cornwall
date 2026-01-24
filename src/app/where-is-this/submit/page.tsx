@@ -476,7 +476,7 @@ export default function SubmitWhereIsThisPage() {
                 <Button
                   type="submit"
                   disabled={isSubmitting || isUploadingImage}
-                  className="w-full bg-atlantic text-parchment hover:bg-atlantic/90 gap-2"
+                  className="w-full bg-atlantic text-white hover:bg-atlantic/90 gap-2 shadow-md"
                 >
                   {isSubmitting || isUploadingImage ? (
                     <>
