@@ -262,7 +262,7 @@ export default function LostCornwallPage() {
           </p>
           {user && (
             <Link href="/lost-cornwall/submit">
-              <Button className="bg-sepia text-parchment hover:bg-sepia/80 border-2 border-sepia hover:border-sepia/80">
+              <Button className="bg-sepia text-white hover:bg-sepia/90 shadow-md">
                 <Camera className="h-4 w-4 mr-2" />
                 Share a Historic Photo
               </Button>

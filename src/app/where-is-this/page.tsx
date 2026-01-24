@@ -224,7 +224,7 @@ export default function WhereIsThisPage() {
           </p>
           {user && (
             <Link href="/where-is-this/submit">
-              <Button className="bg-atlantic text-parchment hover:bg-atlantic/80 border-2 border-atlantic hover:border-atlantic/80">
+              <Button className="bg-atlantic text-white hover:bg-atlantic/90 shadow-md">
                 <Send className="h-4 w-4 mr-2" />
                 Submit a Challenge
               </Button>

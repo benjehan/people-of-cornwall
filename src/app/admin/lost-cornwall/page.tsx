@@ -302,7 +302,7 @@ export default function AdminLostCornwallPage() {
           </div>
           <Button
             onClick={() => setShowCreateDialog(true)}
-            className="bg-sepia text-parchment hover:bg-sepia/90"
+            className="bg-sepia text-white hover:bg-sepia/90 shadow-md"
           >
             <Plus className="h-4 w-4 mr-2" />
             Add Photo
@@ -758,7 +758,7 @@ export default function AdminLostCornwallPage() {
             <Button
               onClick={createPhoto}
               disabled={isCreating}
-              className="bg-sepia text-parchment hover:bg-sepia/90"
+              className="bg-sepia text-white hover:bg-sepia/90"
             >
               {isCreating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
               Add Photo

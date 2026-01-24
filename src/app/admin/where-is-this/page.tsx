@@ -420,7 +420,7 @@ export default function AdminWhereIsThisPage() {
           </div>
           <Button
             onClick={() => setShowCreateDialog(true)}
-            className="bg-atlantic text-parchment hover:bg-atlantic/90"
+            className="bg-atlantic text-white hover:bg-atlantic/90 shadow-md"
           >
             <Plus className="h-4 w-4 mr-2" />
             Create Challenge
@@ -899,7 +899,7 @@ export default function AdminWhereIsThisPage() {
             <Button
               onClick={createChallenge}
               disabled={isCreating}
-              className="bg-atlantic text-parchment hover:bg-atlantic/90"
+              className="bg-atlantic text-white hover:bg-atlantic/90"
             >
               {isCreating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
               Create Challenge

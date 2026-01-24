@@ -31,6 +31,10 @@
   --copper-light: #D4A07A;      /* Lighter copper - hover states */
   --copper-dark: #A66942;       /* Darker copper - pressed states */
   
+  /* Feature Colors */
+  --sepia: #8B5A2B;             /* Warm brown - Lost Cornwall historic feel */
+  --atlantic: #2B6B8B;          /* Ocean blue - Where Is This challenge */
+  
   /* Functional */
   --success: #4A5940;           /* Moss green - success states */
   --error: #9B3B3B;             /* Muted red - errors */
@@ -93,6 +97,10 @@
   --copper: #D4A07A;
   --copper-light: #E5C4A8;
   --copper-dark: #C17F59;
+  
+  /* Feature Colors - lighter for dark mode */
+  --sepia: #B8875A;             /* Lighter brown for dark mode */
+  --atlantic: #5A9BC4;          /* Lighter blue for dark mode */
   
   /* Functional */
   --success: #7A9B6A;
@@ -182,6 +190,8 @@
   --color-copper: var(--copper);
   --color-copper-light: var(--copper-light);
   --color-copper-dark: var(--copper-dark);
+  --color-sepia: var(--sepia);
+  --color-atlantic: var(--atlantic);
   
   /* Legacy color mappings for existing components */
   --color-chalk-white: var(--parchment);
