@@ -2,33 +2,30 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-// Base context for Cornwall-themed images
-const CORNWALL_CONTEXT = `Setting: Cornwall, UK (Kernow) - evoke the feeling of rugged coastline, fishing villages, mining heritage, and community spirit.
-Color palette inspiration: muted earth tones, sea greens, slate grays, and warm copper accents reflecting Cornwall's landscape.`;
+// Light context for Cornwall (doesn't override style)
+const CORNWALL_CONTEXT = `Location: Cornwall, UK. Capture the spirit of Cornish coastline, fishing villages, and local heritage.`;
 
 const FREE_CREDITS = 5; // Free AI image generations per user
 
-// Style-specific prompts that completely define the look
+// Style-specific prompts - each completely different
 const STYLE_PROMPTS: Record<string, string> = {
-  heritage: `Art style: British heritage illustration, museum archive quality, nostalgic and timeless.
-The image should have a painterly quality with subtle grain texture.
-NOT photorealistic, NOT cartoon, NOT anime. Think: classic illustration from a local history book.`,
+  heritage: `Style: Classic British illustration, like artwork from a 1950s travel poster or museum exhibition. 
+Warm, nostalgic colors. Artistic but realistic.`,
   
-  painting: `Art style: Traditional oil painting with clearly visible brushstrokes and rich impasto textures.
-Rich, saturated colors with depth. Canvas texture visible. Classical painting technique like the Newlyn School artists.
-Must look like an actual oil painting, NOT digital art, NOT illustration.`,
+  painting: `Style: Oil painting with thick, visible brushstrokes. Rich colors, canvas texture visible.
+Like a painting by the Newlyn School or Impressionist masters.`,
   
-  watercolor: `Art style: Delicate watercolor painting with soft, flowing edges and transparent color washes.
-Visible paper texture, colors bleeding into each other naturally. Wet-on-wet technique.
-Light and airy feel. Must look like a genuine watercolor painting, NOT digital.`,
+  watercolor: `Style: Watercolor painting. Soft edges, transparent washes of color, visible paper texture.
+Colors gently blending together. Light and delicate.`,
   
-  vintage: `Art style: Authentic vintage photograph from the 1920s-1950s era.
-Sepia or faded color tones, slight vignetting, aged paper texture with subtle scratches and wear.
-Grainy film quality, slightly soft focus. Must look like a real old photograph, NOT a painting or illustration.`,
+  vintage: `Style: Old photograph from the 1930s-1950s. Sepia tones or faded colors.
+Slight grain, soft focus, aged appearance with minor scratches or wear.`,
   
-  sketch: `Art style: Hand-drawn pencil or charcoal sketch on textured paper.
-Detailed line work, cross-hatching for shading, visible pencil strokes.
-Artistic illustration style like a field sketch or artist's study. NOT digital, NOT clean lines.`,
+  sketch: `Style: Pencil or charcoal sketch on paper. Visible pencil strokes, cross-hatching for shadows.
+Like an artist's field sketch or study drawing.`,
+
+  realistic: `Style: High-quality photorealistic image. Sharp details, natural lighting.
+Like a professional photograph.`,
 };
 
 export async function POST(request: NextRequest) {
@@ -141,8 +138,10 @@ ${CORNWALL_CONTEXT}`;
     console.log("Full prompt:", fullPrompt);
 
     // Choose DALL-E style parameter based on selected style
-    // "natural" is better for vintage photos and sketches, "vivid" for paintings
-    const dalleStyle = (actualStyle === "vintage" || actualStyle === "sketch") ? "natural" : "vivid";
+    // "natural" = more realistic/photographic, "vivid" = more artistic/dramatic
+    const dalleStyle = (actualStyle === "vintage" || actualStyle === "sketch" || actualStyle === "realistic") 
+      ? "natural" 
+      : "vivid";
 
     // Generate image using DALL-E 3
     const response = await fetch("https://api.openai.com/v1/images/generations", {

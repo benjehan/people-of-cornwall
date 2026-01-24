@@ -18,14 +18,15 @@ interface AIImageDialogProps {
   storyId?: string;
 }
 
-type ImageStyle = "heritage" | "painting" | "watercolor" | "vintage" | "sketch";
+type ImageStyle = "heritage" | "painting" | "watercolor" | "vintage" | "sketch" | "realistic";
 
 const styleOptions: { value: ImageStyle; label: string; description: string }[] = [
-  { value: "heritage", label: "Heritage", description: "Classic museum archive style" },
-  { value: "painting", label: "Oil Painting", description: "Rich, textured brushstrokes" },
-  { value: "watercolor", label: "Watercolor", description: "Soft, flowing colors" },
-  { value: "vintage", label: "Vintage Photo", description: "Sepia tones, aged look" },
-  { value: "sketch", label: "Sketch", description: "Pencil or charcoal drawing" },
+  { value: "heritage", label: "Heritage", description: "Classic travel poster style" },
+  { value: "painting", label: "Oil Painting", description: "Brushstrokes, canvas texture" },
+  { value: "watercolor", label: "Watercolor", description: "Soft, flowing washes" },
+  { value: "vintage", label: "Vintage Photo", description: "1930s-50s photograph" },
+  { value: "sketch", label: "Sketch", description: "Pencil or charcoal" },
+  { value: "realistic", label: "Realistic", description: "Photorealistic image" },
 ];
 
 export function AIImageDialog({
@@ -256,10 +257,10 @@ export function AIImageDialog({
                 </div>
               </div>
 
-              {/* Info about style */}
+              {/* Info about styles */}
               <div className="rounded-lg bg-blue-50 border border-blue-200 p-3 text-sm text-blue-700">
-                <strong>Cornish Heritage Style:</strong> All images are generated with a museum-archive aesthetic — 
-                painterly quality, subtle grain, muted earth tones. Never photorealistic or cartoonish.
+                <strong>Tip:</strong> Each style produces very different results. Try "Vintage Photo" for old-timey feel, 
+                "Oil Painting" for artistic flair, or "Realistic" for photo-like images.
               </div>
 
               {/* Error */}
