@@ -16,13 +16,13 @@ export default async function PromptsPage() {
     redirect("/login?redirect=/prompts");
   }
   
-  const { data: userData } = await supabase
-    .from("users")
+  const { data: userData } = await (supabase
+    .from("users") as any)
     .select("role")
     .eq("id", user.id)
     .single();
   
-  if (userData?.role !== "admin") {
+  if ((userData as any)?.role !== "admin") {
     // Non-admins are redirected to home - prompts are shown on the homepage
     redirect("/");
   }
