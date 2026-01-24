@@ -701,7 +701,7 @@ export default function CreateEventPage() {
                 </div>
 
                 {/* Image Rights Agreement */}
-                {(imageFile || imageUrl) && (
+                {images.length > 0 && (
                   <div className="p-4 rounded-lg border border-amber-200 bg-amber-50">
                     <label className="flex items-start gap-3 cursor-pointer">
                       <Checkbox
@@ -725,7 +725,7 @@ export default function CreateEventPage() {
                 {/* Submit */}
                 <Button
                   type="submit"
-                  disabled={isSubmitting || isUploadingImage || !!(imageFile || imageUrl) && !hasImageRights}
+                  disabled={isSubmitting || isUploadingImage || (images.length > 0 && !hasImageRights)}
                   className="w-full bg-granite text-parchment hover:bg-slate gap-2"
                 >
                   {isSubmitting || isUploadingImage ? (
