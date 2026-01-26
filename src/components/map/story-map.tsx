@@ -117,7 +117,7 @@ export function StoryMap({ stories }: StoryMapProps) {
 
   if (!isMounted) {
     return (
-      <div className="flex h-[450px] md:h-[600px] items-center justify-center bg-cream">
+      <div className="flex h-[600px] md:h-[800px] items-center justify-center bg-cream">
         <div className="text-center">
           <div className="mb-2 h-6 w-6 animate-spin rounded-full border-2 border-granite border-t-transparent mx-auto" />
           <p className="text-sm text-stone">Loading map...</p>
@@ -171,7 +171,7 @@ export function StoryMap({ stories }: StoryMapProps) {
         }
       `}</style>
 
-      <div className="h-[450px] md:h-[600px] w-full">
+      <div className="h-[600px] md:h-[800px] w-full">
         <MapContainer
           center={CORNWALL_CENTER}
           zoom={9}
