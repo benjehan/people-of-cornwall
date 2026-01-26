@@ -92,13 +92,17 @@ function initAuth() {
     }
     
     if (session?.user) {
-      setState({ user: session.user, isLoading: false });
+      // Keep isLoading true until profile is fetched
+      setState({ user: session.user });
       
       // Fetch profile using direct fetch
       const profile = await fetchProfileDirect(session.user.id, session.access_token);
       if (profile) {
         console.log('[AUTH] Profile loaded, admin:', profile.role === 'admin');
-        setState({ profile, isAdmin: profile.role === "admin" });
+        setState({ profile, isAdmin: profile.role === "admin", isLoading: false });
+      } else {
+        // Profile fetch failed, but we have a user
+        setState({ isLoading: false });
       }
     }
   });
@@ -108,13 +112,17 @@ function initAuth() {
     console.log('[AUTH] Initial session:', session?.user?.email || 'none');
     
     if (session?.user) {
-      setState({ user: session.user, isLoading: false });
+      // Keep isLoading true until profile is fetched
+      setState({ user: session.user });
       
       // Fetch profile using direct fetch
       const profile = await fetchProfileDirect(session.user.id, session.access_token);
       if (profile) {
         console.log('[AUTH] Profile loaded, admin:', profile.role === 'admin');
-        setState({ profile, isAdmin: profile.role === "admin" });
+        setState({ profile, isAdmin: profile.role === "admin", isLoading: false });
+      } else {
+        // Profile fetch failed, but we have a user
+        setState({ isLoading: false });
       }
     } else {
       setState({ isLoading: false });
