@@ -162,7 +162,7 @@ function LostCornwallPageContent() {
       .eq("is_published", true);
 
     // Apply filters
-    if (filters.location) {
+    if (filters.location && filters.location !== "all") {
       query = query.eq("location_name", filters.location);
     }
     if (filters.search) {
@@ -179,14 +179,14 @@ function LostCornwallPageContent() {
 
     // Filter by year range if specified (client-side since year_taken is text)
     let filteredData = data || [];
-    if (filters.yearFrom || filters.yearTo) {
+    if ((filters.yearFrom && filters.yearFrom !== "all") || (filters.yearTo && filters.yearTo !== "all")) {
       filteredData = filteredData.filter((photo: any) => {
         if (!photo.year_taken) return false;
         const yearMatch = photo.year_taken.match(/\d{4}/);
         if (!yearMatch) return false;
         const year = parseInt(yearMatch[0]);
-        if (filters.yearFrom && year < parseInt(filters.yearFrom)) return false;
-        if (filters.yearTo && year > parseInt(filters.yearTo)) return false;
+        if (filters.yearFrom && filters.yearFrom !== "all" && year < parseInt(filters.yearFrom)) return false;
+        if (filters.yearTo && filters.yearTo !== "all" && year > parseInt(filters.yearTo)) return false;
         return true;
       });
     }
@@ -420,7 +420,7 @@ function LostCornwallPageContent() {
                 <SelectValue placeholder="All Locations" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Locations</SelectItem>
+                <SelectItem value="all">All Locations</SelectItem>
                 {locations.map((location) => (
                   <SelectItem key={location} value={location}>{location}</SelectItem>
                 ))}
@@ -437,7 +437,7 @@ function LostCornwallPageContent() {
                   <SelectValue placeholder="From" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">From</SelectItem>
+                  <SelectItem value="all">From</SelectItem>
                   {decadeOptions.map((decade) => (
                     <SelectItem key={decade} value={decade.toString()}>{decade}s</SelectItem>
                   ))}
@@ -452,7 +452,7 @@ function LostCornwallPageContent() {
                   <SelectValue placeholder="To" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">To</SelectItem>
+                  <SelectItem value="all">To</SelectItem>
                   {decadeOptions.map((decade) => (
                     <SelectItem key={decade} value={(decade + 9).toString()}>{decade}s</SelectItem>
                   ))}

@@ -146,16 +146,16 @@ function SchoolPhotosPageContent() {
       .eq("is_published", true);
 
     // Apply filters
-    if (filters.school) {
+    if (filters.school && filters.school !== "all") {
       query = query.eq("school_name", filters.school);
     }
-    if (filters.location) {
+    if (filters.location && filters.location !== "all") {
       query = query.eq("location_name", filters.location);
     }
-    if (filters.yearFrom) {
+    if (filters.yearFrom && filters.yearFrom !== "all") {
       query = query.gte("year_taken", parseInt(filters.yearFrom));
     }
-    if (filters.yearTo) {
+    if (filters.yearTo && filters.yearTo !== "all") {
       query = query.lte("year_taken", parseInt(filters.yearTo));
     }
     if (filters.search) {
@@ -365,7 +365,7 @@ function SchoolPhotosPageContent() {
                 <SelectValue placeholder="All Schools" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Schools</SelectItem>
+                <SelectItem value="all">All Schools</SelectItem>
                 {schools.map((school) => (
                   <SelectItem key={school} value={school}>{school}</SelectItem>
                 ))}
@@ -381,7 +381,7 @@ function SchoolPhotosPageContent() {
                 <SelectValue placeholder="All Locations" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Locations</SelectItem>
+                <SelectItem value="all">All Locations</SelectItem>
                 {locations.map((location) => (
                   <SelectItem key={location} value={location}>{location}</SelectItem>
                 ))}
@@ -398,7 +398,7 @@ function SchoolPhotosPageContent() {
                   <SelectValue placeholder="From" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">From</SelectItem>
+                  <SelectItem value="all">From</SelectItem>
                   {decadeOptions.map((decade) => (
                     <SelectItem key={decade} value={decade.toString()}>{decade}s</SelectItem>
                   ))}
@@ -413,7 +413,7 @@ function SchoolPhotosPageContent() {
                   <SelectValue placeholder="To" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">To</SelectItem>
+                  <SelectItem value="all">To</SelectItem>
                   {decadeOptions.map((decade) => (
                     <SelectItem key={decade} value={(decade + 9).toString()}>{decade}s</SelectItem>
                   ))}
