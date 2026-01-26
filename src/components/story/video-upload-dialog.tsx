@@ -180,7 +180,8 @@ export function VideoUploadDialog({
       // Generate thumbnail (capture first frame)
       let thumbnailUrl: string | undefined;
       try {
-        thumbnailUrl = await generateThumbnail(preview!);
+        const generatedThumb = await generateThumbnail(preview!);
+        thumbnailUrl = generatedThumb || undefined;
         if (thumbnailUrl) {
           // Upload thumbnail
           const thumbFileName = `${user.id}/${storyId || "drafts"}/thumb-${Date.now()}.jpg`;
