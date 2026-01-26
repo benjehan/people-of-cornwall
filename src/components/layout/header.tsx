@@ -73,8 +73,8 @@ export function Header() {
             Collections
           </Link>
           
-          {/* Explore Dropdown - Admin only for now */}
-          {mounted && isAdmin && (
+          {/* Explore Dropdown */}
+          {mounted && (
             <DropdownMenu>
               <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-medium text-stone transition-colors hover:text-granite outline-none">
                 Explore
@@ -300,52 +300,50 @@ export function Header() {
               Collections
             </Link>
             
-            {/* Explore section - Admin only for now */}
-            {isAdmin && (
-              <div className="mt-2 pt-2 border-t border-bone">
-                <p className="px-3 py-1 text-xs font-semibold text-stone uppercase tracking-wide">Explore</p>
-                <Link
-                  href="/lost-cornwall"
-                  className="rounded-md px-3 py-2.5 text-sm font-medium text-granite hover:bg-cream flex items-center gap-2"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <Camera className="h-4 w-4 text-sepia" />
-                  Lost Cornwall
-                </Link>
-                <Link
-                  href="/where-is-this"
-                  className="rounded-md px-3 py-2.5 text-sm font-medium text-granite hover:bg-cream flex items-center gap-2"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <HelpCircle className="h-4 w-4 text-atlantic" />
-                  Where Is This?
-                </Link>
-                <Link
-                  href="/events"
-                  className="rounded-md px-3 py-2.5 text-sm font-medium text-granite hover:bg-cream flex items-center gap-2"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <Calendar className="h-4 w-4 text-copper" />
-                  Events
-                </Link>
-                <Link
-                  href="/school-photos"
-                  className="rounded-md px-3 py-2.5 text-sm font-medium text-granite hover:bg-cream flex items-center gap-2"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <GraduationCap className="h-4 w-4 text-atlantic" />
-                  School Photos
-                </Link>
-                <Link
-                  href="/polls"
-                  className="rounded-md px-3 py-2.5 text-sm font-medium text-granite hover:bg-cream flex items-center gap-2"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <Vote className="h-4 w-4 text-granite" />
-                  Community Polls
-                </Link>
-              </div>
-            )}
+            {/* Explore section */}
+            <div className="mt-2 pt-2 border-t border-bone">
+              <p className="px-3 py-1 text-xs font-semibold text-stone uppercase tracking-wide">Explore</p>
+              <Link
+                href="/lost-cornwall"
+                className="rounded-md px-3 py-2.5 text-sm font-medium text-granite hover:bg-cream flex items-center gap-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Camera className="h-4 w-4 text-sepia" />
+                Lost Cornwall
+              </Link>
+              <Link
+                href="/where-is-this"
+                className="rounded-md px-3 py-2.5 text-sm font-medium text-granite hover:bg-cream flex items-center gap-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <HelpCircle className="h-4 w-4 text-atlantic" />
+                Where Is This?
+              </Link>
+              <Link
+                href="/events"
+                className="rounded-md px-3 py-2.5 text-sm font-medium text-granite hover:bg-cream flex items-center gap-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Calendar className="h-4 w-4 text-copper" />
+                Events
+              </Link>
+              <Link
+                href="/school-photos"
+                className="rounded-md px-3 py-2.5 text-sm font-medium text-granite hover:bg-cream flex items-center gap-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <GraduationCap className="h-4 w-4 text-atlantic" />
+                School Photos
+              </Link>
+              <Link
+                href="/polls"
+                className="rounded-md px-3 py-2.5 text-sm font-medium text-granite hover:bg-cream flex items-center gap-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Vote className="h-4 w-4 text-granite" />
+                Community Polls
+              </Link>
+            </div>
 
             {user && (
               <Link

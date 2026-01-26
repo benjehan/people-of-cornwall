@@ -107,13 +107,6 @@ export default function WhereIsThisPage() {
   const [guessError, setGuessError] = useState<string | null>(null);
   const [selectedPastChallenge, setSelectedPastChallenge] = useState<Challenge | null>(null);
 
-  // Temporarily admin-only while polishing
-  useEffect(() => {
-    if (!authLoading && !isAdmin) {
-      router.push("/");
-    }
-  }, [authLoading, isAdmin, router]);
-
   const loadChallenges = useCallback(async () => {
     setIsLoading(true);
     const supabase = createClient();

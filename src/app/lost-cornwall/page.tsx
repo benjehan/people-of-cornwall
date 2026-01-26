@@ -111,13 +111,6 @@ export default function LostCornwallPage() {
   const [locations, setLocations] = useState<string[]>([]);
   const [years, setYears] = useState<string[]>([]);
 
-  // Temporarily admin-only while polishing
-  useEffect(() => {
-    if (!authLoading && !isAdmin) {
-      router.push("/");
-    }
-  }, [authLoading, isAdmin, router]);
-
   // Load filter options
   useEffect(() => {
     const loadFilterOptions = async () => {
