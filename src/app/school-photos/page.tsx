@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { Suspense, useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +26,6 @@ import {
   GraduationCap, 
   Calendar, 
   MapPin, 
-  Loader2,
   ChevronLeft,
   ChevronRight,
   Eye,
@@ -78,7 +78,7 @@ interface FilterState {
 
 type ViewMode = "grid" | "large";
 
-export default function SchoolPhotosPage() {
+function SchoolPhotosPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
@@ -753,5 +753,21 @@ export default function SchoolPhotosPage() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function SchoolPhotosPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen flex-col bg-parchment">
+        <Header />
+        <main className="flex flex-1 items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-granite" />
+        </main>
+        <Footer />
+      </div>
+    }>
+      <SchoolPhotosPageContent />
+    </Suspense>
   );
 }
