@@ -37,6 +37,8 @@ interface EventsMapProps {
   events: Event[];
   onEventSelect: (event: Event | null) => void;
   selectedEvent: Event | null;
+  /** When true, shows rich popups on markers instead of triggering onEventSelect modal */
+  fullPageMode?: boolean;
 }
 
 // Town coordinates for events without specific lat/lng
@@ -72,7 +74,7 @@ const TOWN_COORDINATES: Record<string, [number, number]> = {
   "Wadebridge": [50.5176, -4.8353],
 };
 
-export default function EventsMap({ events, onEventSelect, selectedEvent }: EventsMapProps) {
+export default function EventsMap({ events, onEventSelect, selectedEvent, fullPageMode = false }: EventsMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<L.Marker[]>([]);
@@ -183,29 +185,95 @@ export default function EventsMap({ events, onEventSelect, selectedEvent }: Even
         icon: createIcon(isSelected),
       });
 
-      // Create popup content
-      const popupContent = `
-        <div style="min-width: 200px; max-width: 280px;">
-          ${event.image_url ? `<img src="${event.image_url}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 4px 4px 0 0; margin: -8px -8px 8px -8px; width: calc(100% + 16px);" />` : ""}
-          <div style="font-weight: 600; font-size: 14px; color: #3D4F4F; margin-bottom: 4px;">${event.title}</div>
-          <div style="font-size: 12px; color: #5A6B6B; margin-bottom: 4px;">
-            📍 ${event.location_name}
+      if (fullPageMode) {
+        // Rich popup content for full page mode (like story map)
+        const richPopupContent = `
+          <div class="event-rich-popup" style="min-width: 280px; max-width: 320px;">
+            ${event.image_url ? `
+              <img src="${event.image_url}" 
+                style="width: calc(100% + 16px); height: 140px; object-fit: cover; border-radius: 8px 8px 0 0; margin: -8px -8px 0 -8px;" 
+                alt="${event.title}" />
+            ` : `
+              <div style="width: calc(100% + 16px); height: 100px; background: linear-gradient(135deg, #EDECE8 0%, #F5F4F0 100%); border-radius: 8px 8px 0 0; margin: -8px -8px 0 -8px; display: flex; align-items: center; justify-content: center;">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+              </div>
+            `}
+            <div style="padding: 12px 0 0 0;">
+              <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap;">
+                <span style="background: #C17F59; color: #FAF9F6; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">
+                  ${formatDate(event.starts_at)}
+                </span>
+                ${!event.all_day ? `
+                  <span style="font-size: 11px; color: #5A6B6B; display: flex; align-items: center; gap: 2px;">
+                    🕐 ${formatTime(event.starts_at)}
+                  </span>
+                ` : ''}
+                ${event.is_free ? '<span style="background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 4px; font-size: 11px;">Free</span>' : ""}
+              </div>
+              <div style="font-family: serif; font-weight: 700; font-size: 16px; color: #3D4F4F; margin-bottom: 8px; line-height: 1.3;">
+                ${event.title}
+              </div>
+              <div style="font-size: 12px; color: #5A6B6B; margin-bottom: 8px; display: flex; align-items: center; gap: 4px;">
+                <span>📍</span> ${event.location_name}
+              </div>
+              ${event.description ? `
+                <div style="font-size: 13px; color: #5A6B6B; margin-bottom: 12px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                  ${event.description.substring(0, 120)}${event.description.length > 120 ? '...' : ''}
+                </div>
+              ` : ''}
+              <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px;">
+                ${event.is_accessible ? '<span style="background: #dbeafe; color: #1d4ed8; padding: 2px 6px; border-radius: 4px; font-size: 10px;">♿ Accessible</span>' : ''}
+                ${event.is_dog_friendly ? '<span style="background: #fef3c7; color: #92400e; padding: 2px 6px; border-radius: 4px; font-size: 10px;">🐕 Dogs OK</span>' : ''}
+                ${event.is_child_friendly ? '<span style="background: #fce7f3; color: #be185d; padding: 2px 6px; border-radius: 4px; font-size: 10px;">👶 Kids</span>' : ''}
+              </div>
+              <div style="border-top: 1px solid #e5e5e5; padding-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+                <a href="/events/${event.id}" 
+                   style="font-size: 13px; font-weight: 500; color: #3D4F4F; text-decoration: none;"
+                   onmouseover="this.style.color='#5A6B6B'" 
+                   onmouseout="this.style.color='#3D4F4F'">
+                  View details →
+                </a>
+              </div>
+            </div>
           </div>
-          <div style="font-size: 12px; color: #5A6B6B; margin-bottom: 8px;">
-            📅 ${formatDate(event.starts_at)} ${!event.all_day ? `at ${formatTime(event.starts_at)}` : "(All day)"}
+        `;
+
+        marker.bindPopup(richPopupContent, {
+          closeButton: true,
+          className: "event-popup event-popup-rich",
+          maxWidth: 320,
+          autoPanPadding: L.point(50, 80),
+        });
+      } else {
+        // Simple popup for embedded mode - clicking opens modal
+        const simplePopupContent = `
+          <div style="min-width: 200px; max-width: 280px;">
+            ${event.image_url ? `<img src="${event.image_url}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 4px 4px 0 0; margin: -8px -8px 8px -8px; width: calc(100% + 16px);" />` : ""}
+            <div style="font-weight: 600; font-size: 14px; color: #3D4F4F; margin-bottom: 4px;">${event.title}</div>
+            <div style="font-size: 12px; color: #5A6B6B; margin-bottom: 4px;">
+              📍 ${event.location_name}
+            </div>
+            <div style="font-size: 12px; color: #5A6B6B; margin-bottom: 8px;">
+              📅 ${formatDate(event.starts_at)} ${!event.all_day ? `at ${formatTime(event.starts_at)}` : "(All day)"}
+            </div>
+            ${event.is_free ? '<span style="background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 4px; font-size: 11px;">Free</span>' : ""}
           </div>
-          ${event.is_free ? '<span style="background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 4px; font-size: 11px;">Free</span>' : ""}
-        </div>
-      `;
+        `;
 
-      marker.bindPopup(popupContent, {
-        closeButton: true,
-        className: "event-popup",
-      });
+        marker.bindPopup(simplePopupContent, {
+          closeButton: true,
+          className: "event-popup",
+        });
 
-      marker.on("click", () => {
-        onEventSelect(event);
-      });
+        marker.on("click", () => {
+          onEventSelect(event);
+        });
+      }
 
       marker.addTo(mapRef.current!);
       markersRef.current.push(marker);
@@ -222,7 +290,7 @@ export default function EventsMap({ events, onEventSelect, selectedEvent }: Even
         mapRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
       }
     }
-  }, [events, selectedEvent, onEventSelect]);
+  }, [events, selectedEvent, onEventSelect, fullPageMode]);
 
   // Pan to selected event
   useEffect(() => {
@@ -258,12 +326,23 @@ export default function EventsMap({ events, onEventSelect, selectedEvent }: Even
         .event-popup .leaflet-popup-content-wrapper {
           border-radius: 8px;
           padding: 0;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.15);
         }
         .event-popup .leaflet-popup-content {
           margin: 8px;
         }
         .event-popup .leaflet-popup-tip {
           background: white;
+        }
+        .event-popup-rich .leaflet-popup-content-wrapper {
+          border-radius: 8px;
+          padding: 0;
+        }
+        .event-popup-rich .leaflet-popup-content {
+          margin: 0;
+          padding: 8px;
+          min-width: 280px;
+          max-width: 320px;
         }
         .custom-event-marker {
           background: transparent;

@@ -845,6 +845,7 @@ export default function EventsPage() {
                 events={events} 
                 onEventSelect={selectEvent}
                 selectedEvent={selectedEvent}
+                fullPageMode={true}
               />
             </div>
           )}

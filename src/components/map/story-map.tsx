@@ -39,9 +39,10 @@ interface StoryMapProps {
 
 // Cornwall center coordinates
 const CORNWALL_CENTER: [number, number] = [50.2660, -5.0527];
+// Extended bounds to allow room for popups to display above northern markers
 const CORNWALL_BOUNDS: [[number, number], [number, number]] = [
-  [49.9, -5.8], // Southwest
-  [50.8, -4.2], // Northeast
+  [49.8, -6.0], // Southwest (extended slightly)
+  [51.2, -4.0], // Northeast (extended north for popup room)
 ];
 
 // Custom marker icon - dark pin
