@@ -176,8 +176,9 @@ export function StoryMap({ stories }: StoryMapProps) {
         <MapContainer
           center={CORNWALL_CENTER}
           zoom={9}
-          maxBounds={CORNWALL_BOUNDS}
           minZoom={8}
+          maxBounds={CORNWALL_BOUNDS}
+          maxBoundsViscosity={0}
           className="h-full w-full"
           style={{ background: "#e8e6e1" }}
         >
