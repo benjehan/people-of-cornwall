@@ -6,7 +6,7 @@ const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "benjamin.jehan@gmail.com";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://peopleofcornwall.com";
 
 interface ModerationRequest {
-  type: "event" | "poll_nomination" | "where_is_this" | "lost_cornwall" | "comment";
+  type: "event" | "poll_nomination" | "where_is_this" | "lost_cornwall" | "school_photo" | "comment";
   content: {
     title?: string;
     description?: string;
@@ -120,6 +120,7 @@ export async function POST(request: NextRequest) {
       poll_nomination: "🗳️ Poll Nomination",
       where_is_this: "🔍 Where Is This Submission",
       lost_cornwall: "📷 Lost Cornwall Photo",
+      school_photo: "🎓 School Photo",
       comment: "💬 New Comment",
     };
     
@@ -151,6 +152,7 @@ export async function POST(request: NextRequest) {
         poll_nomination: `${SITE_URL}/admin/polls`,
         where_is_this: `${SITE_URL}/admin/where-is-this`,
         lost_cornwall: `${SITE_URL}/admin/lost-cornwall`,
+        school_photo: `${SITE_URL}/admin/school-photos`,
         comment: `${SITE_URL}/admin/comments`,
       };
       

@@ -7,7 +7,6 @@ import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
@@ -23,24 +22,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { 
-  Camera, 
-  Clock, 
+  GraduationCap, 
+  Calendar, 
   MapPin, 
-  MessageCircle, 
   Loader2,
   ChevronLeft,
   ChevronRight,
   Eye,
-  Send,
-  Info,
-  Star,
-  Heart,
-  TrendingUp,
   Search,
+  Filter,
+  X,
   Grid3X3,
   LayoutGrid,
-  X,
-  Filter,
+  School,
+  Users,
+  Heart,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -48,59 +44,55 @@ import { useUser } from "@/hooks/use-user";
 import Link from "next/link";
 import { ShareButtons } from "@/components/ui/share-buttons";
 
-interface LostCornwallPhoto {
+interface SchoolPhoto {
   id: string;
-  title: string;
+  title: string | null;
   description: string | null;
   image_url: string;
-  year_taken: string | null;
-  location_name: string | null;
+  school_name: string;
+  school_type: string;
+  location_name: string;
+  year_taken: number | null;
+  class_name: string | null;
   source_credit: string | null;
   view_count: number;
   like_count: number;
   created_at: string;
-  memories: Memory[];
   user_has_liked?: boolean;
+  identifications?: Identification[];
 }
 
-type SortOption = "popular" | "recent" | "views" | "oldest";
-type ViewMode = "grid" | "large";
-
-interface Memory {
+interface Identification {
   id: string;
-  content: string;
-  is_featured: boolean;
-  created_at: string;
-  user: {
-    display_name: string | null;
-    avatar_url: string | null;
-  } | null;
+  person_name: string;
+  relationship: string | null;
 }
 
 interface FilterState {
+  school: string;
   location: string;
   yearFrom: string;
   yearTo: string;
   search: string;
 }
 
-export default function LostCornwallPage() {
+type ViewMode = "grid" | "large";
+
+export default function SchoolPhotosPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
   const { isAdmin, isLoading: authLoading } = useUser();
-  const [photos, setPhotos] = useState<LostCornwallPhoto[]>([]);
+  const [photos, setPhotos] = useState<SchoolPhoto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedPhoto, setSelectedPhoto] = useState<LostCornwallPhoto | null>(null);
-  const [memoryText, setMemoryText] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitMessage, setSubmitMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [sortBy, setSortBy] = useState<SortOption>("popular");
+  const [selectedPhoto, setSelectedPhoto] = useState<SchoolPhoto | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [showFilters, setShowFilters] = useState(false);
   const [isLiking, setIsLiking] = useState<string | null>(null);
 
   // Filter state
   const [filters, setFilters] = useState<FilterState>({
+    school: "",
     location: "",
     yearFrom: "",
     yearTo: "",
@@ -108,15 +100,9 @@ export default function LostCornwallPage() {
   });
 
   // Unique values for filter dropdowns
+  const [schools, setSchools] = useState<string[]>([]);
   const [locations, setLocations] = useState<string[]>([]);
-  const [years, setYears] = useState<string[]>([]);
-
-  // Temporarily admin-only while polishing
-  useEffect(() => {
-    if (!authLoading && !isAdmin) {
-      router.push("/");
-    }
-  }, [authLoading, isAdmin, router]);
+  const [years, setYears] = useState<number[]>([]);
 
   // Load filter options
   useEffect(() => {
@@ -124,21 +110,17 @@ export default function LostCornwallPage() {
       const supabase = createClient();
       
       const { data } = await (supabase
-        .from("lost_cornwall") as any)
-        .select("location_name, year_taken")
+        .from("school_photos") as any)
+        .select("school_name, location_name, year_taken")
         .eq("is_published", true);
 
       if (data) {
-        const uniqueLocations = [...new Set(data.filter((d: any) => d.location_name).map((d: any) => d.location_name))]
-          .sort() as string[];
+        const uniqueSchools = [...new Set(data.map((d: any) => d.school_name))].sort() as string[];
+        const uniqueLocations = [...new Set(data.map((d: any) => d.location_name))].sort() as string[];
         const uniqueYears = [...new Set(data.filter((d: any) => d.year_taken).map((d: any) => d.year_taken))]
-          .sort((a, b) => {
-            // Extract first year from strings like "1920s" or "circa 1950"
-            const yearA = parseInt((a as string).match(/\d{4}/)?.[0] || "0");
-            const yearB = parseInt((b as string).match(/\d{4}/)?.[0] || "0");
-            return yearB - yearA;
-          }) as string[];
+          .sort((a, b) => (b as number) - (a as number)) as number[];
 
+        setSchools(uniqueSchools);
         setLocations(uniqueLocations);
         setYears(uniqueYears);
       }
@@ -152,29 +134,35 @@ export default function LostCornwallPage() {
     const supabase = createClient();
 
     let query = (supabase
-      .from("lost_cornwall") as any)
+      .from("school_photos") as any)
       .select(`
         *,
-        memories:lost_cornwall_memories (
+        identifications:school_photo_identifications (
           id,
-          content,
-          is_featured,
-          created_at,
-          user:users (
-            display_name,
-            avatar_url
-          )
+          person_name,
+          relationship
         )
       `)
       .eq("is_published", true);
 
     // Apply filters
+    if (filters.school) {
+      query = query.eq("school_name", filters.school);
+    }
     if (filters.location) {
       query = query.eq("location_name", filters.location);
     }
-    if (filters.search) {
-      query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%,location_name.ilike.%${filters.search}%`);
+    if (filters.yearFrom) {
+      query = query.gte("year_taken", parseInt(filters.yearFrom));
     }
+    if (filters.yearTo) {
+      query = query.lte("year_taken", parseInt(filters.yearTo));
+    }
+    if (filters.search) {
+      query = query.or(`school_name.ilike.%${filters.search}%,title.ilike.%${filters.search}%,class_name.ilike.%${filters.search}%`);
+    }
+
+    query = query.order("year_taken", { ascending: false, nullsFirst: false });
 
     const { data, error } = await query;
 
@@ -184,29 +172,15 @@ export default function LostCornwallPage() {
       return;
     }
 
-    // Filter by year range if specified (client-side since year_taken is text)
-    let filteredData = data || [];
-    if (filters.yearFrom || filters.yearTo) {
-      filteredData = filteredData.filter((photo: any) => {
-        if (!photo.year_taken) return false;
-        const yearMatch = photo.year_taken.match(/\d{4}/);
-        if (!yearMatch) return false;
-        const year = parseInt(yearMatch[0]);
-        if (filters.yearFrom && year < parseInt(filters.yearFrom)) return false;
-        if (filters.yearTo && year > parseInt(filters.yearTo)) return false;
-        return true;
-      });
-    }
-
     // Check if user has liked each photo
     const photosWithLikes = await Promise.all(
-      filteredData.map(async (photo: any) => {
+      (data || []).map(async (photo: any) => {
         let userHasLiked = false;
         if (user) {
           const { data: like } = await (supabase
             .from("likes") as any)
             .select("id")
-            .eq("content_type", "lost_cornwall")
+            .eq("content_type", "school_photo")
             .eq("content_id", photo.id)
             .eq("user_id", user.id)
             .maybeSingle();
@@ -237,59 +211,33 @@ export default function LostCornwallPage() {
     }
   }, [searchParams, photos]);
 
-  const openPhoto = async (photo: LostCornwallPhoto) => {
+  const openPhoto = async (photo: SchoolPhoto) => {
     setSelectedPhoto(photo);
-    window.history.pushState(null, "", `/lost-cornwall?photo=${photo.id}`);
+    // Update URL without navigation
+    window.history.pushState(null, "", `/school-photos?photo=${photo.id}`);
+    
     // Increment view count
     const supabase = createClient();
     await (supabase
-      .from("lost_cornwall") as any)
+      .from("school_photos") as any)
       .update({ view_count: (photo.view_count || 0) + 1 })
       .eq("id", photo.id);
   };
 
   const closePhoto = () => {
     setSelectedPhoto(null);
-    window.history.pushState(null, "", "/lost-cornwall");
-  };
-
-  const submitMemory = async () => {
-    if (!user || !selectedPhoto || !memoryText.trim()) return;
-    
-    setIsSubmitting(true);
-    const supabase = createClient();
-
-    const { error } = await (supabase
-      .from("lost_cornwall_memories") as any)
-      .insert({
-        lost_cornwall_id: selectedPhoto.id,
-        user_id: user.id,
-        content: memoryText.trim(),
-      });
-
-    if (error) {
-      console.error("Error submitting memory:", error);
-      setSubmitMessage({ type: "error", text: "Failed to share your memory" });
-    } else {
-      setSubmitMessage({ type: "success", text: "Memory shared! Thank you for contributing." });
-      setMemoryText("");
-      await loadPhotos();
-      const updated = photos.find(p => p.id === selectedPhoto.id);
-      if (updated) setSelectedPhoto(updated);
-      setTimeout(() => setSubmitMessage(null), 3000);
-    }
-    setIsSubmitting(false);
+    window.history.pushState(null, "", "/school-photos");
   };
 
   const navigatePhoto = (direction: "prev" | "next") => {
     if (!selectedPhoto) return;
-    const currentIndex = sortedPhotos.findIndex(p => p.id === selectedPhoto.id);
+    const currentIndex = photos.findIndex(p => p.id === selectedPhoto.id);
     const newIndex = direction === "prev" 
-      ? (currentIndex - 1 + sortedPhotos.length) % sortedPhotos.length
-      : (currentIndex + 1) % sortedPhotos.length;
-    const newPhoto = sortedPhotos[newIndex];
+      ? (currentIndex - 1 + photos.length) % photos.length
+      : (currentIndex + 1) % photos.length;
+    const newPhoto = photos[newIndex];
     setSelectedPhoto(newPhoto);
-    window.history.pushState(null, "", `/lost-cornwall?photo=${newPhoto.id}`);
+    window.history.pushState(null, "", `/school-photos?photo=${newPhoto.id}`);
   };
 
   const handleLike = async (photoId: string, hasLiked: boolean, e?: React.MouseEvent) => {
@@ -303,19 +251,20 @@ export default function LostCornwallPage() {
       await (supabase
         .from("likes") as any)
         .delete()
-        .eq("content_type", "lost_cornwall")
+        .eq("content_type", "school_photo")
         .eq("content_id", photoId)
         .eq("user_id", user.id);
     } else {
       await (supabase
         .from("likes") as any)
         .insert({
-          content_type: "lost_cornwall",
+          content_type: "school_photo",
           content_id: photoId,
           user_id: user.id,
         });
     }
 
+    // Update local state
     setPhotos(prev => prev.map(p => {
       if (p.id === photoId) {
         return {
@@ -340,6 +289,7 @@ export default function LostCornwallPage() {
 
   const clearFilters = () => {
     setFilters({
+      school: "",
       location: "",
       yearFrom: "",
       yearTo: "",
@@ -347,33 +297,21 @@ export default function LostCornwallPage() {
     });
   };
 
-  const hasActiveFilters = filters.location || filters.yearFrom || filters.yearTo || filters.search;
+  const hasActiveFilters = filters.school || filters.location || filters.yearFrom || filters.yearTo || filters.search;
 
-  // Sort photos based on selected option
-  const sortedPhotos = useMemo(() => {
-    return [...photos].sort((a, b) => {
-      switch (sortBy) {
-        case "popular":
-          return (b.like_count || 0) - (a.like_count || 0);
-        case "views":
-          return (b.view_count || 0) - (a.view_count || 0);
-        case "oldest": {
-          const yearA = parseInt(a.year_taken?.match(/\d{4}/)?.[0] || "9999");
-          const yearB = parseInt(b.year_taken?.match(/\d{4}/)?.[0] || "9999");
-          return yearA - yearB;
-        }
-        case "recent":
-        default:
-          return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
-      }
-    });
-  }, [photos, sortBy]);
-
-  // Generate decade options
+  // Generate decade options for year filter
   const decadeOptions = useMemo(() => {
-    const decades = [1900, 1910, 1920, 1930, 1940, 1950, 1960, 1970, 1980, 1990, 2000, 2010, 2020];
+    if (years.length === 0) return [];
+    const minYear = Math.min(...years);
+    const maxYear = Math.max(...years);
+    const startDecade = Math.floor(minYear / 10) * 10;
+    const endDecade = Math.floor(maxYear / 10) * 10;
+    const decades: number[] = [];
+    for (let d = startDecade; d <= endDecade; d += 10) {
+      decades.push(d);
+    }
     return decades.reverse();
-  }, []);
+  }, [years]);
 
   return (
     <div className="min-h-screen bg-parchment">
@@ -382,42 +320,58 @@ export default function LostCornwallPage() {
       <main className="container mx-auto px-4 py-8">
         {/* Hero */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sepia/10 text-sepia text-sm font-medium mb-4">
-            <Camera className="h-4 w-4" />
-            Lost Cornwall
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-atlantic/10 text-atlantic text-sm font-medium mb-4">
+            <GraduationCap className="h-4 w-4" />
+            School Photos
           </div>
           <h1 className="font-serif text-4xl md:text-5xl text-granite mb-4">
-            Windows to the Past
+            Class of Cornwall
           </h1>
           <p className="text-stone max-w-2xl mx-auto text-lg mb-6">
-            Explore historic photographs of Cornwall and share your memories. 
-            Do you recognize these places? Remember these scenes? Help us preserve our heritage.
+            Explore school photographs from across Cornwall's history. 
+            Find old classmates, remember your teachers, and relive school days gone by.
           </p>
           {user && (
-            <Link href="/lost-cornwall/submit">
-              <Button className="bg-sepia text-white hover:bg-sepia/90 shadow-md">
-                <Camera className="h-4 w-4 mr-2" />
-                Share a Historic Photo
+            <Link href="/school-photos/submit">
+              <Button className="bg-atlantic text-white hover:bg-atlantic/90 shadow-md">
+                <GraduationCap className="h-4 w-4 mr-2" />
+                Share a School Photo
               </Button>
             </Link>
           )}
         </div>
 
-        {/* Search, Filters & Sort */}
+        {/* Search & Filters */}
         <div className="bg-cream border border-bone rounded-lg p-4 mb-8">
           <div className="flex flex-wrap gap-4 items-center">
             {/* Search */}
             <div className="flex-1 min-w-[200px] relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone" />
               <Input
-                placeholder="Search photos..."
+                placeholder="Search schools, classes..."
                 value={filters.search}
                 onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
                 className="pl-9 border-bone"
               />
             </div>
 
-            {/* Location filter */}
+            {/* Quick filters */}
+            <Select
+              value={filters.school}
+              onValueChange={(v) => setFilters(f => ({ ...f, school: v }))}
+            >
+              <SelectTrigger className="w-[180px] border-bone">
+                <School className="h-4 w-4 mr-2 text-stone" />
+                <SelectValue placeholder="All Schools" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All Schools</SelectItem>
+                {schools.map((school) => (
+                  <SelectItem key={school} value={school}>{school}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             <Select
               value={filters.location}
               onValueChange={(v) => setFilters(f => ({ ...f, location: v }))}
@@ -480,26 +434,13 @@ export default function LostCornwallPage() {
               </Button>
             )}
 
-            {/* Sort */}
-            <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-              <SelectTrigger className="w-[140px] border-bone">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="popular">Most Loved</SelectItem>
-                <SelectItem value="views">Most Viewed</SelectItem>
-                <SelectItem value="recent">Recently Added</SelectItem>
-                <SelectItem value="oldest">Oldest First</SelectItem>
-              </SelectContent>
-            </Select>
-
             {/* View mode toggle */}
             <div className="flex border border-bone rounded-md overflow-hidden">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setViewMode("grid")}
-                className={`rounded-none ${viewMode === "grid" ? "bg-sepia text-white" : ""}`}
+                className={`rounded-none ${viewMode === "grid" ? "bg-atlantic text-white" : ""}`}
               >
                 <Grid3X3 className="h-4 w-4" />
               </Button>
@@ -507,7 +448,7 @@ export default function LostCornwallPage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setViewMode("large")}
-                className={`rounded-none ${viewMode === "large" ? "bg-sepia text-white" : ""}`}
+                className={`rounded-none ${viewMode === "large" ? "bg-atlantic text-white" : ""}`}
               >
                 <LayoutGrid className="h-4 w-4" />
               </Button>
@@ -517,8 +458,16 @@ export default function LostCornwallPage() {
           {/* Active filters summary */}
           {hasActiveFilters && (
             <div className="mt-3 flex flex-wrap gap-2">
+              {filters.school && (
+                <Badge variant="secondary" className="bg-atlantic/10 text-atlantic">
+                  {filters.school}
+                  <button onClick={() => setFilters(f => ({ ...f, school: "" }))} className="ml-1">
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              )}
               {filters.location && (
-                <Badge variant="secondary" className="bg-sepia/10 text-sepia">
+                <Badge variant="secondary" className="bg-atlantic/10 text-atlantic">
                   {filters.location}
                   <button onClick={() => setFilters(f => ({ ...f, location: "" }))} className="ml-1">
                     <X className="h-3 w-3" />
@@ -526,17 +475,9 @@ export default function LostCornwallPage() {
                 </Badge>
               )}
               {(filters.yearFrom || filters.yearTo) && (
-                <Badge variant="secondary" className="bg-sepia/10 text-sepia">
+                <Badge variant="secondary" className="bg-atlantic/10 text-atlantic">
                   {filters.yearFrom || "..."} - {filters.yearTo || "..."}
                   <button onClick={() => setFilters(f => ({ ...f, yearFrom: "", yearTo: "" }))} className="ml-1">
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              )}
-              {filters.search && (
-                <Badge variant="secondary" className="bg-sepia/10 text-sepia">
-                  "{filters.search}"
-                  <button onClick={() => setFilters(f => ({ ...f, search: "" }))} className="ml-1">
                     <X className="h-3 w-3" />
                   </button>
                 </Badge>
@@ -548,7 +489,7 @@ export default function LostCornwallPage() {
         {/* Results count */}
         {!isLoading && (
           <p className="text-sm text-stone mb-4">
-            Showing {sortedPhotos.length} photo{sortedPhotos.length !== 1 ? "s" : ""}
+            Showing {photos.length} photo{photos.length !== 1 ? "s" : ""}
           </p>
         )}
 
@@ -557,23 +498,29 @@ export default function LostCornwallPage() {
           <div className="flex justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-granite" />
           </div>
-        ) : sortedPhotos.length === 0 ? (
+        ) : photos.length === 0 ? (
           <Card className="border-bone bg-cream text-center py-12">
             <CardContent>
-              <Camera className="h-12 w-12 text-stone mx-auto mb-4" />
+              <GraduationCap className="h-12 w-12 text-stone mx-auto mb-4" />
               <h3 className="font-serif text-xl text-granite mb-2">
-                {hasActiveFilters ? "No photos match your filters" : "Coming Soon"}
+                {hasActiveFilters ? "No photos match your filters" : "No Photos Yet"}
               </h3>
               <p className="text-stone mb-4">
                 {hasActiveFilters 
                   ? "Try adjusting your filters to see more results."
-                  : "Historic photographs will be added soon. Check back!"}
+                  : "Be the first to share a school photo from Cornwall!"}
               </p>
-              {hasActiveFilters && (
+              {hasActiveFilters ? (
                 <Button variant="outline" onClick={clearFilters}>
                   Clear Filters
                 </Button>
-              )}
+              ) : user ? (
+                <Link href="/school-photos/submit">
+                  <Button className="bg-atlantic text-white hover:bg-atlantic/90">
+                    Share a Photo
+                  </Button>
+                </Link>
+              ) : null}
             </CardContent>
           </Card>
         ) : (
@@ -582,7 +529,7 @@ export default function LostCornwallPage() {
               ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5" 
               : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
           }`}>
-            {sortedPhotos.map((photo) => (
+            {photos.map((photo) => (
               <Card 
                 key={photo.id} 
                 className="border-bone bg-cream overflow-hidden cursor-pointer group hover:shadow-lg transition-all"
@@ -591,62 +538,67 @@ export default function LostCornwallPage() {
                 <div className={`relative ${viewMode === "grid" ? "aspect-square" : "aspect-[4/3]"} bg-stone/10 overflow-hidden`}>
                   <img
                     src={photo.image_url}
-                    alt={photo.title}
-                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 sepia-[0.3]"
+                    alt={photo.title || photo.school_name}
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
-                  {/* Vintage overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  {/* Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   
                   {/* Year badge */}
                   {photo.year_taken && (
-                    <Badge className="absolute top-2 right-2 bg-sepia/90 text-parchment border-0 text-xs">
-                      <Clock className="h-3 w-3 mr-1" />
+                    <Badge className="absolute top-2 right-2 bg-atlantic/90 text-white border-0 text-xs">
                       {photo.year_taken}
                     </Badge>
                   )}
 
-                  {/* Title overlay */}
-                  <div className="absolute bottom-0 left-0 right-0 p-3">
-                    <h3 className="font-serif text-sm text-parchment font-bold line-clamp-1">
-                      {photo.title}
+                  {/* Hover info */}
+                  <div className="absolute bottom-0 left-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <h3 className="font-medium text-white text-sm line-clamp-1">
+                      {photo.school_name}
                     </h3>
-                    {photo.location_name && viewMode === "large" && (
-                      <p className="text-xs text-parchment/80 flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        {photo.location_name}
-                      </p>
-                    )}
+                    <p className="text-xs text-white/80">
+                      {photo.location_name}
+                    </p>
                   </div>
                 </div>
 
                 {viewMode === "large" && (
                   <CardContent className="p-3">
+                    <h3 className="font-medium text-granite line-clamp-1 mb-1">
+                      {photo.title || photo.school_name}
+                    </h3>
+                    <div className="flex items-center gap-2 text-xs text-stone mb-2">
+                      <span className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        {photo.location_name}
+                      </span>
+                      {photo.class_name && (
+                        <span className="flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          {photo.class_name}
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center justify-between text-xs text-stone">
                       <button
                         onClick={(e) => handleLike(photo.id, photo.user_has_liked || false, e)}
                         disabled={!user || isLiking === photo.id}
-                        className={`flex items-center gap-1 transition-colors ${
-                          photo.user_has_liked 
-                            ? "text-red-500" 
-                            : "text-stone hover:text-red-500"
-                        } disabled:opacity-50`}
+                        className={`flex items-center gap-1 ${
+                          photo.user_has_liked ? "text-red-500" : "hover:text-red-500"
+                        }`}
                       >
-                        <Heart className={`h-4 w-4 ${photo.user_has_liked ? "fill-current" : ""}`} />
-                        {photo.like_count || 0}
+                        <Heart className={`h-3 w-3 ${photo.user_has_liked ? "fill-current" : ""}`} />
+                        {photo.like_count}
                       </button>
                       <span className="flex items-center gap-1">
-                        <MessageCircle className="h-4 w-4" />
-                        {photo.memories?.length || 0}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Eye className="h-4 w-4" />
-                        {photo.view_count || 0}
+                        <Eye className="h-3 w-3" />
+                        {photo.view_count}
                       </span>
                       <div onClick={(e) => e.stopPropagation()}>
                         <ShareButtons
-                          url={`/lost-cornwall?photo=${photo.id}`}
-                          title={`Lost Cornwall: ${photo.title}`}
-                          description={photo.description || `Historic photo from ${photo.year_taken || 'Cornwall'}`}
+                          url={`/school-photos?photo=${photo.id}`}
+                          title={`${photo.school_name} - ${photo.year_taken || "School Photo"}`}
+                          description={`Class photo from ${photo.school_name}, ${photo.location_name}`}
                           variant="compact"
                         />
                       </div>
@@ -657,52 +609,23 @@ export default function LostCornwallPage() {
             ))}
           </div>
         )}
-
-        {/* Call to contribute */}
-        <div className="mt-16 text-center">
-          <Card className="border-sepia/30 bg-gradient-to-r from-sepia/5 to-amber-500/5 inline-block">
-            <CardContent className="p-8">
-              <Info className="h-8 w-8 text-sepia mx-auto mb-4" />
-              <h3 className="font-serif text-xl text-granite mb-2">
-                Have Old Photos of Cornwall?
-              </h3>
-              <p className="text-stone max-w-md mb-4">
-                We'd love to feature your family's historic photographs. 
-                Help us build a visual archive of Cornwall's past.
-              </p>
-              {user ? (
-                <Link href="/lost-cornwall/submit">
-                  <Button className="bg-sepia text-white hover:bg-sepia/90">
-                    Share a Photo
-                  </Button>
-                </Link>
-              ) : (
-                <Link href="/login?redirect=/lost-cornwall/submit">
-                  <Button variant="outline" className="border-sepia text-sepia hover:bg-sepia hover:text-parchment">
-                    Login to Contribute
-                  </Button>
-                </Link>
-              )}
-            </CardContent>
-          </Card>
-        </div>
       </main>
 
       {/* Photo Detail Dialog */}
       <Dialog open={!!selectedPhoto} onOpenChange={(open) => !open && closePhoto()}>
-        <DialogContent className="max-w-3xl p-0 overflow-hidden bg-parchment max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl p-0 overflow-hidden bg-parchment max-h-[90vh] overflow-y-auto">
           {selectedPhoto && (
             <div className="flex flex-col">
-              {/* Image section - Full width on top */}
-              <div className="relative aspect-[4/3] bg-black overflow-hidden">
+              {/* Image section */}
+              <div className="relative bg-black">
                 <img
                   src={selectedPhoto.image_url}
-                  alt={selectedPhoto.title}
-                  className="absolute inset-0 w-full h-full object-contain sepia-[0.2]"
+                  alt={selectedPhoto.title || selectedPhoto.school_name}
+                  className="w-full max-h-[60vh] object-contain"
                 />
                 
                 {/* Navigation */}
-                {sortedPhotos.length > 1 && (
+                {photos.length > 1 && (
                   <>
                     <Button
                       variant="ghost"
@@ -722,32 +645,39 @@ export default function LostCornwallPage() {
                     </Button>
                   </>
                 )}
-
-                {/* Year badge */}
-                {selectedPhoto.year_taken && (
-                  <Badge className="absolute top-4 right-4 bg-sepia/90 text-white border-0 text-base">
-                    <Clock className="h-4 w-4 mr-1" />
-                    {selectedPhoto.year_taken}
-                  </Badge>
-                )}
               </div>
 
-              {/* Info section - Below image */}
+              {/* Info section */}
               <div className="p-6">
-                {/* Title and Location */}
                 <DialogHeader className="mb-4">
                   <DialogTitle className="font-serif text-2xl text-granite">
-                    {selectedPhoto.title}
+                    {selectedPhoto.title || selectedPhoto.school_name}
                   </DialogTitle>
-                  {selectedPhoto.location_name && (
-                    <p className="text-stone flex items-center gap-1 text-sm mt-1">
-                      <MapPin className="h-4 w-4" />
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    <Badge variant="outline" className="border-atlantic text-atlantic">
+                      <School className="h-3 w-3 mr-1" />
+                      {selectedPhoto.school_name}
+                    </Badge>
+                    <Badge variant="outline" className="border-stone text-stone">
+                      <MapPin className="h-3 w-3 mr-1" />
                       {selectedPhoto.location_name}
-                    </p>
-                  )}
+                    </Badge>
+                    {selectedPhoto.year_taken && (
+                      <Badge variant="outline" className="border-stone text-stone">
+                        <Calendar className="h-3 w-3 mr-1" />
+                        {selectedPhoto.year_taken}
+                      </Badge>
+                    )}
+                    {selectedPhoto.class_name && (
+                      <Badge variant="outline" className="border-stone text-stone">
+                        <Users className="h-3 w-3 mr-1" />
+                        {selectedPhoto.class_name}
+                      </Badge>
+                    )}
+                  </div>
                 </DialogHeader>
 
-                {/* Like & Stats - Prominent placement */}
+                {/* Like & Stats */}
                 <div className="flex items-center justify-between gap-4 mb-4 pb-4 border-b border-bone">
                   <div className="flex items-center gap-4">
                     <button
@@ -768,9 +698,9 @@ export default function LostCornwallPage() {
                     </div>
                   </div>
                   <ShareButtons
-                    url={`/lost-cornwall?photo=${selectedPhoto.id}`}
-                    title={`Lost Cornwall: ${selectedPhoto.title}`}
-                    description={selectedPhoto.description || `Historic photo from ${selectedPhoto.year_taken || 'Cornwall'}`}
+                    url={`/school-photos?photo=${selectedPhoto.id}`}
+                    title={`${selectedPhoto.school_name} - ${selectedPhoto.year_taken || "School Photo"}`}
+                    description={`Class photo from ${selectedPhoto.school_name}, ${selectedPhoto.location_name}`}
                     variant="compact"
                   />
                 </div>
@@ -788,78 +718,32 @@ export default function LostCornwallPage() {
                   </p>
                 )}
 
-                {/* Memories/Comments */}
-                <div className="pt-4 border-t border-bone">
-                  <h4 className="font-medium text-granite mb-3 flex items-center gap-2">
-                    <MessageCircle className="h-4 w-4" />
-                    Shared Memories ({selectedPhoto.memories?.length || 0})
-                  </h4>
-
-                  <div className="space-y-3 max-h-48 overflow-y-auto pr-2">
-                    {selectedPhoto.memories?.length === 0 ? (
-                      <p className="text-stone text-sm italic">
-                        No memories shared yet. Be the first!
-                      </p>
-                    ) : (
-                      selectedPhoto.memories?.map((memory) => (
-                        <div 
-                          key={memory.id} 
-                          className={`p-3 rounded-lg ${
-                            memory.is_featured 
-                              ? "bg-yellow-50 border border-yellow-200" 
-                              : "bg-cream border border-bone"
-                          }`}
-                        >
-                          {memory.is_featured && (
-                            <Badge className="bg-yellow-500 text-white text-xs mb-2">
-                              <Star className="h-3 w-3 mr-1" />
-                              Featured
-                            </Badge>
-                          )}
-                          <p className="text-sm text-granite">{memory.content}</p>
-                          <p className="text-xs text-silver mt-2">
-                            {memory.user?.display_name || "Anonymous"} · {new Date(memory.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                      ))
-                    )}
+                {/* Identifications */}
+                {selectedPhoto.identifications && selectedPhoto.identifications.length > 0 && (
+                  <div className="pt-4 border-t border-bone">
+                    <h4 className="font-medium text-granite mb-3 flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      People Identified ({selectedPhoto.identifications.length})
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedPhoto.identifications.map((id) => (
+                        <Badge key={id.id} variant="secondary" className="bg-cream">
+                          {id.person_name}
+                          {id.relationship && <span className="text-stone ml-1">({id.relationship})</span>}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
+                )}
 
-                  {/* Add memory form */}
-                  {user ? (
-                    <div className="mt-4 pt-4 border-t border-bone">
-                      <Textarea
-                        placeholder="Do you remember this place? Share your memory..."
-                        value={memoryText}
-                        onChange={(e) => setMemoryText(e.target.value)}
-                        className="border-bone bg-cream text-sm resize-none"
-                        rows={2}
-                      />
-                      <Button
-                        onClick={submitMemory}
-                        disabled={!memoryText.trim() || isSubmitting}
-                        className="w-full mt-2 bg-sepia text-white hover:bg-sepia/90"
-                      >
-                        {isSubmitting ? (
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        ) : (
-                          <Send className="h-4 w-4 mr-2" />
-                        )}
-                        Share Memory
-                      </Button>
-                      {submitMessage && (
-                        <p className={`mt-2 text-sm text-center ${submitMessage.type === "success" ? "text-green-600" : "text-red-600"}`}>
-                          {submitMessage.text}
-                        </p>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="mt-4 pt-4 border-t border-bone text-center">
-                      <a href="/login" className="text-sm text-atlantic hover:underline">
-                        Login to share your memories
-                      </a>
-                    </div>
-                  )}
+                {/* Call to action */}
+                <div className="mt-6 pt-4 border-t border-bone text-center">
+                  <p className="text-sm text-stone mb-2">
+                    Recognize someone in this photo?
+                  </p>
+                  <Button variant="outline" className="border-atlantic text-atlantic hover:bg-atlantic hover:text-white">
+                    Identify Someone
+                  </Button>
                 </div>
               </div>
             </div>

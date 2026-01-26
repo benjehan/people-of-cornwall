@@ -22,11 +22,21 @@ import {
   X,
   Clock,
   FileText,
+  Plus,
+  Star,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/use-user";
 import { LocationAutocomplete } from "@/components/ui/location-autocomplete";
 import { ImageCropDialog } from "@/components/story/image-crop-dialog";
+
+interface ImageItem {
+  id: string;
+  file: File;
+  preview: string;
+  caption: string;
+  isPrimary: boolean;
+}
 
 export default function SubmitLostCornwallPage() {
   const router = useRouter();
@@ -45,79 +55,130 @@ export default function SubmitLostCornwallPage() {
   const [locationLng, setLocationLng] = useState<number | null>(null);
   const [sourceCredit, setSourceCredit] = useState("");
   
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  // Multiple images state
+  const [images, setImages] = useState<ImageItem[]>([]);
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
   const [showCropDialog, setShowCropDialog] = useState(false);
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+  const [currentCropIndex, setCurrentCropIndex] = useState<number | null>(null);
   
   const [hasImageRights, setHasImageRights] = useState(false);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-    if (!file.type.startsWith("image/")) {
-      setError("Please select an image file");
+    // Check total count
+    if (images.length + files.length > 10) {
+      setError("Maximum 10 images allowed");
       return;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      setError("Image must be less than 10MB");
-      return;
+    // Validate files
+    for (const file of files) {
+      if (!file.type.startsWith("image/")) {
+        setError("Please select only image files");
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        setError("Each image must be less than 10MB");
+        return;
+      }
     }
 
-    const objectUrl = URL.createObjectURL(file);
+    // Open crop dialog for first file (one at a time)
+    const objectUrl = URL.createObjectURL(files[0]);
     setImageToCrop(objectUrl);
+    setCurrentCropIndex(images.length);
     setShowCropDialog(true);
     setError(null);
-  };
-
-  const handleCropComplete = async (croppedBlob: Blob) => {
-    const croppedFile = new File([croppedBlob], "historic-photo.jpg", { type: "image/jpeg" });
-    setImageFile(croppedFile);
-    setImagePreview(URL.createObjectURL(croppedBlob));
-    setShowCropDialog(false);
-    setImageToCrop(null);
-  };
-
-  const clearImage = () => {
-    setImageFile(null);
-    setImagePreview(null);
+    
+    // Clear input for next selection
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
 
-  const uploadImage = async (): Promise<string | null> => {
-    if (!imageFile) return null;
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    const croppedFile = new File([croppedBlob], `historic-photo-${Date.now()}.jpg`, { type: "image/jpeg" });
+    const preview = URL.createObjectURL(croppedBlob);
+    
+    const newImage: ImageItem = {
+      id: `img-${Date.now()}`,
+      file: croppedFile,
+      preview,
+      caption: "",
+      isPrimary: images.length === 0, // First image is primary by default
+    };
+    
+    setImages(prev => [...prev, newImage]);
+    setShowCropDialog(false);
+    setImageToCrop(null);
+    setCurrentCropIndex(null);
+  };
 
-    setIsUploadingImage(true);
+  const removeImage = (id: string) => {
+    setImages(prev => {
+      const filtered = prev.filter(img => img.id !== id);
+      // Ensure at least one primary if images remain
+      if (filtered.length > 0 && !filtered.some(img => img.isPrimary)) {
+        filtered[0].isPrimary = true;
+      }
+      return filtered;
+    });
+  };
+
+  const setPrimaryImage = (id: string) => {
+    setImages(prev => prev.map(img => ({
+      ...img,
+      isPrimary: img.id === id,
+    })));
+  };
+
+  const updateCaption = (id: string, caption: string) => {
+    setImages(prev => prev.map(img => 
+      img.id === id ? { ...img, caption } : img
+    ));
+  };
+
+  const uploadImages = async (): Promise<{ url: string; caption: string; isPrimary: boolean }[]> => {
+    if (images.length === 0) return [];
+
+    setIsUploadingImages(true);
     const supabase = createClient();
+    const uploadedImages: { url: string; caption: string; isPrimary: boolean }[] = [];
 
     try {
-      const fileExt = imageFile.name.split(".").pop();
-      const fileName = `lost-cornwall/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      for (const image of images) {
+        const fileExt = image.file.name.split(".").pop();
+        const fileName = `lost-cornwall/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from("story-media")
-        .upload(fileName, imageFile, {
-          cacheControl: "3600",
-          upsert: false,
+        const { error: uploadError } = await supabase.storage
+          .from("story-media")
+          .upload(fileName, image.file, {
+            cacheControl: "3600",
+            upsert: false,
+          });
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from("story-media")
+          .getPublicUrl(fileName);
+
+        uploadedImages.push({
+          url: publicUrl,
+          caption: image.caption,
+          isPrimary: image.isPrimary,
         });
+      }
 
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from("story-media")
-        .getPublicUrl(fileName);
-
-      return publicUrl;
+      return uploadedImages;
     } catch (err) {
-      console.error("Error uploading image:", err);
-      throw new Error("Failed to upload image");
+      console.error("Error uploading images:", err);
+      throw new Error("Failed to upload images");
     } finally {
-      setIsUploadingImage(false);
+      setIsUploadingImages(false);
     }
   };
 
@@ -130,12 +191,12 @@ export default function SubmitLostCornwallPage() {
       setError("Please enter a title");
       return;
     }
-    if (!imageFile) {
-      setError("Please upload a historic photo");
+    if (images.length === 0) {
+      setError("Please upload at least one historic photo");
       return;
     }
     if (!hasImageRights) {
-      setError("Please confirm you have the rights to use this image");
+      setError("Please confirm you have the rights to use these images");
       return;
     }
 
@@ -143,16 +204,18 @@ export default function SubmitLostCornwallPage() {
     setError(null);
 
     try {
-      const imageUrl = await uploadImage();
-      if (!imageUrl) throw new Error("Failed to upload image");
+      const uploadedImages = await uploadImages();
+      if (uploadedImages.length === 0) throw new Error("Failed to upload images");
 
       const supabase = createClient();
+      const primaryImage = uploadedImages.find(img => img.isPrimary) || uploadedImages[0];
 
+      // Create the main entry with primary image
       const { data, error: insertError } = await (supabase.from("lost_cornwall") as any)
         .insert({
           title: title.trim(),
           description: description.trim() || null,
-          image_url: imageUrl,
+          image_url: primaryImage.url,
           year_taken: yearTaken.trim() || null,
           location_name: locationName || null,
           location_lat: locationLat,
@@ -169,6 +232,24 @@ export default function SubmitLostCornwallPage() {
 
       if (insertError) throw insertError;
 
+      // Insert additional images into lost_cornwall_images table
+      if (uploadedImages.length > 0) {
+        const imageInserts = uploadedImages.map((img, index) => ({
+          lost_cornwall_id: data.id,
+          image_url: img.url,
+          caption: img.caption || null,
+          is_primary: img.isPrimary,
+          display_order: index,
+        }));
+
+        const { error: imagesError } = await (supabase.from("lost_cornwall_images") as any)
+          .insert(imageInserts);
+
+        if (imagesError) {
+          console.error("Error inserting additional images:", imagesError);
+        }
+      }
+
       // Send notification to admin
       try {
         await fetch("/api/moderation/check", {
@@ -178,10 +259,10 @@ export default function SubmitLostCornwallPage() {
             type: "lost_cornwall",
             content: {
               title: title.trim(),
-              description: description.trim(),
+              description: `${description.trim()}\n\nImages: ${uploadedImages.length}`,
               yearTaken: yearTaken.trim(),
               location: locationName,
-              imageUrl,
+              imageUrl: primaryImage.url,
             },
             submitterId: user.id,
             submitterEmail: user.email,
@@ -194,8 +275,8 @@ export default function SubmitLostCornwallPage() {
 
       setIsSuccess(true);
     } catch (err) {
-      console.error("Error submitting photo:", err);
-      setError("Failed to submit photo. Please try again.");
+      console.error("Error submitting photos:", err);
+      setError("Failed to submit photos. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -225,7 +306,7 @@ export default function SubmitLostCornwallPage() {
                 Login Required
               </h2>
               <p className="text-stone mb-4">
-                Please log in to submit a historic photo.
+                Please log in to submit historic photos.
               </p>
               <Link href="/login?redirect=/lost-cornwall/submit">
                 <Button className="bg-granite text-parchment hover:bg-slate">
@@ -249,11 +330,11 @@ export default function SubmitLostCornwallPage() {
             <CardContent className="pt-6">
               <CheckCircle className="mx-auto h-12 w-12 text-green-600 mb-4" />
               <h2 className="font-serif text-xl font-bold text-granite mb-2">
-                Photo Submitted!
+                Photos Submitted!
               </h2>
               <p className="text-stone mb-4">
-                Thank you for sharing this piece of history! Your photo has been submitted for review. 
-                Our team will review it and you'll receive an email once it's approved.
+                Thank you for sharing these pieces of history! Your photos have been submitted for review. 
+                Our team will review them and you'll receive an email once they're approved.
               </p>
               <div className="flex gap-3 justify-center">
                 <Link href="/lost-cornwall">
@@ -271,13 +352,12 @@ export default function SubmitLostCornwallPage() {
                     setLocationLat(null);
                     setLocationLng(null);
                     setSourceCredit("");
-                    setImageFile(null);
-                    setImagePreview(null);
+                    setImages([]);
                     setHasImageRights(false);
                   }}
                   className="bg-granite text-parchment hover:bg-slate"
                 >
-                  Submit Another
+                  Submit More
                 </Button>
               </div>
             </CardContent>
@@ -307,10 +387,11 @@ export default function SubmitLostCornwallPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 font-serif text-2xl text-granite">
                 <Camera className="h-6 w-6 text-sepia" />
-                Share a Historic Photo
+                Share Historic Photos
               </CardTitle>
               <CardDescription>
                 Help preserve Cornwall's visual history by sharing old photographs from your family collection.
+                You can upload up to 10 images for a single entry.
               </CardDescription>
             </CardHeader>
 
@@ -326,43 +407,69 @@ export default function SubmitLostCornwallPage() {
                 <div className="space-y-4">
                   <h3 className="font-medium text-granite flex items-center gap-2">
                     <ImageIcon className="h-4 w-4" />
-                    Historic Photo *
+                    Historic Photos * <span className="text-xs text-stone font-normal">({images.length}/10)</span>
                   </h3>
                   <p className="text-sm text-stone">
-                    Upload a scan or photo of the historic image. Higher quality is better!
+                    Upload scans or photos of the historic images. You can add multiple related photos.
+                    Click the star to set the primary image for the thumbnail.
                   </p>
 
-                  {imagePreview ? (
-                    <div className="relative">
-                      <img
-                        src={imagePreview}
-                        alt="Preview"
-                        className="w-full h-64 object-cover rounded-lg border border-bone sepia-[0.2]"
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        onClick={clearImage}
-                        className="absolute top-2 right-2"
+                  {/* Image Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {images.map((image) => (
+                      <div key={image.id} className="relative group">
+                        <img
+                          src={image.preview}
+                          alt="Preview"
+                          className={`w-full aspect-square object-cover rounded-lg border-2 sepia-[0.2] ${
+                            image.isPrimary ? "border-sepia" : "border-bone"
+                          }`}
+                        />
+                        {/* Primary indicator */}
+                        <button
+                          type="button"
+                          onClick={() => setPrimaryImage(image.id)}
+                          className={`absolute top-2 left-2 p-1 rounded-full transition-all ${
+                            image.isPrimary 
+                              ? "bg-sepia text-white" 
+                              : "bg-black/50 text-white/70 hover:text-yellow-400"
+                          }`}
+                          title={image.isPrimary ? "Primary image" : "Set as primary"}
+                        >
+                          <Star className={`h-4 w-4 ${image.isPrimary ? "fill-current" : ""}`} />
+                        </button>
+                        {/* Remove button */}
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          onClick={() => removeImage(image.id)}
+                          className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                        {/* Caption input */}
+                        <Input
+                          placeholder="Caption (optional)"
+                          value={image.caption}
+                          onChange={(e) => updateCaption(image.id, e.target.value)}
+                          className="mt-1 text-xs border-bone h-7"
+                        />
+                      </div>
+                    ))}
+                    
+                    {/* Add more button */}
+                    {images.length < 10 && (
+                      <div
+                        onClick={() => fileInputRef.current?.click()}
+                        className="aspect-square border-2 border-dashed border-sepia/30 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-sepia transition-colors bg-sepia/5"
                       >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div
-                      onClick={() => fileInputRef.current?.click()}
-                      className="border-2 border-dashed border-sepia/30 rounded-lg p-8 text-center cursor-pointer hover:border-sepia transition-colors bg-sepia/5"
-                    >
-                      <Upload className="h-8 w-8 text-sepia/60 mx-auto mb-2" />
-                      <p className="text-sm text-stone">
-                        Click to upload your historic photo
-                      </p>
-                      <p className="text-xs text-silver mt-1">
-                        Max 10MB, JPG/PNG
-                      </p>
-                    </div>
-                  )}
+                        <Plus className="h-8 w-8 text-sepia/60 mb-1" />
+                        <p className="text-xs text-stone">Add Photo</p>
+                      </div>
+                    )}
+                  </div>
+                  
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -397,7 +504,7 @@ export default function SubmitLostCornwallPage() {
                       id="description"
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Tell us about this photo... What's happening? Who might be in it?"
+                      placeholder="Tell us about these photos... What's happening? Who might be in them?"
                       className="border-bone"
                       rows={4}
                     />
@@ -413,7 +520,6 @@ export default function SubmitLostCornwallPage() {
                         id="yearTaken"
                         value={yearTaken}
                         onChange={(e) => {
-                          // Only allow numbers
                           const value = e.target.value.replace(/[^0-9]/g, '');
                           if (value.length <= 4) {
                             setYearTaken(value);
@@ -475,8 +581,8 @@ export default function SubmitLostCornwallPage() {
                         Image Rights Confirmation *
                       </p>
                       <p className="text-xs text-amber-800 mt-1">
-                        I confirm that this is a family photo, I own the rights to it, or it is in the public domain, 
-                        and I grant People of Cornwall permission to display it on the website.
+                        I confirm that these are family photos, I own the rights to them, or they are in the public domain, 
+                        and I grant People of Cornwall permission to display them on the website.
                       </p>
                     </div>
                   </label>
@@ -485,18 +591,18 @@ export default function SubmitLostCornwallPage() {
                 {/* Submit */}
                 <Button
                   type="submit"
-                  disabled={isSubmitting || isUploadingImage}
+                  disabled={isSubmitting || isUploadingImages}
                   className="w-full bg-sepia text-white hover:bg-sepia/90 gap-2 shadow-md"
                 >
-                  {isSubmitting || isUploadingImage ? (
+                  {isSubmitting || isUploadingImages ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      {isUploadingImage ? "Uploading..." : "Submitting..."}
+                      {isUploadingImages ? "Uploading..." : "Submitting..."}
                     </>
                   ) : (
                     <>
                       <CheckCircle className="h-4 w-4" />
-                      Submit Photo for Review
+                      Submit Photos for Review
                     </>
                   )}
                 </Button>
@@ -517,9 +623,7 @@ export default function SubmitLostCornwallPage() {
           if (!open) {
             setShowCropDialog(false);
             setImageToCrop(null);
-            if (fileInputRef.current) {
-              fileInputRef.current.value = "";
-            }
+            setCurrentCropIndex(null);
           }
         }}
         imageSrc={imageToCrop || ""}

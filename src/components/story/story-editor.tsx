@@ -5,11 +5,12 @@ import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import Image from "@tiptap/extension-image";
 import { Button } from "@/components/ui/button";
-import { Bold, Italic, List, ListOrdered, Undo, Redo, ImagePlus, Youtube, Mic, Wand2, Sparkles, Link2, Music } from "lucide-react";
+import { Bold, Italic, List, ListOrdered, Undo, Redo, ImagePlus, Youtube, Mic, Wand2, Sparkles, Link2, Music, Film } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useCallback } from "react";
 import { ImageUploadDialog } from "./image-upload-dialog";
 import { VideoEmbedDialog } from "./video-embed-dialog";
+import { VideoUploadDialog } from "./video-upload-dialog";
 import { LinkEmbedDialog } from "./link-embed-dialog";
 import { AudioUploadDialog } from "./audio-upload-dialog";
 import { SpeechToText } from "./speech-to-text";
@@ -35,6 +36,7 @@ export function StoryEditor({
 }: StoryEditorProps) {
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
   const [videoDialogOpen, setVideoDialogOpen] = useState(false);
+  const [videoUploadDialogOpen, setVideoUploadDialogOpen] = useState(false);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [audioDialogOpen, setAudioDialogOpen] = useState(false);
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
@@ -170,6 +172,25 @@ export function StoryEditor({
     editor.chain().focus().insertContent(audioHtml).run();
   };
 
+  const handleVideoUpload = (url: string, thumbnailUrl?: string) => {
+    if (!editor) return;
+    // Insert video player HTML
+    const videoHtml = `
+      <div class="video-upload" data-video-url="${url}">
+        <video 
+          controls 
+          preload="metadata" 
+          poster="${thumbnailUrl || ""}"
+          class="rounded-lg max-w-full mx-auto my-4"
+        >
+          <source src="${url}" type="video/mp4">
+          Your browser does not support the video element.
+        </video>
+      </div>
+    `;
+    editor.chain().focus().insertContent(videoHtml).run();
+  };
+
   if (!editor) {
     return (
       <div className="min-h-[400px] animate-pulse rounded-lg bg-chalk-white-dark/50" />
@@ -214,6 +235,12 @@ export function StoryEditor({
         open={audioDialogOpen}
         onOpenChange={setAudioDialogOpen}
         onUpload={handleAudioInsert}
+        storyId={storyId}
+      />
+      <VideoUploadDialog
+        open={videoUploadDialogOpen}
+        onOpenChange={setVideoUploadDialogOpen}
+        onUpload={handleVideoUpload}
         storyId={storyId}
       />
 
@@ -323,12 +350,23 @@ export function StoryEditor({
           type="button"
           variant="ghost"
           size="sm"
+          onClick={() => setVideoUploadDialogOpen(true)}
+          className="h-8 px-2 gap-1"
+          title="Upload video"
+        >
+          <Film className="h-4 w-4" />
+          <span className="hidden sm:inline text-xs">Video</span>
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
           onClick={() => setVideoDialogOpen(true)}
           className="h-8 px-2 gap-1"
           title="Embed YouTube or Vimeo video"
         >
           <Youtube className="h-4 w-4" />
-          <span className="hidden sm:inline text-xs">Video</span>
+          <span className="hidden sm:inline text-xs">YouTube</span>
         </Button>
         <Button
           type="button"
