@@ -8,6 +8,31 @@ import { MapPin, Clock, X, ExternalLink, Accessibility, Dog, Baby, Leaf } from "
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
+// Category to gradient/icon mapping for placeholder (matches EventImageCarousel)
+const CATEGORY_STYLES: Record<string, { gradient: string; icon: string }> = {
+  music: { gradient: "linear-gradient(135deg, #9333ea 0%, #ec4899 100%)", icon: "🎵" },
+  food: { gradient: "linear-gradient(135deg, #f59e0b 0%, #f97316 100%)", icon: "🍽️" },
+  arts: { gradient: "linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%)", icon: "🎨" },
+  sports: { gradient: "linear-gradient(135deg, #22c55e 0%, #10b981 100%)", icon: "🏆" },
+  community: { gradient: "linear-gradient(135deg, #f43f5e 0%, #ef4444 100%)", icon: "👥" },
+  nature: { gradient: "linear-gradient(135deg, #16a34a 0%, #14b8a6 100%)", icon: "🌿" },
+  festival: { gradient: "linear-gradient(135deg, #eab308 0%, #f59e0b 100%)", icon: "✨" },
+  default: { gradient: "linear-gradient(135deg, #475569 0%, #64748b 100%)", icon: "📅" },
+};
+
+// Detect category from event title
+function detectCategory(title: string): string {
+  const lower = title.toLowerCase();
+  if (lower.includes("music") || lower.includes("concert") || lower.includes("festival") || lower.includes("band") || lower.includes("shanty")) return "music";
+  if (lower.includes("food") || lower.includes("pasty") || lower.includes("restaurant") || lower.includes("beer") || lower.includes("tasting")) return "food";
+  if (lower.includes("art") || lower.includes("gallery") || lower.includes("exhibition") || lower.includes("theatre") || lower.includes("film")) return "arts";
+  if (lower.includes("run") || lower.includes("marathon") || lower.includes("surf") || lower.includes("swim") || lower.includes("cycle") || lower.includes("gig")) return "sports";
+  if (lower.includes("market") || lower.includes("fair") || lower.includes("carnival") || lower.includes("parade") || lower.includes("community")) return "community";
+  if (lower.includes("walk") || lower.includes("nature") || lower.includes("wildlife") || lower.includes("garden") || lower.includes("seal") || lower.includes("bird")) return "nature";
+  if (lower.includes("festival") || lower.includes("celebration") || lower.includes("regatta")) return "festival";
+  return "default";
+}
+
 interface Event {
   id: string;
   title: string;
@@ -186,6 +211,10 @@ export default function EventsMap({ events, onEventSelect, selectedEvent, fullPa
       });
 
       if (fullPageMode) {
+        // Get category style for placeholder
+        const category = detectCategory(event.title);
+        const categoryStyle = CATEGORY_STYLES[category] || CATEGORY_STYLES.default;
+        
         // Rich popup content for full page mode (like story map)
         const richPopupContent = `
           <div class="event-rich-popup" style="min-width: 280px; max-width: 320px;">
@@ -194,13 +223,11 @@ export default function EventsMap({ events, onEventSelect, selectedEvent, fullPa
                 style="width: calc(100% + 16px); height: 140px; object-fit: cover; border-radius: 8px 8px 0 0; margin: -8px -8px 0 -8px;" 
                 alt="${event.title}" />
             ` : `
-              <div style="width: calc(100% + 16px); height: 100px; background: linear-gradient(135deg, #EDECE8 0%, #F5F4F0 100%); border-radius: 8px 8px 0 0; margin: -8px -8px 0 -8px; display: flex; align-items: center; justify-content: center;">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                  <line x1="16" y1="2" x2="16" y2="6"></line>
-                  <line x1="8" y1="2" x2="8" y2="6"></line>
-                  <line x1="3" y1="10" x2="21" y2="10"></line>
-                </svg>
+              <div style="width: calc(100% + 16px); height: 120px; background: ${categoryStyle.gradient}; border-radius: 8px 8px 0 0; margin: -8px -8px 0 -8px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;">
+                <div style="width: 56px; height: 56px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); font-size: 28px;">
+                  ${categoryStyle.icon}
+                </div>
+                <div style="position: absolute; inset: 0; opacity: 0.1; background-image: radial-gradient(circle, white 1px, transparent 1px); background-size: 16px 16px;"></div>
               </div>
             `}
             <div style="padding: 12px 0 0 0;">
@@ -250,10 +277,22 @@ export default function EventsMap({ events, onEventSelect, selectedEvent, fullPa
           autoPanPadding: L.point(50, 80),
         });
       } else {
+        // Get category style for placeholder
+        const category = detectCategory(event.title);
+        const categoryStyle = CATEGORY_STYLES[category] || CATEGORY_STYLES.default;
+        
         // Simple popup for embedded mode - clicking opens modal
         const simplePopupContent = `
           <div style="min-width: 200px; max-width: 280px;">
-            ${event.image_url ? `<img src="${event.image_url}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 4px 4px 0 0; margin: -8px -8px 8px -8px; width: calc(100% + 16px);" />` : ""}
+            ${event.image_url ? `
+              <img src="${event.image_url}" style="width: calc(100% + 16px); height: 100px; object-fit: cover; border-radius: 4px 4px 0 0; margin: -8px -8px 8px -8px;" />
+            ` : `
+              <div style="width: calc(100% + 16px); height: 80px; background: ${categoryStyle.gradient}; border-radius: 4px 4px 0 0; margin: -8px -8px 8px -8px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;">
+                <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                  ${categoryStyle.icon}
+                </div>
+              </div>
+            `}
             <div style="font-weight: 600; font-size: 14px; color: #3D4F4F; margin-bottom: 4px;">${event.title}</div>
             <div style="font-size: 12px; color: #5A6B6B; margin-bottom: 4px;">
               📍 ${event.location_name}
