@@ -570,15 +570,15 @@ function LostCornwallPageContent() {
             </CardContent>
           </Card>
         ) : (
-          <div className={`grid gap-4 ${
-            viewMode === "grid" 
-              ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5" 
-              : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-          }`}>
+          <div className={`${
+            viewMode === "grid"
+              ? "columns-2 sm:columns-3 md:columns-4 lg:columns-5"
+              : "columns-1 sm:columns-2 lg:columns-3"
+          } gap-4`}>
             {sortedPhotos.map((photo) => (
-              <Card 
-                key={photo.id} 
-                className="border-bone bg-cream overflow-hidden cursor-pointer group hover:shadow-lg transition-all"
+              <Card
+                key={photo.id}
+                className="border-bone bg-cream overflow-hidden cursor-pointer group hover:shadow-lg transition-all mb-4 break-inside-avoid"
                 onClick={() => openPhoto(photo)}
               >
                 <div className={`relative ${viewMode === "grid" ? "aspect-square" : "aspect-[4/3]"} bg-stone/10 overflow-hidden`}>
