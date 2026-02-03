@@ -50,6 +50,7 @@ import { useUser } from "@/hooks/use-user";
 import Link from "next/link";
 import { ShareButtons } from "@/components/ui/share-buttons";
 import { ImageCarousel } from "@/components/ui/image-carousel";
+import { BeforeAfterSlider } from "@/components/ui/before-after-slider";
 
 interface LostCornwallPhoto {
   id: string;
@@ -111,6 +112,7 @@ function LostCornwallPageContent() {
   const [editingMemoryId, setEditingMemoryId] = useState<string | null>(null);
   const [editedMemoryText, setEditedMemoryText] = useState("");
   const [deletingMemoryId, setDeletingMemoryId] = useState<string | null>(null);
+  const [isComparisonMode, setIsComparisonMode] = useState(false);
 
   // Filter state
   const [filters, setFilters] = useState<FilterState>({
@@ -152,6 +154,11 @@ function LostCornwallPageContent() {
 
     loadFilterOptions();
   }, []);
+
+  // Reset comparison mode when photo changes
+  useEffect(() => {
+    setIsComparisonMode(false);
+  }, [selectedPhoto?.id]);
 
   const loadPhotos = useCallback(async () => {
     setIsLoading(true);
@@ -782,9 +789,33 @@ function LostCornwallPageContent() {
                       .map(img => ({ url: img.image_url, caption: img.caption }))
                   ];
 
+                  const hasMultipleImages = allImages.length >= 2;
+
                   return (
                     <>
-                      <ImageCarousel images={allImages} className="aspect-[4/3]" />
+                      {/* Toggle button for comparison mode (only show when 2+ images) */}
+                      {hasMultipleImages && (
+                        <Button
+                          onClick={() => setIsComparisonMode(!isComparisonMode)}
+                          size="sm"
+                          className="absolute top-4 right-4 bg-black/70 text-white hover:bg-black/90 z-20 text-xs"
+                        >
+                          {isComparisonMode ? "Show All" : "Compare"}
+                        </Button>
+                      )}
+
+                      {/* Render carousel or before/after slider based on mode */}
+                      {isComparisonMode && hasMultipleImages ? (
+                        <BeforeAfterSlider
+                          beforeImage={allImages[0].url}
+                          afterImage={allImages[1].url}
+                          beforeLabel={allImages[0].caption || "Before"}
+                          afterLabel={allImages[1].caption || "After"}
+                          className="aspect-[4/3]"
+                        />
+                      ) : (
+                        <ImageCarousel images={allImages} className="aspect-[4/3]" />
+                      )}
 
                       {/* Photo navigation (between different photos, not images) */}
                       {sortedPhotos.length > 1 && (
