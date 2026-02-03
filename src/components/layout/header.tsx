@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MapPin, Clock, Menu, X, User, LogOut, FileText, Settings, PenLine, Search, ChevronDown, Camera, HelpCircle, Calendar, Vote, Lightbulb, GraduationCap } from "lucide-react";
+import { MapPin, Clock, Menu, X, User, LogOut, FileText, Settings, PenLine, Search, ChevronDown, Camera, HelpCircle, Calendar, Vote, Lightbulb, GraduationCap, Trophy } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useUser, getDisplayName, getAvatarUrl } from "@/hooks/use-user";
 
@@ -114,6 +114,15 @@ export function Header() {
                     <div>
                       <p className="font-medium">School Photos</p>
                       <p className="text-xs text-stone">Class memories</p>
+                    </div>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/sport-clubs" className="flex items-center gap-2 cursor-pointer">
+                    <Trophy className="h-4 w-4 text-copper" />
+                    <div>
+                      <p className="font-medium">Sport & Clubs</p>
+                      <p className="text-xs text-stone">Team photos & sporting heritage</p>
                     </div>
                   </Link>
                 </DropdownMenuItem>
@@ -334,6 +343,14 @@ export function Header() {
               >
                 <GraduationCap className="h-4 w-4 text-atlantic" />
                 School Photos
+              </Link>
+              <Link
+                href="/sport-clubs"
+                className="rounded-md px-3 py-2.5 text-sm font-medium text-granite hover:bg-cream flex items-center gap-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Trophy className="h-4 w-4 text-copper" />
+                Sport & Clubs
               </Link>
               <Link
                 href="/polls"
