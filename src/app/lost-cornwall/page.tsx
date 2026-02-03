@@ -113,6 +113,9 @@ function LostCornwallPageContent() {
   const [editedMemoryText, setEditedMemoryText] = useState("");
   const [deletingMemoryId, setDeletingMemoryId] = useState<string | null>(null);
   const [isComparisonMode, setIsComparisonMode] = useState(false);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
+  const [showFilters, setShowFilters] = useState(true);
 
   // Filter state
   const [filters, setFilters] = useState<FilterState>({
@@ -159,6 +162,18 @@ function LostCornwallPageContent() {
   useEffect(() => {
     setIsComparisonMode(false);
   }, [selectedPhoto?.id]);
+
+  // Prevent body scroll when modal is open (mobile)
+  useEffect(() => {
+    if (selectedPhoto) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [selectedPhoto]);
 
   const loadPhotos = useCallback(async () => {
     setIsLoading(true);
@@ -361,12 +376,37 @@ function LostCornwallPageContent() {
   const navigatePhoto = (direction: "prev" | "next") => {
     if (!selectedPhoto) return;
     const currentIndex = sortedPhotos.findIndex(p => p.id === selectedPhoto.id);
-    const newIndex = direction === "prev" 
+    const newIndex = direction === "prev"
       ? (currentIndex - 1 + sortedPhotos.length) % sortedPhotos.length
       : (currentIndex + 1) % sortedPhotos.length;
     const newPhoto = sortedPhotos[newIndex];
     setSelectedPhoto(newPhoto);
     window.history.pushState(null, "", `/lost-cornwall?photo=${newPhoto.id}`);
+  };
+
+  // Touch handlers for mobile swipe navigation
+  const handleModalTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleModalTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleModalTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+
+    if (isLeftSwipe && sortedPhotos.length > 1) {
+      navigatePhoto("next");
+    } else if (isRightSwipe && sortedPhotos.length > 1) {
+      navigatePhoto("prev");
+    }
+
+    setTouchStart(0);
+    setTouchEnd(0);
   };
 
   const handleLike = async (photoId: string, hasLiked: boolean, e?: React.MouseEvent) => {
@@ -482,7 +522,21 @@ function LostCornwallPageContent() {
 
         {/* Search, Filters & Sort */}
         <div className="bg-cream border border-bone rounded-lg p-4 mb-8">
-          <div className="flex flex-wrap gap-4 items-center">
+          {/* Mobile filter toggle */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowFilters(!showFilters)}
+            className="md:hidden w-full mb-4 justify-between text-granite hover:bg-bone"
+          >
+            <span className="flex items-center gap-2">
+              <Filter className="h-4 w-4" />
+              Filters & Sort
+            </span>
+            <ChevronRight className={`h-4 w-4 transition-transform ${showFilters ? "rotate-90" : ""}`} />
+          </Button>
+
+          <div className={`flex flex-wrap gap-4 items-center ${showFilters ? "" : "hidden md:flex"}`}>
             {/* Search */}
             <div className="flex-1 min-w-[200px] relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone" />
@@ -775,9 +829,14 @@ function LostCornwallPageContent() {
 
       {/* Photo Detail Dialog */}
       <Dialog open={!!selectedPhoto} onOpenChange={(open) => !open && closePhoto()}>
-        <DialogContent className="max-w-3xl p-0 overflow-hidden bg-parchment max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl p-0 overflow-hidden bg-parchment max-h-[90vh] md:max-h-[90vh] h-screen md:h-auto overflow-y-auto">
           {selectedPhoto && (
-            <div className="flex flex-col">
+            <div
+              className="flex flex-col"
+              onTouchStart={handleModalTouchStart}
+              onTouchMove={handleModalTouchMove}
+              onTouchEnd={handleModalTouchEnd}
+            >
               {/* Image section - Full width on top */}
               <div className="relative bg-black">
                 {(() => {
@@ -798,7 +857,7 @@ function LostCornwallPageContent() {
                         <Button
                           onClick={() => setIsComparisonMode(!isComparisonMode)}
                           size="sm"
-                          className="absolute top-4 right-4 bg-black/70 text-white hover:bg-black/90 z-20 text-xs"
+                          className="absolute top-4 right-4 bg-black/70 text-white hover:bg-black/90 z-20 text-xs h-9 md:h-8 px-4 md:px-3"
                         >
                           {isComparisonMode ? "Show All" : "Compare"}
                         </Button>
@@ -824,17 +883,17 @@ function LostCornwallPageContent() {
                             variant="ghost"
                             size="icon"
                             onClick={(e) => { e.stopPropagation(); navigatePhoto("prev"); }}
-                            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/70 text-white hover:bg-black/90 z-10"
+                            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/70 text-white hover:bg-black/90 z-10 h-12 w-12 md:h-10 md:w-10"
                           >
-                            <ChevronLeft className="h-8 w-8" />
+                            <ChevronLeft className="h-8 w-8 md:h-6 md:w-6" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={(e) => { e.stopPropagation(); navigatePhoto("next"); }}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/70 text-white hover:bg-black/90 z-10"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/70 text-white hover:bg-black/90 z-10 h-12 w-12 md:h-10 md:w-10"
                           >
-                            <ChevronRight className="h-8 w-8" />
+                            <ChevronRight className="h-8 w-8 md:h-6 md:w-6" />
                           </Button>
                         </>
                       )}
