@@ -47,6 +47,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useUser } from "@/hooks/use-user";
 import Link from "next/link";
 import { ShareButtons } from "@/components/ui/share-buttons";
+import { ImageCarousel } from "@/components/ui/image-carousel";
 
 interface LostCornwallPhoto {
   id: string;
@@ -61,6 +62,12 @@ interface LostCornwallPhoto {
   created_at: string;
   memories: Memory[];
   user_has_liked?: boolean;
+  additional_images?: Array<{
+    id: string;
+    image_url: string;
+    caption: string | null;
+    display_order: number;
+  }>;
 }
 
 type SortOption = "popular" | "recent" | "views" | "oldest";
@@ -157,6 +164,12 @@ function LostCornwallPageContent() {
             display_name,
             avatar_url
           )
+        ),
+        additional_images:lost_cornwall_images (
+          id,
+          image_url,
+          caption,
+          display_order
         )
       `)
       .eq("is_published", true);
@@ -598,6 +611,14 @@ function LostCornwallPageContent() {
                     </Badge>
                   )}
 
+                  {/* Multiple images indicator */}
+                  {photo.additional_images && photo.additional_images.length > 0 && (
+                    <Badge className="absolute top-2 left-2 bg-black/70 text-white border-0 text-xs">
+                      <Camera className="h-3 w-3 mr-1" />
+                      {photo.additional_images.length + 1}
+                    </Badge>
+                  )}
+
                   {/* Title overlay */}
                   <div className="absolute bottom-0 left-0 right-0 p-3">
                     <h3 className="font-serif text-sm text-parchment font-bold line-clamp-1">
@@ -687,42 +708,52 @@ function LostCornwallPageContent() {
           {selectedPhoto && (
             <div className="flex flex-col">
               {/* Image section - Full width on top */}
-              <div className="relative aspect-[4/3] bg-black overflow-hidden">
-                <img
-                  src={selectedPhoto.image_url}
-                  alt={selectedPhoto.title}
-                  className="absolute inset-0 w-full h-full object-contain sepia-[0.2]"
-                />
-                
-                {/* Navigation */}
-                {sortedPhotos.length > 1 && (
-                  <>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => { e.stopPropagation(); navigatePhoto("prev"); }}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white hover:bg-black/70"
-                    >
-                      <ChevronLeft className="h-6 w-6" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => { e.stopPropagation(); navigatePhoto("next"); }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white hover:bg-black/70"
-                    >
-                      <ChevronRight className="h-6 w-6" />
-                    </Button>
-                  </>
-                )}
+              <div className="relative bg-black">
+                {(() => {
+                  // Build images array: primary image + additional images sorted by display_order
+                  const allImages = [
+                    { url: selectedPhoto.image_url, caption: null },
+                    ...(selectedPhoto.additional_images || [])
+                      .sort((a, b) => a.display_order - b.display_order)
+                      .map(img => ({ url: img.image_url, caption: img.caption }))
+                  ];
 
-                {/* Year badge */}
-                {selectedPhoto.year_taken && (
-                  <Badge className="absolute top-4 right-4 bg-sepia/90 text-white border-0 text-base">
-                    <Clock className="h-4 w-4 mr-1" />
-                    {selectedPhoto.year_taken}
-                  </Badge>
-                )}
+                  return (
+                    <>
+                      <ImageCarousel images={allImages} className="aspect-[4/3]" />
+
+                      {/* Photo navigation (between different photos, not images) */}
+                      {sortedPhotos.length > 1 && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => { e.stopPropagation(); navigatePhoto("prev"); }}
+                            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/70 text-white hover:bg-black/90 z-10"
+                          >
+                            <ChevronLeft className="h-8 w-8" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => { e.stopPropagation(); navigatePhoto("next"); }}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/70 text-white hover:bg-black/90 z-10"
+                          >
+                            <ChevronRight className="h-8 w-8" />
+                          </Button>
+                        </>
+                      )}
+
+                      {/* Year badge */}
+                      {selectedPhoto.year_taken && (
+                        <Badge className="absolute top-4 left-4 bg-sepia/90 text-white border-0 text-base z-10">
+                          <Clock className="h-4 w-4 mr-1" />
+                          {selectedPhoto.year_taken}
+                        </Badge>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
 
               {/* Info section - Below image */}
