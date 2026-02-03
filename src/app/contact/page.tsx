@@ -43,7 +43,7 @@ export default function ContactPage() {
     } catch (error) {
       console.error("Contact form error:", error);
       setSubmitStatus("error");
-      setErrorMessage("Failed to send message. Please try again or email us directly at peopleofcornwall@protonmail.com");
+      setErrorMessage("Failed to send message. Please try again or email us directly at hello@peopleofcornwall.com");
     } finally {
       setIsSubmitting(false);
     }
@@ -190,10 +190,10 @@ export default function ContactPage() {
             <p>
               You can also email us directly at{" "}
               <a
-                href="mailto:peopleofcornwall@protonmail.com"
+                href="mailto:hello@peopleofcornwall.com"
                 className="text-atlantic hover:underline font-medium"
               >
-                peopleofcornwall@protonmail.com
+                hello@peopleofcornwall.com
               </a>
             </p>
           </div>

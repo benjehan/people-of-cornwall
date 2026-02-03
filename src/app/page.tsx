@@ -386,7 +386,7 @@ export default async function HomePage() {
                     Contact Us
                   </Link>
                   <span className="text-sm text-stone">
-                    Or email peopleofcornwall@protonmail.com
+                    Or email hello@peopleofcornwall.com
                   </span>
                 </div>
                 <p className="mt-6 text-sm text-silver">
