@@ -24,7 +24,7 @@ export type Database = {
           email: string;
           display_name: string | null;
           avatar_url: string | null;
-          role: "user" | "admin";
+          role: "user" | "moderator" | "admin";
           created_at: string;
         };
         Insert: {
@@ -32,7 +32,7 @@ export type Database = {
           email: string;
           display_name?: string | null;
           avatar_url?: string | null;
-          role?: "user" | "admin";
+          role?: "user" | "moderator" | "admin";
           created_at?: string;
         };
         Update: {
@@ -40,7 +40,7 @@ export type Database = {
           email?: string;
           display_name?: string | null;
           avatar_url?: string | null;
-          role?: "user" | "admin";
+          role?: "user" | "moderator" | "admin";
           created_at?: string;
         };
       };
