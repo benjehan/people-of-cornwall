@@ -268,6 +268,97 @@ export type Database = {
           expires_at?: string | null;
         };
       };
+      sport_clubs: {
+        Row: {
+          id: string;
+          title: string;
+          description: string | null;
+          image_url: string;
+          club_name: string | null;
+          sport_type: string | null;
+          team_name: string | null;
+          year_taken: string | null;
+          season: string | null;
+          location_name: string | null;
+          location_lat: number | null;
+          location_lng: number | null;
+          source_credit: string | null;
+          view_count: number;
+          like_count: number;
+          is_published: boolean;
+          created_at: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          description?: string | null;
+          image_url: string;
+          club_name?: string | null;
+          sport_type?: string | null;
+          team_name?: string | null;
+          year_taken?: string | null;
+          season?: string | null;
+          location_name?: string | null;
+          location_lat?: number | null;
+          location_lng?: number | null;
+          source_credit?: string | null;
+          view_count?: number;
+          like_count?: number;
+          is_published?: boolean;
+          created_at?: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          description?: string | null;
+          image_url?: string;
+          club_name?: string | null;
+          sport_type?: string | null;
+          team_name?: string | null;
+          year_taken?: string | null;
+          season?: string | null;
+          location_name?: string | null;
+          location_lat?: number | null;
+          location_lng?: number | null;
+          source_credit?: string | null;
+          view_count?: number;
+          like_count?: number;
+          is_published?: boolean;
+          created_at?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+      };
+      sport_clubs_images: {
+        Row: {
+          id: string;
+          sport_club_id: string;
+          image_url: string;
+          caption: string | null;
+          display_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          sport_club_id: string;
+          image_url: string;
+          caption?: string | null;
+          display_order?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          sport_club_id?: string;
+          image_url?: string;
+          caption?: string | null;
+          display_order?: number;
+          created_at?: string;
+        };
+      };
     };
     Views: {
       [_ in never]: never;
