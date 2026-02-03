@@ -21,6 +21,8 @@ import {
   Calendar,
   HelpCircle,
   Camera,
+  GraduationCap,
+  Trophy,
 } from "lucide-react";
 import { useUser } from "@/hooks/use-user";
 import { createClient } from "@/lib/supabase/client";
@@ -37,6 +39,8 @@ interface Stats {
   pendingNominations: number;
   pendingWhereIsThis: number;
   pendingLostCornwall: number;
+  pendingSchoolPhotos: number;
+  pendingSportClubs: number;
 }
 
 export default function AdminDashboard() {
@@ -58,7 +62,7 @@ export default function AdminDashboard() {
       const supabase = createClient();
 
       // Fetch counts (excluding soft-deleted stories)
-      const [storiesRes, reviewRes, publishedRes, usersRes, commentsRes, deletionsRes, promptsRes, eventsRes, nominationsRes, whereIsThisRes, lostCornwallRes] = await Promise.all([
+      const [storiesRes, reviewRes, publishedRes, usersRes, commentsRes, deletionsRes, promptsRes, eventsRes, nominationsRes, whereIsThisRes, lostCornwallRes, schoolPhotosRes, sportClubsRes] = await Promise.all([
         (supabase.from("stories") as any).select("id", { count: "exact", head: true }).eq("soft_deleted", false),
         (supabase.from("stories") as any).select("id", { count: "exact", head: true }).eq("status", "review").eq("soft_deleted", false),
         (supabase.from("stories") as any).select("id", { count: "exact", head: true }).eq("status", "published").eq("soft_deleted", false),
@@ -70,6 +74,8 @@ export default function AdminDashboard() {
         (supabase.from("poll_nominations") as any).select("id", { count: "exact", head: true }).eq("is_approved", false),
         (supabase.from("where_is_this") as any).select("id", { count: "exact", head: true }).eq("is_pending", true),
         (supabase.from("lost_cornwall") as any).select("id", { count: "exact", head: true }).eq("is_pending", true),
+        (supabase.from("school_photos") as any).select("id", { count: "exact", head: true }).eq("is_published", false),
+        (supabase.from("sport_clubs") as any).select("id", { count: "exact", head: true }).eq("is_published", false),
       ]);
 
       setStats({
@@ -84,6 +90,8 @@ export default function AdminDashboard() {
         pendingNominations: nominationsRes.count || 0,
         pendingWhereIsThis: whereIsThisRes.count || 0,
         pendingLostCornwall: lostCornwallRes.count || 0,
+        pendingSchoolPhotos: schoolPhotosRes.count || 0,
+        pendingSportClubs: sportClubsRes.count || 0,
       });
       setLoadingStats(false);
     };
@@ -371,7 +379,67 @@ export default function AdminDashboard() {
                 </CardHeader>
               </Card>
             </Link>
+
+            <Link href="/admin/school-photos">
+              <Card className="h-full border-bone bg-cream transition-all hover:border-granite/30 hover:shadow-md">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg font-serif text-granite">
+                    <GraduationCap className="h-5 w-5 text-atlantic" />
+                    School Photos
+                    {stats && stats.pendingSchoolPhotos > 0 && (
+                      <Badge className="ml-auto bg-yellow-500 text-white border-0">
+                        {stats.pendingSchoolPhotos} pending
+                      </Badge>
+                    )}
+                  </CardTitle>
+                  <CardDescription className="text-stone">
+                    Review school photo submissions and manage the gallery.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
+
+            <Link href="/admin/sport-clubs">
+              <Card className="h-full border-bone bg-cream transition-all hover:border-granite/30 hover:shadow-md">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg font-serif text-granite">
+                    <Trophy className="h-5 w-5 text-copper" />
+                    Sport & Clubs
+                    {stats && stats.pendingSportClubs > 0 && (
+                      <Badge className="ml-auto bg-yellow-500 text-white border-0">
+                        {stats.pendingSportClubs} pending
+                      </Badge>
+                    )}
+                  </CardTitle>
+                  <CardDescription className="text-stone">
+                    Review sport & clubs photo submissions and manage the gallery.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
           </div>
+
+          {/* Admin Tools */}
+          {isAdmin && (
+            <>
+              <h2 className="mb-4 mt-10 font-serif text-xl font-bold text-granite">Admin Tools</h2>
+              <div className="grid gap-4 sm:grid-cols-2 mb-10">
+                <Link href="/admin/users">
+                  <Card className="h-full border-bone bg-cream transition-all hover:border-granite/30 hover:shadow-md">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2 text-lg font-serif text-granite">
+                        <Users className="h-5 w-5 text-granite" />
+                        User Management
+                      </CardTitle>
+                      <CardDescription className="text-stone">
+                        Manage user roles and promote moderators.
+                      </CardDescription>
+                    </CardHeader>
+                  </Card>
+                </Link>
+              </div>
+            </>
+          )}
 
           {/* Community Promotion */}
           <h2 className="mb-4 mt-10 font-serif text-xl font-bold text-granite">Community</h2>
