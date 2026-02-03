@@ -23,11 +23,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
-  Camera, 
-  Clock, 
-  MapPin, 
-  MessageCircle, 
+import {
+  Camera,
+  Clock,
+  MapPin,
+  MessageCircle,
   ChevronLeft,
   ChevronRight,
   Eye,
@@ -41,6 +41,8 @@ import {
   LayoutGrid,
   X,
   Filter,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -78,6 +80,7 @@ interface Memory {
   content: string;
   is_featured: boolean;
   created_at: string;
+  user_id: string;
   user: {
     display_name: string | null;
     avatar_url: string | null;
@@ -105,6 +108,9 @@ function LostCornwallPageContent() {
   const [sortBy, setSortBy] = useState<SortOption>("popular");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [isLiking, setIsLiking] = useState<string | null>(null);
+  const [editingMemoryId, setEditingMemoryId] = useState<string | null>(null);
+  const [editedMemoryText, setEditedMemoryText] = useState("");
+  const [deletingMemoryId, setDeletingMemoryId] = useState<string | null>(null);
 
   // Filter state
   const [filters, setFilters] = useState<FilterState>({
@@ -160,6 +166,7 @@ function LostCornwallPageContent() {
           content,
           is_featured,
           created_at,
+          user_id,
           user:users (
             display_name,
             avatar_url
@@ -261,7 +268,7 @@ function LostCornwallPageContent() {
 
   const submitMemory = async () => {
     if (!user || !selectedPhoto || !memoryText.trim()) return;
-    
+
     setIsSubmitting(true);
     const supabase = createClient();
 
@@ -285,6 +292,63 @@ function LostCornwallPageContent() {
       setTimeout(() => setSubmitMessage(null), 3000);
     }
     setIsSubmitting(false);
+  };
+
+  const startEditMemory = (memoryId: string, content: string) => {
+    setEditingMemoryId(memoryId);
+    setEditedMemoryText(content);
+  };
+
+  const cancelEditMemory = () => {
+    setEditingMemoryId(null);
+    setEditedMemoryText("");
+  };
+
+  const saveEditMemory = async (memoryId: string) => {
+    if (!user || !editedMemoryText.trim()) return;
+
+    const supabase = createClient();
+    const { error } = await (supabase
+      .from("lost_cornwall_memories") as any)
+      .update({ content: editedMemoryText.trim() })
+      .eq("id", memoryId);
+
+    if (error) {
+      setSubmitMessage({ type: "error", text: "Failed to update memory" });
+    } else {
+      setSubmitMessage({ type: "success", text: "Memory updated!" });
+      setEditingMemoryId(null);
+      setEditedMemoryText("");
+      await loadPhotos();
+      if (selectedPhoto) {
+        const updated = photos.find(p => p.id === selectedPhoto.id);
+        if (updated) setSelectedPhoto(updated);
+      }
+      setTimeout(() => setSubmitMessage(null), 3000);
+    }
+  };
+
+  const deleteMemory = async (memoryId: string) => {
+    if (!user) return;
+
+    const supabase = createClient();
+    const { error } = await (supabase
+      .from("lost_cornwall_memories") as any)
+      .delete()
+      .eq("id", memoryId);
+
+    if (error) {
+      setSubmitMessage({ type: "error", text: "Failed to delete memory" });
+    } else {
+      setSubmitMessage({ type: "success", text: "Memory deleted" });
+      setDeletingMemoryId(null);
+      await loadPhotos();
+      if (selectedPhoto) {
+        const updated = photos.find(p => p.id === selectedPhoto.id);
+        if (updated) setSelectedPhoto(updated);
+      }
+      setTimeout(() => setSubmitMessage(null), 3000);
+    }
   };
 
   const navigatePhoto = (direction: "prev" | "next") => {
@@ -825,27 +889,113 @@ function LostCornwallPageContent() {
                         No memories shared yet. Be the first!
                       </p>
                     ) : (
-                      selectedPhoto.memories?.map((memory) => (
-                        <div 
-                          key={memory.id} 
-                          className={`p-3 rounded-lg ${
-                            memory.is_featured 
-                              ? "bg-yellow-50 border border-yellow-200" 
-                              : "bg-cream border border-bone"
-                          }`}
-                        >
-                          {memory.is_featured && (
-                            <Badge className="bg-yellow-500 text-white text-xs mb-2">
-                              <Star className="h-3 w-3 mr-1" />
-                              Featured
-                            </Badge>
-                          )}
-                          <p className="text-sm text-granite">{memory.content}</p>
-                          <p className="text-xs text-silver mt-2">
-                            {memory.user?.display_name || "Anonymous"} · {new Date(memory.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                      ))
+                      selectedPhoto.memories?.map((memory) => {
+                        const isOwner = user && memory.user_id === user.id;
+                        const isEditing = editingMemoryId === memory.id;
+                        const isDeleting = deletingMemoryId === memory.id;
+
+                        return (
+                          <div
+                            key={memory.id}
+                            className={`p-3 rounded-lg ${
+                              memory.is_featured
+                                ? "bg-yellow-50 border border-yellow-200"
+                                : "bg-cream border border-bone"
+                            }`}
+                          >
+                            {memory.is_featured && (
+                              <Badge className="bg-yellow-500 text-white text-xs mb-2">
+                                <Star className="h-3 w-3 mr-1" />
+                                Featured
+                              </Badge>
+                            )}
+
+                            {isEditing ? (
+                              // Editing mode
+                              <div className="space-y-2">
+                                <Textarea
+                                  value={editedMemoryText}
+                                  onChange={(e) => setEditedMemoryText(e.target.value)}
+                                  className="text-sm border-bone min-h-[80px]"
+                                  autoFocus
+                                />
+                                <div className="flex gap-2">
+                                  <Button
+                                    onClick={() => saveEditMemory(memory.id)}
+                                    size="sm"
+                                    className="bg-granite text-parchment hover:bg-slate"
+                                  >
+                                    Save
+                                  </Button>
+                                  <Button
+                                    onClick={cancelEditMemory}
+                                    size="sm"
+                                    variant="outline"
+                                    className="border-bone"
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : isDeleting ? (
+                              // Delete confirmation
+                              <div className="space-y-2">
+                                <p className="text-sm text-granite">
+                                  Are you sure you want to delete this memory?
+                                </p>
+                                <div className="flex gap-2">
+                                  <Button
+                                    onClick={() => deleteMemory(memory.id)}
+                                    size="sm"
+                                    variant="destructive"
+                                    className="bg-red-500 hover:bg-red-600"
+                                  >
+                                    Delete
+                                  </Button>
+                                  <Button
+                                    onClick={() => setDeletingMemoryId(null)}
+                                    size="sm"
+                                    variant="outline"
+                                    className="border-bone"
+                                  >
+                                    Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              // Display mode
+                              <>
+                                <p className="text-sm text-granite">{memory.content}</p>
+                                <div className="flex items-center justify-between mt-2">
+                                  <p className="text-xs text-silver">
+                                    {memory.user?.display_name || "Anonymous"} · {new Date(memory.created_at).toLocaleDateString()}
+                                  </p>
+                                  {isOwner && (
+                                    <div className="flex gap-1">
+                                      <Button
+                                        onClick={() => startEditMemory(memory.id, memory.content)}
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-7 px-2 text-stone hover:text-granite"
+                                      >
+                                        <Pencil className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        onClick={() => setDeletingMemoryId(memory.id)}
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-7 px-2 text-stone hover:text-red-500"
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  )}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })
                     )}
                   </div>
 
