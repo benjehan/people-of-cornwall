@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- St Piran's Flag: White cross on black background -->
+  <rect width="100" height="100" fill="#000000"/>
+  <!-- Horizontal bar of cross -->
+  <rect x="0" y="40" width="100" height="20" fill="#FFFFFF"/>
+  <!-- Vertical bar of cross -->
+  <rect x="40" y="0" width="20" height="100" fill="#FFFFFF"/>
+</svg>

@@ -34,22 +34,22 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function AdminCommentsPage() {
   const router = useRouter();
-  const { user, isAdmin, isLoading } = useUser();
+  const { user, isAdmin, isModerator, isLoading } = useUser();
   const [comments, setComments] = useState<Comment[]>([]);
   const [loadingComments, setLoadingComments] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    if (!isLoading && (!user || !isAdmin)) {
+    if (!isLoading && (!user || !isModerator)) {
       router.push("/");
     }
-  }, [isLoading, user, isAdmin, router]);
+  }, [isLoading, user, isModerator, router]);
 
   useEffect(() => {
-    if (!user || !isAdmin) return;
+    if (!user || !isModerator) return;
     fetchComments();
-  }, [user, isAdmin, statusFilter]);
+  }, [user, isModerator, statusFilter]);
 
   const fetchComments = async () => {
     const supabase = createClient();

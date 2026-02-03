@@ -112,7 +112,7 @@ interface EditForm {
 }
 
 export default function AdminEventsPage() {
-  const { user, isAdmin, isLoading: userLoading } = useUser();
+  const { user, isAdmin, isModerator, isLoading: userLoading } = useUser();
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -174,10 +174,10 @@ export default function AdminEventsPage() {
   }, []);
 
   useEffect(() => {
-    if (!userLoading && isAdmin) {
+    if (!userLoading && isModerator) {
       loadEvents();
     }
-  }, [userLoading, isAdmin, loadEvents]);
+  }, [userLoading, isModerator, loadEvents]);
 
   const handleApprove = async (eventId: string) => {
     setActionLoading(eventId);
@@ -501,7 +501,7 @@ export default function AdminEventsPage() {
     );
   }
 
-  if (!isAdmin) {
+  if (!isModerator) {
     return (
       <div className="flex min-h-screen flex-col bg-parchment">
         <Header />

@@ -378,15 +378,15 @@ export default async function HomePage() {
                   as part of our heritage museum.
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                  <a
-                    href="mailto:hello@peopleofcornwall.com?subject=Heritage%20Collection%20Contribution"
+                  <Link
+                    href="/contact"
                     className="inline-flex items-center gap-2 rounded-lg bg-granite px-6 py-3 font-medium text-parchment transition-colors hover:bg-slate"
                   >
                     <Mail className="h-5 w-5" />
                     Contact Us
-                  </a>
+                  </Link>
                   <span className="text-sm text-stone">
-                    hello@peopleofcornwall.com
+                    Or email peopleofcornwall@protonmail.com
                   </span>
                 </div>
                 <p className="mt-6 text-sm text-silver">

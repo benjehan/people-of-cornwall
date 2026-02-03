@@ -93,6 +93,14 @@ export function Footer() {
                   Search
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/contact"
+                  className="text-sm text-stone transition-colors hover:text-granite"
+                >
+                  Contact
+                </Link>
+              </li>
             </ul>
           </div>
         </div>
@@ -109,12 +117,12 @@ export function Footer() {
             Are you a local business, museum, or heritage organization? We'd love to explore 
             collaboration opportunities to promote Cornish culture together.
           </p>
-          <a 
-            href="mailto:hello@peopleofcornwall.com?subject=Partnership Inquiry"
+          <Link
+            href="/contact"
             className="inline-flex items-center gap-2 rounded-md bg-granite px-4 py-2 text-sm font-medium text-parchment transition-colors hover:bg-slate"
           >
             📧 Get in Touch
-          </a>
+          </Link>
         </div>
 
         {/* Bottom */}

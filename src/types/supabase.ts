@@ -282,7 +282,7 @@ export type Database = {
       story_status: "draft" | "review" | "published" | "rejected" | "unpublished";
       media_type: "image" | "video" | "audio";
       comment_status: "visible" | "hidden" | "flagged";
-      user_role: "user" | "admin";
+      user_role: "user" | "moderator" | "admin";
     };
   };
 };

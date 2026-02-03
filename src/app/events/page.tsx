@@ -146,7 +146,7 @@ type DateFilter = "anytime" | "today" | "this_week" | "next_weekend" | "this_mon
 
 export default function EventsPage() {
   const router = useRouter();
-  const { user, isAdmin, isLoading: authLoading } = useUser();
+  const { user } = useUser();
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"list" | "calendar" | "map">("list");
@@ -167,12 +167,7 @@ export default function EventsPage() {
   const [showVeganFriendly, setShowVeganFriendly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Temporarily admin-only while polishing
-  useEffect(() => {
-    if (!authLoading && !isAdmin) {
-      router.push("/");
-    }
-  }, [authLoading, isAdmin, router]);
+  // Events are now publicly accessible
 
   // Get date range from filter
   const getDateRange = useCallback(() => {

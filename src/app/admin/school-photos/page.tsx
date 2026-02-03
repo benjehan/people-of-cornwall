@@ -45,18 +45,18 @@ interface SchoolPhoto {
 
 export default function AdminSchoolPhotosPage() {
   const router = useRouter();
-  const { user, isAdmin, isLoading: authLoading } = useUser();
+  const { user, isAdmin, isModerator, isLoading: authLoading } = useUser();
   const [photos, setPhotos] = useState<SchoolPhoto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"pending" | "approved" | "rejected">("pending");
   const [processingId, setProcessingId] = useState<string | null>(null);
 
-  // Redirect non-admins
+  // Redirect non-moderators
   useEffect(() => {
-    if (!authLoading && !isAdmin) {
+    if (!authLoading && !isModerator) {
       router.push("/");
     }
-  }, [authLoading, isAdmin, router]);
+  }, [authLoading, isModerator, router]);
 
   const loadPhotos = async () => {
     setIsLoading(true);

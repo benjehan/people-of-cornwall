@@ -37,7 +37,7 @@ type Story = Tables<"stories"> & {
 
 export default function ReviewQueuePage() {
   const router = useRouter();
-  const { user, isAdmin, isLoading } = useUser();
+  const { user, isAdmin, isModerator, isLoading } = useUser();
   const [stories, setStories] = useState<Story[]>([]);
   const [loadingStories, setLoadingStories] = useState(true);
   const [selectedStory, setSelectedStory] = useState<Story | null>(null);
@@ -46,10 +46,10 @@ export default function ReviewQueuePage() {
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    if (!isLoading && (!user || !isAdmin)) {
+    if (!isLoading && (!user || !isModerator)) {
       router.push("/");
     }
-  }, [isLoading, user, isAdmin, router]);
+  }, [isLoading, user, isModerator, router]);
 
   const fetchStories = async () => {
     const supabase = createClient();
@@ -71,9 +71,9 @@ export default function ReviewQueuePage() {
   };
 
   useEffect(() => {
-    if (!user || !isAdmin) return;
+    if (!user || !isModerator) return;
     fetchStories();
-  }, [user, isAdmin]);
+  }, [user, isModerator]);
 
   const handleApprove = (story: Story) => {
     startTransition(async () => {

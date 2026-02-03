@@ -18,7 +18,7 @@ export type MediaType = "image" | "video" | "audio";
 
 export type CommentStatus = "visible" | "hidden" | "flagged";
 
-export type UserRole = "user" | "admin";
+export type UserRole = "user" | "moderator" | "admin";
 
 // =============================================================================
 // TABLES

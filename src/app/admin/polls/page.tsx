@@ -131,7 +131,7 @@ function getPollStatus(poll: Poll): { status: string; color: string; icon: React
 }
 
 export default function AdminPollsPage() {
-  const { user, isAdmin, isLoading: authLoading } = useAuth();
+  const { user, isAdmin, isModerator, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const [polls, setPolls] = useState<Poll[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -169,16 +169,16 @@ export default function AdminPollsPage() {
   const [editFormError, setEditFormError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!authLoading && !isAdmin) {
+    if (!authLoading && !isModerator) {
       router.push("/");
     }
-  }, [authLoading, isAdmin, router]);
+  }, [authLoading, isModerator, router]);
 
   useEffect(() => {
-    if (isAdmin) {
+    if (isModerator) {
       loadPolls();
     }
-  }, [isAdmin]);
+  }, [isModerator]);
 
   const loadPolls = async () => {
     setIsLoading(true);
@@ -423,7 +423,7 @@ export default function AdminPollsPage() {
     await loadPolls();
   };
 
-  if (authLoading || !isAdmin) {
+  if (authLoading || !isModerator) {
     return (
       <div className="min-h-screen bg-parchment flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-granite" />

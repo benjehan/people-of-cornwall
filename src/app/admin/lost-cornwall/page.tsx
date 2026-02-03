@@ -62,7 +62,7 @@ interface Photo {
 
 export default function AdminLostCornwallPage() {
   const router = useRouter();
-  const { user, isAdmin, isLoading: authLoading } = useUser();
+  const { user, isAdmin, isModerator, isLoading: authLoading } = useUser();
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
@@ -90,10 +90,10 @@ export default function AdminLostCornwallPage() {
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!authLoading && (!user || !isAdmin)) {
+    if (!authLoading && (!user || !isModerator)) {
       router.push("/");
     }
-  }, [authLoading, user, isAdmin, router]);
+  }, [authLoading, user, isModerator, router]);
 
   const loadPhotos = async () => {
     setIsLoading(true);

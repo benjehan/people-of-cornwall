@@ -15,6 +15,7 @@ interface AuthState {
   profile: Profile | null;
   isLoading: boolean;
   isAdmin: boolean;
+  isModerator: boolean;
 }
 
 let state: AuthState = {
@@ -22,6 +23,7 @@ let state: AuthState = {
   profile: null,
   isLoading: true,
   isAdmin: false,
+  isModerator: false,
 };
 
 let listeners: Set<() => void> = new Set();
@@ -87,7 +89,7 @@ function initAuth() {
     console.log('[AUTH] Event:', event, session?.user?.email || 'no user');
     
     if (event === 'SIGNED_OUT') {
-      setState({ user: null, profile: null, isAdmin: false, isLoading: false });
+      setState({ user: null, profile: null, isAdmin: false, isModerator: false, isLoading: false });
       return;
     }
     
@@ -98,8 +100,13 @@ function initAuth() {
       // Fetch profile using direct fetch
       const profile = await fetchProfileDirect(session.user.id, session.access_token);
       if (profile) {
-        console.log('[AUTH] Profile loaded, admin:', profile.role === 'admin');
-        setState({ profile, isAdmin: profile.role === "admin", isLoading: false });
+        console.log('[AUTH] Profile loaded, admin:', profile.role === 'admin', 'moderator:', profile.role === 'moderator');
+        setState({
+          profile,
+          isAdmin: profile.role === "admin",
+          isModerator: profile.role === "moderator" || profile.role === "admin",
+          isLoading: false
+        });
       } else {
         // Profile fetch failed, but we have a user
         setState({ isLoading: false });
@@ -118,8 +125,13 @@ function initAuth() {
       // Fetch profile using direct fetch
       const profile = await fetchProfileDirect(session.user.id, session.access_token);
       if (profile) {
-        console.log('[AUTH] Profile loaded, admin:', profile.role === 'admin');
-        setState({ profile, isAdmin: profile.role === "admin", isLoading: false });
+        console.log('[AUTH] Profile loaded, admin:', profile.role === 'admin', 'moderator:', profile.role === 'moderator');
+        setState({
+          profile,
+          isAdmin: profile.role === "admin",
+          isModerator: profile.role === "moderator" || profile.role === "admin",
+          isLoading: false
+        });
       } else {
         // Profile fetch failed, but we have a user
         setState({ isLoading: false });
@@ -157,7 +169,7 @@ export function useUser() {
     console.log('[AUTH] Signing out...');
     const supabase = createClient();
     await supabase.auth.signOut();
-    setState({ user: null, profile: null, isAdmin: false });
+    setState({ user: null, profile: null, isAdmin: false, isModerator: false });
   }, []);
   
   return {
@@ -165,6 +177,7 @@ export function useUser() {
     profile: currentState.profile,
     isLoading: currentState.isLoading,
     isAdmin: currentState.isAdmin,
+    isModerator: currentState.isModerator,
     signOut,
   };
 }

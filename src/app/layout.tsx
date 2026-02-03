@@ -18,7 +18,7 @@ const inter = Inter({
 });
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://peopleofcornwall.com";
-const DEFAULT_OG_IMAGE = `${SITE_URL}/og-default.png`;
+const DEFAULT_OG_IMAGE = `${SITE_URL}/og-default.svg`;
 
 export const metadata: Metadata = {
   title: {

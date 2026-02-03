@@ -41,18 +41,18 @@ interface Stats {
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const { user, isAdmin, isLoading } = useUser();
+  const { user, isAdmin, isModerator, isLoading } = useUser();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loadingStats, setLoadingStats] = useState(true);
 
   useEffect(() => {
-    if (!isLoading && (!user || !isAdmin)) {
+    if (!isLoading && (!user || !isModerator)) {
       router.push("/");
     }
-  }, [isLoading, user, isAdmin, router]);
+  }, [isLoading, user, isModerator, router]);
 
   useEffect(() => {
-    if (!user || !isAdmin) return;
+    if (!user || !isModerator) return;
 
     const fetchStats = async () => {
       const supabase = createClient();
@@ -89,9 +89,9 @@ export default function AdminDashboard() {
     };
 
     fetchStats();
-  }, [user, isAdmin]);
+  }, [user, isModerator]);
 
-  if (isLoading || !user || !isAdmin) {
+  if (isLoading || !user || !isModerator) {
     return (
       <div className="flex min-h-screen flex-col bg-parchment">
         <Header />
@@ -109,9 +109,13 @@ export default function AdminDashboard() {
       <main className="flex-1 py-10">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mb-8">
-            <h1 className="mb-2 font-serif text-3xl font-bold tracking-tight text-granite">Admin Dashboard</h1>
+            <h1 className="mb-2 font-serif text-3xl font-bold tracking-tight text-granite">
+              {isAdmin ? "Admin Dashboard" : "Moderator Dashboard"}
+            </h1>
             <p className="text-stone">
-              Manage stories, users, and community content.
+              {isAdmin
+                ? "Manage stories, users, and community content."
+                : "Help moderate community content and approve submissions."}
             </p>
           </div>
 
@@ -220,24 +224,26 @@ export default function AdminDashboard() {
               </Card>
             </Link>
 
-            <Link href="/admin/prompts">
-              <Card className="h-full border-bone bg-cream transition-all hover:border-granite/30 hover:shadow-md">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-lg font-serif text-granite">
-                    <Sparkles className="h-5 w-5 text-copper" />
-                    Prompts
-                    {stats && stats.activePrompts > 0 && (
-                      <Badge className="ml-auto bg-copper/10 text-copper border-0 text-xs">
-                        {stats.activePrompts} active
-                      </Badge>
-                    )}
-                  </CardTitle>
-                  <CardDescription className="text-stone">
-                    Manage community writing prompts.
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            </Link>
+            {isAdmin && (
+              <Link href="/admin/prompts">
+                <Card className="h-full border-bone bg-cream transition-all hover:border-granite/30 hover:shadow-md">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg font-serif text-granite">
+                      <Sparkles className="h-5 w-5 text-copper" />
+                      Prompts
+                      {stats && stats.activePrompts > 0 && (
+                        <Badge className="ml-auto bg-copper/10 text-copper border-0 text-xs">
+                          {stats.activePrompts} active
+                        </Badge>
+                      )}
+                    </CardTitle>
+                    <CardDescription className="text-stone">
+                      Manage community writing prompts.
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              </Link>
+            )}
 
             <Link href="/admin/comments">
               <Card className="h-full border-bone bg-cream transition-all hover:border-granite/30 hover:shadow-md">
@@ -253,38 +259,42 @@ export default function AdminDashboard() {
               </Card>
             </Link>
 
-            <Link href="/admin/collections">
-              <Card className="h-full border-bone bg-cream transition-all hover:border-granite/30 hover:shadow-md">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-lg font-serif text-granite">
-                    <Folder className="h-5 w-5 text-granite" />
-                    Collections
-                  </CardTitle>
-                  <CardDescription className="text-stone">
-                    Manage themed story collections.
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            </Link>
+            {isAdmin && (
+              <Link href="/admin/collections">
+                <Card className="h-full border-bone bg-cream transition-all hover:border-granite/30 hover:shadow-md">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg font-serif text-granite">
+                      <Folder className="h-5 w-5 text-granite" />
+                      Collections
+                    </CardTitle>
+                    <CardDescription className="text-stone">
+                      Manage themed story collections.
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              </Link>
+            )}
 
-            <Link href="/admin/deletions">
-              <Card className="h-full border-bone bg-cream transition-all hover:border-red-200 hover:shadow-md">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-lg font-serif text-granite">
-                    <Trash2 className="h-5 w-5 text-red-500" />
-                    Deletion Requests
-                    {stats && stats.pendingDeletions > 0 && (
-                      <Badge className="ml-auto bg-red-100 text-red-700 border-0">
-                        {stats.pendingDeletions}
-                      </Badge>
-                    )}
-                  </CardTitle>
-                  <CardDescription className="text-stone">
-                    Review story deletion requests.
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            </Link>
+            {isAdmin && (
+              <Link href="/admin/deletions">
+                <Card className="h-full border-bone bg-cream transition-all hover:border-red-200 hover:shadow-md">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg font-serif text-granite">
+                      <Trash2 className="h-5 w-5 text-red-500" />
+                      Deletion Requests
+                      {stats && stats.pendingDeletions > 0 && (
+                        <Badge className="ml-auto bg-red-100 text-red-700 border-0">
+                          {stats.pendingDeletions}
+                        </Badge>
+                      )}
+                    </CardTitle>
+                    <CardDescription className="text-stone">
+                      Review story deletion requests.
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              </Link>
+            )}
 
             <Link href="/admin/polls">
               <Card className="h-full border-bone bg-cream transition-all hover:border-granite/30 hover:shadow-md">
