@@ -774,3 +774,162 @@ export async function getCollectionStories(collectionSlug: string) {
 
   return { collection, stories: storiesWithCounts };
 }
+
+// =============================================================================
+// HOMEPAGE — Photo Archives
+// =============================================================================
+
+export interface HomepageArchivePreview {
+  image_url: string | null;
+  title: string | null;
+  count: number;
+}
+
+/**
+ * Get most recent published Lost Cornwall photo + total count
+ */
+export async function getRecentLostCornwall(): Promise<HomepageArchivePreview> {
+  const supabase = await createClient();
+
+  const [{ data: recent }, { count }] = await Promise.all([
+    (supabase.from("lost_cornwall") as any)
+      .select("image_url, title")
+      .eq("is_published", true)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    (supabase.from("lost_cornwall") as any)
+      .select("*", { count: "exact", head: true })
+      .eq("is_published", true),
+  ]);
+
+  return {
+    image_url: recent?.image_url || null,
+    title: recent?.title || null,
+    count: count || 0,
+  };
+}
+
+/**
+ * Get most recent published school photo + total count
+ */
+export async function getRecentSchoolPhoto(): Promise<HomepageArchivePreview> {
+  const supabase = await createClient();
+
+  const [{ data: recent }, { count }] = await Promise.all([
+    (supabase.from("school_photos") as any)
+      .select("image_url, title")
+      .eq("is_published", true)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    (supabase.from("school_photos") as any)
+      .select("*", { count: "exact", head: true })
+      .eq("is_published", true),
+  ]);
+
+  return {
+    image_url: recent?.image_url || null,
+    title: recent?.title || null,
+    count: count || 0,
+  };
+}
+
+/**
+ * Get most recent published sport club photo + total count
+ */
+export async function getRecentSportClub(): Promise<HomepageArchivePreview> {
+  const supabase = await createClient();
+
+  const [{ data: recent }, { count }] = await Promise.all([
+    (supabase.from("sport_clubs") as any)
+      .select("image_url, title")
+      .eq("is_published", true)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    (supabase.from("sport_clubs") as any)
+      .select("*", { count: "exact", head: true })
+      .eq("is_published", true),
+  ]);
+
+  return {
+    image_url: recent?.image_url || null,
+    title: recent?.title || null,
+    count: count || 0,
+  };
+}
+
+// =============================================================================
+// HOMEPAGE — Community
+// =============================================================================
+
+export interface HomepageEvent {
+  id: string;
+  title: string;
+  starts_at: string;
+  location_name: string | null;
+}
+
+/**
+ * Get next upcoming approved event
+ */
+export async function getNextUpcomingEvent(): Promise<HomepageEvent | null> {
+  const supabase = await createClient();
+
+  const { data } = await (supabase.from("events") as any)
+    .select("id, title, starts_at, location_name")
+    .eq("is_approved", true)
+    .gte("starts_at", new Date().toISOString())
+    .order("starts_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  return data || null;
+}
+
+export interface HomepageChallenge {
+  id: string;
+  difficulty: string | null;
+  hint: string | null;
+  image_url: string | null;
+}
+
+/**
+ * Get the active Where Is This challenge
+ */
+export async function getActiveChallenge(): Promise<HomepageChallenge | null> {
+  const supabase = await createClient();
+
+  const { data } = await (supabase.from("where_is_this") as any)
+    .select("id, difficulty, hint, image_url")
+    .eq("is_active", true)
+    .limit(1)
+    .maybeSingle();
+
+  return data || null;
+}
+
+export interface HomepagePoll {
+  id: string;
+  title: string;
+  category: string | null;
+  voting_end_at: string | null;
+}
+
+/**
+ * Get the active community poll (still accepting votes)
+ */
+export async function getActivePoll(): Promise<HomepagePoll | null> {
+  const supabase = await createClient();
+
+  const { data } = await (supabase.from("polls") as any)
+    .select("id, title, category, voting_end_at")
+    .eq("is_active", true)
+    .is("winner_nomination_id", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  return data || null;
+}

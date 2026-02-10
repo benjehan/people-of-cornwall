@@ -5,8 +5,16 @@ import { StoryCard } from "@/components/story/story-card";
 import { RotatingPrompts } from "@/components/home/rotating-prompts";
 import { DigestSubscribe } from "@/components/home/digest-subscribe";
 import { Button } from "@/components/ui/button";
-import { MapPin, Clock, Folder, ArrowRight, Archive, Mail } from "lucide-react";
-import { getFeaturedStory, getPublishedStories, getStoryDecades, getCollections, getRotatingPrompts, getFeaturedCollections } from "@/lib/supabase/queries";
+import {
+  MapPin, Clock, Folder, ArrowRight, Archive, Mail,
+  Camera, GraduationCap, Trophy, Calendar, HelpCircle, Vote,
+} from "lucide-react";
+import {
+  getFeaturedStory, getPublishedStories, getStoryDecades, getCollections,
+  getRotatingPrompts, getFeaturedCollections,
+  getRecentLostCornwall, getRecentSchoolPhoto, getRecentSportClub,
+  getNextUpcomingEvent, getActiveChallenge, getActivePoll,
+} from "@/lib/supabase/queries";
 import type { StoryWithDetails } from "@/types";
 
 /**
@@ -16,13 +24,13 @@ function extractImageFromBody(body: string | null): string | null {
   if (!body) return null;
   const imgMatch = body.match(/<img[^>]+src="([^">]+)"/);
   if (imgMatch) return imgMatch[1];
-  
+
   // Check for YouTube video thumbnail
   const youtubeMatch = body.match(/data-video-id="([a-zA-Z0-9_-]+)"[^>]*data-platform="youtube"/);
   const youtubeMatch2 = body.match(/data-platform="youtube"[^>]*data-video-id="([a-zA-Z0-9_-]+)"/);
   const youtubeId = youtubeMatch?.[1] || youtubeMatch2?.[1];
   if (youtubeId) return `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`;
-  
+
   return null;
 }
 
@@ -35,14 +43,25 @@ interface FeaturedCollection {
 }
 
 export default async function HomePage() {
-  // Fetch real data from Supabase
-  const [featuredStory, { stories: recentStories }, decades, collections, rotatingPrompts, featuredCollections] = await Promise.all([
+  // Fetch all data in parallel
+  const [
+    featuredStory, { stories: recentStories }, decades, collections,
+    rotatingPrompts, featuredCollections,
+    lostCornwall, schoolPhotos, sportClubs,
+    nextEvent, activeChallenge, activePoll,
+  ] = await Promise.all([
     getFeaturedStory(),
-    getPublishedStories({ perPage: 6 }),
+    getPublishedStories({ perPage: 3 }),
     getStoryDecades(),
     getCollections(),
-    getRotatingPrompts(), // Get ALL prompts for the carousel
+    getRotatingPrompts(),
     getFeaturedCollections(3),
+    getRecentLostCornwall(),
+    getRecentSchoolPhoto(),
+    getRecentSportClub(),
+    getNextUpcomingEvent(),
+    getActiveChallenge(),
+    getActivePoll(),
   ]);
 
   // Convert to StoryWithDetails format
@@ -83,7 +102,6 @@ export default async function HomePage() {
                   ) : (
                     <div className="flex h-full items-center justify-center bg-gradient-to-br from-slate via-granite to-slate">
                       <div className="text-center text-parchment/80">
-                        {/* St Piran's Cross / Cornish Flag inspired design */}
                         <div className="relative w-24 h-24 mx-auto mb-4">
                           <div className="absolute inset-0 bg-parchment/15 rounded-lg"></div>
                           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-20 bg-parchment/50 rounded"></div>
@@ -94,7 +112,7 @@ export default async function HomePage() {
                     </div>
                   )}
                 </div>
-                
+
                 {/* Featured Content */}
                 <div className="flex flex-col justify-center">
                   <div className="mb-4">
@@ -135,18 +153,26 @@ export default async function HomePage() {
             ) : (
               <div className="text-center py-12">
                 <h1 className="mb-6 font-serif text-5xl font-bold tracking-tight text-granite md:text-6xl">
-                  A living archive of<br />Cornish voices
+                  Cornwall's living<br />heritage museum
                 </h1>
                 <p className="mx-auto mb-8 max-w-xl text-lg text-stone">
-                  Stories, memories, and experiences from the people of Cornwall.
-                  Every voice matters. Every story is preserved.
+                  Stories, photographs, and memories from the people of Cornwall.
+                  Explore our growing archive of Cornish voices, historic images, and community life.
                 </p>
-                <Link href="/write">
-                  <Button className="gap-2 bg-granite text-parchment hover:bg-slate">
-                    Share the first story
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </Link>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                  <Link href="/write">
+                    <Button className="gap-2 bg-granite text-parchment hover:bg-slate">
+                      Share a Story
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                  <Link href="/lost-cornwall">
+                    <Button variant="outline" className="gap-2 border-granite text-granite">
+                      Browse the Archives
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
               </div>
             )}
           </div>
@@ -207,24 +233,271 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Weekly Digest Subscribe */}
-        <DigestSubscribe />
+        {/* Photo Archives */}
+        <section className="border-t border-bone bg-cream py-16 md:py-20">
+          <div className="mx-auto max-w-[1320px] px-4 sm:px-6">
+            <div className="mb-12 text-center">
+              <h2 className="font-serif text-3xl font-bold tracking-tight text-granite">
+                Photo Archives
+              </h2>
+              <p className="mt-2 text-stone">
+                Explore Cornwall's visual heritage through historic photographs
+              </p>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-3">
+              {/* Lost Cornwall */}
+              <Link
+                href="/lost-cornwall"
+                className="group relative overflow-hidden rounded-lg border border-bone transition-all hover:border-granite hover:shadow-md"
+              >
+                <div className="aspect-[3/2] bg-gradient-to-br from-sepia/30 to-granite/20">
+                  {lostCornwall.image_url ? (
+                    <img
+                      src={lostCornwall.image_url}
+                      alt={lostCornwall.title || "Lost Cornwall"}
+                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center">
+                      <Camera className="h-16 w-16 text-sepia/40" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-granite/80 via-granite/20 to-transparent" />
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 p-5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Camera className="h-4 w-4 text-parchment/80" />
+                    <h3 className="font-serif text-lg font-bold text-parchment">Lost Cornwall</h3>
+                  </div>
+                  <p className="text-sm text-parchment/70 mb-2">
+                    Historic photographs of places and people
+                  </p>
+                  {lostCornwall.count > 0 && (
+                    <span className="text-xs text-parchment/60">
+                      {lostCornwall.count} photograph{lostCornwall.count !== 1 ? "s" : ""}
+                    </span>
+                  )}
+                  <span className="mt-2 flex items-center gap-1 text-sm font-medium text-parchment group-hover:text-cream">
+                    Explore
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </span>
+                </div>
+              </Link>
+
+              {/* School Photos */}
+              <Link
+                href="/school-photos"
+                className="group relative overflow-hidden rounded-lg border border-bone transition-all hover:border-granite hover:shadow-md"
+              >
+                <div className="aspect-[3/2] bg-gradient-to-br from-atlantic/20 to-granite/20">
+                  {schoolPhotos.image_url ? (
+                    <img
+                      src={schoolPhotos.image_url}
+                      alt={schoolPhotos.title || "School Photos"}
+                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center">
+                      <GraduationCap className="h-16 w-16 text-atlantic/40" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-granite/80 via-granite/20 to-transparent" />
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 p-5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <GraduationCap className="h-4 w-4 text-parchment/80" />
+                    <h3 className="font-serif text-lg font-bold text-parchment">School Photos</h3>
+                  </div>
+                  <p className="text-sm text-parchment/70 mb-2">
+                    Class photos and school memories
+                  </p>
+                  {schoolPhotos.count > 0 && (
+                    <span className="text-xs text-parchment/60">
+                      {schoolPhotos.count} photograph{schoolPhotos.count !== 1 ? "s" : ""}
+                    </span>
+                  )}
+                  <span className="mt-2 flex items-center gap-1 text-sm font-medium text-parchment group-hover:text-cream">
+                    Explore
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </span>
+                </div>
+              </Link>
+
+              {/* Sport & Clubs */}
+              <Link
+                href="/sport-clubs"
+                className="group relative overflow-hidden rounded-lg border border-bone transition-all hover:border-granite hover:shadow-md"
+              >
+                <div className="aspect-[3/2] bg-gradient-to-br from-copper/20 to-granite/20">
+                  {sportClubs.image_url ? (
+                    <img
+                      src={sportClubs.image_url}
+                      alt={sportClubs.title || "Sport & Clubs"}
+                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center">
+                      <Trophy className="h-16 w-16 text-copper/40" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-granite/80 via-granite/20 to-transparent" />
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 p-5">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Trophy className="h-4 w-4 text-parchment/80" />
+                    <h3 className="font-serif text-lg font-bold text-parchment">Sport & Clubs</h3>
+                  </div>
+                  <p className="text-sm text-parchment/70 mb-2">
+                    Team photos and sporting heritage
+                  </p>
+                  {sportClubs.count > 0 && (
+                    <span className="text-xs text-parchment/60">
+                      {sportClubs.count} photograph{sportClubs.count !== 1 ? "s" : ""}
+                    </span>
+                  )}
+                  <span className="mt-2 flex items-center gap-1 text-sm font-medium text-parchment group-hover:text-cream">
+                    Explore
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </span>
+                </div>
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* Community */}
+        <section className="py-16 md:py-20">
+          <div className="mx-auto max-w-[1320px] px-4 sm:px-6">
+            <div className="mb-12 text-center">
+              <h2 className="font-serif text-3xl font-bold tracking-tight text-granite">
+                Community
+              </h2>
+              <p className="mt-2 text-stone">
+                Join in, have your say, and connect with fellow Cornish folk
+              </p>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-3">
+              {/* Events */}
+              <Link
+                href="/events"
+                className="group rounded-lg border border-bone bg-parchment p-8 transition-all hover:border-granite hover:shadow-md"
+              >
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-copper/10 group-hover:bg-granite group-hover:text-parchment transition-colors">
+                  <Calendar className="h-5 w-5 text-copper group-hover:text-parchment" />
+                </div>
+                <h3 className="mb-2 font-serif text-xl font-bold text-granite">
+                  Local Events
+                </h3>
+                {nextEvent ? (
+                  <div className="mb-4">
+                    <p className="text-sm font-medium text-granite">{nextEvent.title}</p>
+                    <p className="text-xs text-stone mt-1">
+                      {new Date(nextEvent.starts_at).toLocaleDateString("en-GB", {
+                        weekday: "short",
+                        day: "numeric",
+                        month: "short",
+                      })}
+                      {nextEvent.location_name && ` — ${nextEvent.location_name}`}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="mb-4 text-sm text-stone">
+                    Discover what's happening across Cornwall — markets, festivals, exhibitions, and more.
+                  </p>
+                )}
+                <span className="inline-flex items-center gap-1 text-sm font-medium text-granite group-hover:text-slate">
+                  {nextEvent ? "View all events" : "Browse events"}
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </span>
+              </Link>
+
+              {/* Where Is This? */}
+              <Link
+                href="/where-is-this"
+                className="group rounded-lg border border-bone bg-parchment p-8 transition-all hover:border-granite hover:shadow-md"
+              >
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-atlantic/10 group-hover:bg-granite group-hover:text-parchment transition-colors">
+                  <HelpCircle className="h-5 w-5 text-atlantic group-hover:text-parchment" />
+                </div>
+                <h3 className="mb-2 font-serif text-xl font-bold text-granite">
+                  Where Is This?
+                </h3>
+                {activeChallenge ? (
+                  <div className="mb-4">
+                    <span className="inline-block rounded-full bg-atlantic/10 px-2.5 py-0.5 text-xs font-medium text-atlantic mb-2">
+                      Active challenge
+                    </span>
+                    {activeChallenge.hint && (
+                      <p className="text-sm text-stone">
+                        Hint: {activeChallenge.hint}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="mb-4 text-sm text-stone">
+                    Test your knowledge of Cornwall's landmarks and hidden spots. Can you guess the location?
+                  </p>
+                )}
+                <span className="inline-flex items-center gap-1 text-sm font-medium text-granite group-hover:text-slate">
+                  {activeChallenge ? "Take a guess" : "See past challenges"}
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </span>
+              </Link>
+
+              {/* Community Polls */}
+              <Link
+                href="/polls"
+                className="group rounded-lg border border-bone bg-parchment p-8 transition-all hover:border-granite hover:shadow-md"
+              >
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-granite/10 group-hover:bg-granite group-hover:text-parchment transition-colors">
+                  <Vote className="h-5 w-5 text-granite group-hover:text-parchment" />
+                </div>
+                <h3 className="mb-2 font-serif text-xl font-bold text-granite">
+                  Community Polls
+                </h3>
+                {activePoll ? (
+                  <div className="mb-4">
+                    <p className="text-sm font-medium text-granite">{activePoll.title}</p>
+                    {activePoll.voting_end_at && (
+                      <p className="text-xs text-stone mt-1">
+                        Voting ends {new Date(activePoll.voting_end_at).toLocaleDateString("en-GB", {
+                          day: "numeric",
+                          month: "short",
+                        })}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="mb-4 text-sm text-stone">
+                    Nominate and vote for Cornwall's best — from pubs and beaches to local characters.
+                  </p>
+                )}
+                <span className="inline-flex items-center gap-1 text-sm font-medium text-granite group-hover:text-slate">
+                  {activePoll ? "Cast your vote" : "View polls"}
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </span>
+              </Link>
+            </div>
+          </div>
+        </section>
 
         {/* Discovery Section — Three Ways to Explore */}
         <section className="border-t border-bone bg-cream py-16 md:py-20">
           <div className="mx-auto max-w-[1320px] px-4 sm:px-6">
             <div className="mb-12 text-center">
               <h2 className="font-serif text-3xl font-bold tracking-tight text-granite">
-                Explore Stories
+                Discover Cornwall
               </h2>
               <p className="mt-2 text-stone">
-                Discover Cornwall through place, time, and theme
+                Explore stories through place, time, and theme
               </p>
             </div>
 
             <div className="grid gap-6 md:grid-cols-3">
               {/* By Place */}
-              <Link 
+              <Link
                 href="/map"
                 className="group rounded-lg border border-bone bg-parchment p-8 transition-all hover:border-granite hover:shadow-md"
               >
@@ -244,7 +517,7 @@ export default async function HomePage() {
               </Link>
 
               {/* By Time */}
-              <Link 
+              <Link
                 href="/timeline"
                 className="group rounded-lg border border-bone bg-parchment p-8 transition-all hover:border-granite hover:shadow-md"
               >
@@ -276,7 +549,7 @@ export default async function HomePage() {
               </Link>
 
               {/* By Collection */}
-              <Link 
+              <Link
                 href="/collections"
                 className="group rounded-lg border border-bone bg-parchment p-8 transition-all hover:border-granite hover:shadow-md"
               >
@@ -309,6 +582,9 @@ export default async function HomePage() {
             </div>
           </div>
         </section>
+
+        {/* Weekly Digest Subscribe */}
+        <DigestSubscribe />
 
         {/* Featured Collections */}
         {featuredCollections.length > 0 && (
@@ -372,9 +648,9 @@ export default async function HomePage() {
                   Do you have a treasure trove of Cornish memories?
                 </h2>
                 <p className="mb-6 text-stone leading-relaxed md:text-lg">
-                  If you hold precious <strong>stories, photograph collections, films, audio recordings, 
-                  or historical documents</strong> that deserve to be preserved and shared with the community, 
-                  we'd love to hear from you. Let's work together to build a special digital collection 
+                  If you hold precious <strong>stories, photograph collections, films, audio recordings,
+                  or historical documents</strong> that deserve to be preserved and shared with the community,
+                  we'd love to hear from you. Let's work together to build a special digital collection
                   as part of our heritage museum.
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -401,20 +677,31 @@ export default async function HomePage() {
         <section className="border-t border-bone bg-granite py-20 text-parchment dark:bg-bone dark:text-granite">
           <div className="mx-auto max-w-2xl px-4 text-center">
             <h2 className="mb-4 font-serif text-3xl font-bold tracking-tight md:text-4xl">
-              Every story matters
+              Be part of Cornwall's heritage
             </h2>
             <p className="mb-8 text-lg text-silver dark:text-stone">
-              Your memories are part of Cornwall's living history. Share a story
-              from your family, your community, or your own experience.
+              Your memories are part of Cornwall's living history. Share a story,
+              upload a photograph, or join in the community.
             </p>
-            <Link href="/write">
-              <Button
-                size="lg"
-                className="bg-parchment text-granite hover:bg-cream font-medium dark:bg-granite dark:text-parchment dark:hover:bg-slate"
-              >
-                Share a Story
-              </Button>
-            </Link>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link href="/write">
+                <Button
+                  size="lg"
+                  className="bg-parchment text-granite hover:bg-cream font-medium dark:bg-granite dark:text-parchment dark:hover:bg-slate"
+                >
+                  Share a Story
+                </Button>
+              </Link>
+              <Link href="/lost-cornwall/submit">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="border-parchment/50 text-parchment hover:bg-parchment/10 font-medium"
+                >
+                  Upload a Photo
+                </Button>
+              </Link>
+            </div>
           </div>
         </section>
       </main>
