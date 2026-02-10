@@ -88,7 +88,7 @@ export default function AdminCommentsPage() {
     fetchComments();
   };
 
-  if (isLoading || !user || !isAdmin) {
+  if (isLoading || !user || !isModerator) {
     return (
       <div className="flex min-h-screen flex-col">
         <Header />

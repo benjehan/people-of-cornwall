@@ -123,7 +123,7 @@ export default function ReviewQueuePage() {
     setRejectDialogOpen(true);
   };
 
-  if (isLoading || !user || !isAdmin) {
+  if (isLoading || !user || !isModerator) {
     return (
       <div className="flex min-h-screen flex-col">
         <Header />

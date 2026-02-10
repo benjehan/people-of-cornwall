@@ -94,7 +94,7 @@ const DIFFICULTY_COLORS = {
 
 export default function AdminWhereIsThisPage() {
   const router = useRouter();
-  const { user, isAdmin, isLoading: authLoading } = useUser();
+  const { user, isAdmin, isModerator, isLoading: authLoading } = useUser();
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedChallenge, setSelectedChallenge] = useState<Challenge | null>(null);
@@ -123,10 +123,10 @@ export default function AdminWhereIsThisPage() {
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!authLoading && (!user || !isAdmin)) {
+    if (!authLoading && (!user || !isModerator)) {
       router.push("/");
     }
-  }, [authLoading, user, isAdmin, router]);
+  }, [authLoading, user, isModerator, router]);
 
   const loadChallenges = async () => {
     setIsLoading(true);
@@ -152,10 +152,10 @@ export default function AdminWhereIsThisPage() {
   };
 
   useEffect(() => {
-    if (user && isAdmin) {
+    if (user && isModerator) {
       loadChallenges();
     }
-  }, [user, isAdmin]);
+  }, [user, isModerator]);
 
   const loadGuesses = async (challengeId: string) => {
     setLoadingGuesses(true);
@@ -411,7 +411,7 @@ export default function AdminWhereIsThisPage() {
   const activeChallenges = challenges.filter(c => c.is_active);
   const revealedChallenges = challenges.filter(c => c.is_revealed);
 
-  if (authLoading || !isAdmin) {
+  if (authLoading || !isModerator) {
     return (
       <div className="min-h-screen bg-parchment flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-granite" />

@@ -65,7 +65,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function AdminStoriesPage() {
   const router = useRouter();
-  const { user, isAdmin, isLoading } = useUser();
+  const { user, isAdmin, isModerator, isLoading } = useUser();
   const [stories, setStories] = useState<Story[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loadingStories, setLoadingStories] = useState(true);
@@ -78,16 +78,16 @@ export default function AdminStoriesPage() {
   const [selectedCollectionId, setSelectedCollectionId] = useState<string>("");
 
   useEffect(() => {
-    if (!isLoading && (!user || !isAdmin)) {
+    if (!isLoading && (!user || !isModerator)) {
       router.push("/");
     }
-  }, [isLoading, user, isAdmin, router]);
+  }, [isLoading, user, isModerator, router]);
 
   useEffect(() => {
-    if (!user || !isAdmin) return;
+    if (!user || !isModerator) return;
     fetchStories();
     fetchCollections();
-  }, [user, isAdmin, statusFilter]);
+  }, [user, isModerator, statusFilter]);
 
   const fetchStories = async () => {
     const supabase = createClient();
@@ -152,7 +152,7 @@ export default function AdminStoriesPage() {
     });
   };
 
-  if (isLoading || !user || !isAdmin) {
+  if (isLoading || !user || !isModerator) {
     return (
       <div className="flex min-h-screen flex-col bg-parchment">
         <Header />

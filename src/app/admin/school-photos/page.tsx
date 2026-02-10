@@ -85,10 +85,10 @@ export default function AdminSchoolPhotosPage() {
   };
 
   useEffect(() => {
-    if (isAdmin) {
+    if (isModerator) {
       loadPhotos();
     }
-  }, [isAdmin, activeTab]);
+  }, [isModerator, activeTab]);
 
   const handleApprove = async (id: string) => {
     setProcessingId(id);
@@ -140,7 +140,7 @@ export default function AdminSchoolPhotosPage() {
     setProcessingId(null);
   };
 
-  if (authLoading || !isAdmin) {
+  if (authLoading || !isModerator) {
     return (
       <div className="flex min-h-screen flex-col bg-parchment">
         <Header />

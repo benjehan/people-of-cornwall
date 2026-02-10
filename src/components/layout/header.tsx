@@ -19,7 +19,7 @@ import { useUser, getDisplayName, getAvatarUrl } from "@/hooks/use-user";
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const { user, profile, isLoading, isAdmin, signOut } = useUser();
+  const { user, profile, isLoading, isAdmin, isModerator, signOut } = useUser();
   const router = useRouter();
 
   // Prevent hydration mismatch by only rendering user-specific content after mount
@@ -222,12 +222,12 @@ export function Header() {
                       Settings
                     </Link>
                   </DropdownMenuItem>
-                  {isAdmin && (
+                  {isModerator && (
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem asChild>
                         <Link href="/admin" className="flex items-center gap-2 cursor-pointer text-copper font-medium">
-                          Admin Dashboard
+                          {isAdmin ? "Admin Dashboard" : "Moderator Dashboard"}
                         </Link>
                       </DropdownMenuItem>
                     </>

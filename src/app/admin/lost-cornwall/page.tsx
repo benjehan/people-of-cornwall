@@ -119,10 +119,10 @@ export default function AdminLostCornwallPage() {
   };
 
   useEffect(() => {
-    if (user && isAdmin) {
+    if (user && isModerator) {
       loadPhotos();
     }
-  }, [user, isAdmin]);
+  }, [user, isModerator]);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -293,7 +293,7 @@ export default function AdminLostCornwallPage() {
   const publishedPhotos = photos.filter(p => p.is_published && !p.is_pending);
   const unpublishedPhotos = photos.filter(p => !p.is_published && !p.is_pending);
 
-  if (authLoading || !isAdmin) {
+  if (authLoading || !isModerator) {
     return (
       <div className="min-h-screen bg-parchment flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-granite" />
