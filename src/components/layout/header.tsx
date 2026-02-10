@@ -47,38 +47,62 @@ export function Header() {
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden items-center gap-8 md:flex">
-          <Link
-            href="/stories"
-            className="text-sm font-medium text-stone transition-colors hover:text-granite hover:no-underline"
-          >
-            Stories
-          </Link>
-          <Link
-            href="/map"
-            className="text-sm font-medium text-stone transition-colors hover:text-granite hover:no-underline"
-          >
-            Map
-          </Link>
-          <Link
-            href="/timeline"
-            className="text-sm font-medium text-stone transition-colors hover:text-granite hover:no-underline"
-          >
-            Timeline
-          </Link>
-          <Link
-            href="/collections"
-            className="text-sm font-medium text-stone transition-colors hover:text-granite hover:no-underline"
-          >
-            Collections
-          </Link>
-          
-          {/* Explore Dropdown */}
+        <nav className="hidden items-center gap-6 md:flex">
+          {/* Stories Dropdown */}
           {mounted && (
             <DropdownMenu>
               <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-medium text-stone transition-colors hover:text-granite outline-none">
-                Explore
-                <ChevronDown className="h-4 w-4" />
+                Stories
+                <ChevronDown className="h-3.5 w-3.5" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center" className="w-48">
+                <DropdownMenuItem asChild>
+                  <Link href="/stories" className="flex items-center gap-2 cursor-pointer">
+                    <FileText className="h-4 w-4 text-granite" />
+                    <div>
+                      <p className="font-medium">Browse Stories</p>
+                      <p className="text-xs text-stone">Read community stories</p>
+                    </div>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/map" className="flex items-center gap-2 cursor-pointer">
+                    <MapPin className="h-4 w-4 text-copper" />
+                    <div>
+                      <p className="font-medium">Map</p>
+                      <p className="text-xs text-stone">Explore by location</p>
+                    </div>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/timeline" className="flex items-center gap-2 cursor-pointer">
+                    <Clock className="h-4 w-4 text-sepia" />
+                    <div>
+                      <p className="font-medium">Timeline</p>
+                      <p className="text-xs text-stone">Browse by decade</p>
+                    </div>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/collections" className="flex items-center gap-2 cursor-pointer">
+                    <FileText className="h-4 w-4 text-atlantic" />
+                    <div>
+                      <p className="font-medium">Collections</p>
+                      <p className="text-xs text-stone">Curated story themes</p>
+                    </div>
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          {/* Archives Dropdown */}
+          {mounted && (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-medium text-stone transition-colors hover:text-granite outline-none">
+                Archives
+                <ChevronDown className="h-3.5 w-3.5" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center" className="w-52">
                 <DropdownMenuItem asChild>
@@ -87,24 +111,6 @@ export function Header() {
                     <div>
                       <p className="font-medium">Lost Cornwall</p>
                       <p className="text-xs text-stone">Historic photographs</p>
-                    </div>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/where-is-this" className="flex items-center gap-2 cursor-pointer">
-                    <HelpCircle className="h-4 w-4 text-atlantic" />
-                    <div>
-                      <p className="font-medium">Where Is This?</p>
-                      <p className="text-xs text-stone">Location guessing game</p>
-                    </div>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/events" className="flex items-center gap-2 cursor-pointer">
-                    <Calendar className="h-4 w-4 text-copper" />
-                    <div>
-                      <p className="font-medium">Events</p>
-                      <p className="text-xs text-stone">Local happenings</p>
                     </div>
                   </Link>
                 </DropdownMenuItem>
@@ -126,7 +132,36 @@ export function Header() {
                     </div>
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          {/* Community Dropdown */}
+          {mounted && (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-medium text-stone transition-colors hover:text-granite outline-none">
+                Community
+                <ChevronDown className="h-3.5 w-3.5" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center" className="w-52">
+                <DropdownMenuItem asChild>
+                  <Link href="/events" className="flex items-center gap-2 cursor-pointer">
+                    <Calendar className="h-4 w-4 text-copper" />
+                    <div>
+                      <p className="font-medium">Events</p>
+                      <p className="text-xs text-stone">Local happenings</p>
+                    </div>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/where-is-this" className="flex items-center gap-2 cursor-pointer">
+                    <HelpCircle className="h-4 w-4 text-atlantic" />
+                    <div>
+                      <p className="font-medium">Where Is This?</p>
+                      <p className="text-xs text-stone">Location guessing game</p>
+                    </div>
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/polls" className="flex items-center gap-2 cursor-pointer">
                     <Vote className="h-4 w-4 text-granite" />
@@ -280,38 +315,44 @@ export function Header() {
       {mobileMenuOpen && (
         <nav className="border-t border-bone bg-parchment px-4 py-4 md:hidden">
           <div className="flex flex-col gap-1">
+            {/* Stories section */}
+            <p className="px-3 py-1 text-xs font-semibold text-stone uppercase tracking-wide">Stories</p>
             <Link
               href="/stories"
-              className="rounded-md px-3 py-2.5 text-sm font-medium text-granite hover:bg-cream"
+              className="rounded-md px-3 py-2.5 text-sm font-medium text-granite hover:bg-cream flex items-center gap-2"
               onClick={() => setMobileMenuOpen(false)}
             >
-              Stories
+              <FileText className="h-4 w-4 text-granite" />
+              Browse Stories
             </Link>
             <Link
               href="/map"
-              className="rounded-md px-3 py-2.5 text-sm font-medium text-granite hover:bg-cream"
+              className="rounded-md px-3 py-2.5 text-sm font-medium text-granite hover:bg-cream flex items-center gap-2"
               onClick={() => setMobileMenuOpen(false)}
             >
+              <MapPin className="h-4 w-4 text-copper" />
               Map
             </Link>
             <Link
               href="/timeline"
-              className="rounded-md px-3 py-2.5 text-sm font-medium text-granite hover:bg-cream"
+              className="rounded-md px-3 py-2.5 text-sm font-medium text-granite hover:bg-cream flex items-center gap-2"
               onClick={() => setMobileMenuOpen(false)}
             >
+              <Clock className="h-4 w-4 text-sepia" />
               Timeline
             </Link>
             <Link
               href="/collections"
-              className="rounded-md px-3 py-2.5 text-sm font-medium text-granite hover:bg-cream"
+              className="rounded-md px-3 py-2.5 text-sm font-medium text-granite hover:bg-cream flex items-center gap-2"
               onClick={() => setMobileMenuOpen(false)}
             >
+              <FileText className="h-4 w-4 text-atlantic" />
               Collections
             </Link>
-            
-            {/* Explore section */}
+
+            {/* Archives section */}
             <div className="mt-2 pt-2 border-t border-bone">
-              <p className="px-3 py-1 text-xs font-semibold text-stone uppercase tracking-wide">Explore</p>
+              <p className="px-3 py-1 text-xs font-semibold text-stone uppercase tracking-wide">Archives</p>
               <Link
                 href="/lost-cornwall"
                 className="rounded-md px-3 py-2.5 text-sm font-medium text-granite hover:bg-cream flex items-center gap-2"
@@ -319,22 +360,6 @@ export function Header() {
               >
                 <Camera className="h-4 w-4 text-sepia" />
                 Lost Cornwall
-              </Link>
-              <Link
-                href="/where-is-this"
-                className="rounded-md px-3 py-2.5 text-sm font-medium text-granite hover:bg-cream flex items-center gap-2"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <HelpCircle className="h-4 w-4 text-atlantic" />
-                Where Is This?
-              </Link>
-              <Link
-                href="/events"
-                className="rounded-md px-3 py-2.5 text-sm font-medium text-granite hover:bg-cream flex items-center gap-2"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <Calendar className="h-4 w-4 text-copper" />
-                Events
               </Link>
               <Link
                 href="/school-photos"
@@ -351,6 +376,27 @@ export function Header() {
               >
                 <Trophy className="h-4 w-4 text-copper" />
                 Sport & Clubs
+              </Link>
+            </div>
+
+            {/* Community section */}
+            <div className="mt-2 pt-2 border-t border-bone">
+              <p className="px-3 py-1 text-xs font-semibold text-stone uppercase tracking-wide">Community</p>
+              <Link
+                href="/events"
+                className="rounded-md px-3 py-2.5 text-sm font-medium text-granite hover:bg-cream flex items-center gap-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Calendar className="h-4 w-4 text-copper" />
+                Events
+              </Link>
+              <Link
+                href="/where-is-this"
+                className="rounded-md px-3 py-2.5 text-sm font-medium text-granite hover:bg-cream flex items-center gap-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <HelpCircle className="h-4 w-4 text-atlantic" />
+                Where Is This?
               </Link>
               <Link
                 href="/polls"
