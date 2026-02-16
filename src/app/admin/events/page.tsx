@@ -446,10 +446,10 @@ export default function AdminEventsPage() {
       contact_name: event.contact_name || "",
       contact_email: event.contact_email || "",
       contact_phone: event.contact_phone || "",
-      category: event.category || "",
+      category: (event.category || "").toLowerCase(),
       source_url: event.source_url || "",
       recurring: event.recurring ?? false,
-      recurrence_pattern: event.recurrence_pattern || "",
+      recurrence_pattern: (event.recurrence_pattern || "").toLowerCase(),
       recurrence_end_date: event.recurrence_end_date || "",
       excluded_dates: event.excluded_dates || [],
     });
@@ -1010,7 +1010,7 @@ export default function AdminEventsPage() {
               <div className="space-y-3">
                 <div className="space-y-2">
                   <Label>Category</Label>
-                  <Select value={editForm.category} onValueChange={(v) => setEditForm({ ...editForm, category: v })}>
+                  <Select value={editForm.category || undefined} onValueChange={(v) => setEditForm({ ...editForm, category: v })}>
                     <SelectTrigger className="border-bone">
                       <SelectValue placeholder="Select a category..." />
                     </SelectTrigger>
@@ -1044,7 +1044,7 @@ export default function AdminEventsPage() {
                   <>
                     <div className="space-y-2">
                       <Label>How often?</Label>
-                      <Select value={editForm.recurrence_pattern} onValueChange={(v) => setEditForm({ ...editForm, recurrence_pattern: v })}>
+                      <Select value={editForm.recurrence_pattern || undefined} onValueChange={(v) => setEditForm({ ...editForm, recurrence_pattern: v })}>
                         <SelectTrigger className="border-bone">
                           <SelectValue placeholder="Select frequency..." />
                         </SelectTrigger>

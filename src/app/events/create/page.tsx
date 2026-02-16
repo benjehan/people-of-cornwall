@@ -455,7 +455,7 @@ export default function CreateEventPage() {
 
                   <div>
                     <Label htmlFor="category">Category</Label>
-                    <Select value={category} onValueChange={setCategory}>
+                    <Select value={category || undefined} onValueChange={setCategory}>
                       <SelectTrigger className="border-bone">
                         <SelectValue placeholder="Select a category..." />
                       </SelectTrigger>
@@ -662,7 +662,7 @@ export default function CreateEventPage() {
                     <>
                       <div>
                         <Label htmlFor="recurrencePattern">How often?</Label>
-                        <Select value={recurrencePattern} onValueChange={(v) => setRecurrencePattern(v as RecurrencePattern)}>
+                        <Select value={recurrencePattern || undefined} onValueChange={(v) => setRecurrencePattern(v as RecurrencePattern)}>
                           <SelectTrigger className="border-bone">
                             <SelectValue placeholder="Select frequency..." />
                           </SelectTrigger>
