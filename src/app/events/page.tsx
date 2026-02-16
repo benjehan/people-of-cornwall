@@ -39,11 +39,15 @@ import {
   List,
   Map as MapIcon,
   X,
+  Repeat,
+  GraduationCap,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/use-user";
 import { ShareButtons } from "@/components/ui/share-buttons";
 import { EventImageCarousel } from "@/components/events/event-image-carousel";
+import { expandAllEvents } from "@/lib/events/recurrence";
+import { getHalfTermForDate } from "@/lib/events/half-terms";
 
 interface EventImage {
   id: string;
@@ -130,7 +134,15 @@ interface Event {
   is_child_friendly: boolean;
   is_vegan_friendly: boolean;
   is_featured: boolean;
+  category: string | null;
+  source_url: string | null;
+  recurring: boolean;
+  recurrence_pattern: string | null;
+  recurrence_end_date: string | null;
+  excluded_dates: string[];
   primary_image?: string | null;
+  instance_date?: string;
+  is_recurring_instance?: boolean;
 }
 
 const CORNISH_TOWNS = [
@@ -166,6 +178,16 @@ export default function EventsPage() {
   const [showChildFriendly, setShowChildFriendly] = useState(false);
   const [showVeganFriendly, setShowVeganFriendly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showHalfTerms, setShowHalfTerms] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('showHalfTerms') !== 'false';
+    }
+    return true;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('showHalfTerms', String(showHalfTerms));
+  }, [showHalfTerms]);
 
   // Events are now publicly accessible
 
@@ -208,72 +230,105 @@ export default function EventsPage() {
     const supabase = createClient();
     const { start, end, isPast } = getDateRange();
 
-    // Query events with their primary image from event_images
-    let query = (supabase.from("events") as any)
-      .select(`
-        *,
-        event_images!left (
-          image_url,
-          is_primary
-        )
-      `)
-      .eq("is_approved", true);
+    const selectFields = `
+      *,
+      event_images!left (
+        image_url,
+        is_primary
+      )
+    `;
 
-    // For past events, show from start to end (both dates in the past)
-    // For future events, show from start onwards
+    // Build base filter function for location/amenity filters
+    const applyFilters = (q: any) => {
+      if (locationFilter !== "All Cornwall") {
+        q = q.ilike("location_name", `%${locationFilter}%`);
+      }
+      if (showFreeOnly) q = q.eq("is_free", true);
+      if (showAccessible) q = q.eq("is_accessible", true);
+      if (showDogFriendly) q = q.eq("is_dog_friendly", true);
+      if (showChildFriendly) q = q.eq("is_child_friendly", true);
+      if (showVeganFriendly) q = q.eq("is_vegan_friendly", true);
+      return q;
+    };
+
+    // Query 1: Non-recurring events (original logic)
+    let query1 = (supabase.from("events") as any)
+      .select(selectFields)
+      .eq("is_approved", true)
+      .or("recurring.is.null,recurring.eq.false");
+
     if (isPast && end) {
-      query = query
+      query1 = query1
         .gte("starts_at", start.toISOString())
         .lt("starts_at", end.toISOString())
-        .order("starts_at", { ascending: false }); // Most recent first for past
+        .order("starts_at", { ascending: false });
     } else {
-      query = query
+      query1 = query1
         .gte("starts_at", start.toISOString())
         .order("starts_at", { ascending: true });
-      
       if (end) {
-        query = query.lte("starts_at", end.toISOString());
+        query1 = query1.lte("starts_at", end.toISOString());
       }
     }
+    query1 = applyFilters(query1);
 
-    if (locationFilter !== "All Cornwall") {
-      query = query.ilike("location_name", `%${locationFilter}%`);
+    // Query 2: Recurring events that may have instances in the range
+    let query2 = (supabase.from("events") as any)
+      .select(selectFields)
+      .eq("is_approved", true)
+      .eq("recurring", true);
+    query2 = applyFilters(query2);
+
+    const [result1, result2] = await Promise.all([query1, query2]);
+
+    if (result1.error) {
+      console.error("Error loading events:", result1.error);
     }
-    if (showFreeOnly) query = query.eq("is_free", true);
-    if (showAccessible) query = query.eq("is_accessible", true);
-    if (showDogFriendly) query = query.eq("is_dog_friendly", true);
-    if (showChildFriendly) query = query.eq("is_child_friendly", true);
-    if (showVeganFriendly) query = query.eq("is_vegan_friendly", true);
 
-    const { data, error } = await query;
+    const allData = [...(result1.data || []), ...(result2.data || [])];
 
-    if (error) {
-      console.error("Error loading events:", error);
-    } else {
-      // Process events to extract primary image
-      let processed = (data || []).map((event: any) => {
-        const images = event.event_images || [];
-        const primaryImage = images.find((img: any) => img.is_primary)?.image_url 
-          || images[0]?.image_url 
-          || event.image_url; // Fallback to legacy image_url
-        return {
-          ...event,
-          primary_image: primaryImage,
-          event_images: undefined, // Remove the nested array
-        };
-      });
-      
-      if (searchQuery) {
-        const q = searchQuery.toLowerCase();
-        processed = processed.filter(
-          (e: Event) =>
-            e.title.toLowerCase().includes(q) ||
-            e.description?.toLowerCase().includes(q) ||
-            e.location_name.toLowerCase().includes(q)
-        );
-      }
-      setEvents(processed);
+    // Deduplicate by id (in case a recurring event also matched query1)
+    const seen = new Set<string>();
+    const deduplicated = allData.filter((event: any) => {
+      if (seen.has(event.id)) return false;
+      seen.add(event.id);
+      return true;
+    });
+
+    // Process events to extract primary image
+    const processed = deduplicated.map((event: any) => {
+      const images = event.event_images || [];
+      const primaryImage = images.find((img: any) => img.is_primary)?.image_url
+        || images[0]?.image_url
+        || event.image_url;
+      return {
+        ...event,
+        primary_image: primaryImage,
+        event_images: undefined,
+        excluded_dates: event.excluded_dates || [],
+      };
+    });
+
+    // Expand recurring events into instances
+    const rangeEnd = end || new Date(start.getFullYear() + 1, start.getMonth(), start.getDate());
+    let expanded = expandAllEvents(processed, start, rangeEnd) as unknown as Event[];
+
+    // Sort by starts_at
+    expanded.sort((a, b) => {
+      const diff = new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime();
+      return isPast ? -diff : diff;
+    });
+
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      expanded = expanded.filter(
+        (e: Event) =>
+          e.title.toLowerCase().includes(q) ||
+          e.description?.toLowerCase().includes(q) ||
+          e.location_name.toLowerCase().includes(q)
+      );
     }
+    setEvents(expanded);
     setIsLoading(false);
   }, [locationFilter, showFreeOnly, showAccessible, showDogFriendly, showChildFriendly, showVeganFriendly, searchQuery, getDateRange]);
 
@@ -428,6 +483,17 @@ export default function EventsPage() {
                   )}
                   {event.is_featured && (
                     <Badge className="bg-yellow-500 text-white text-xs">⭐</Badge>
+                  )}
+                  {event.recurring && event.recurrence_pattern && (
+                    <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50 text-xs flex items-center gap-0.5">
+                      <Repeat className="h-3 w-3" />
+                      {event.recurrence_pattern.charAt(0).toUpperCase() + event.recurrence_pattern.slice(1)}
+                    </Badge>
+                  )}
+                  {event.category && (
+                    <Badge variant="outline" className="border-bone text-stone text-xs">
+                      {event.category.charAt(0).toUpperCase() + event.category.slice(1)}
+                    </Badge>
                   )}
                 </div>
 
@@ -714,6 +780,17 @@ export default function EventsPage() {
                     Clear filters
                   </Button>
                 )}
+
+                <div className="ml-auto border-l border-bone pl-4">
+                  <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <Checkbox checked={showHalfTerms} onCheckedChange={(c) => setShowHalfTerms(c === true)} />
+                    <GraduationCap className="h-4 w-4 text-amber-600" />
+                    School holidays
+                    {showHalfTerms && (
+                      <span className="inline-block w-3 h-3 rounded-sm bg-amber-50 border border-amber-200" />
+                    )}
+                  </label>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -751,7 +828,7 @@ export default function EventsPage() {
                   </CardContent>
                 </Card>
               ) : (
-                events.map((event) => <EventCard key={event.id} event={event} />)
+                events.map((event) => <EventCard key={`${event.id}-${event.instance_date || event.starts_at}`} event={event} />)
               )}
             </div>
           ) : viewMode === "calendar" ? (
@@ -797,30 +874,44 @@ export default function EventsPage() {
                   {Array.from({ length: daysInMonth }).map((_, i) => {
                     const day = i + 1;
                     const dayEvents = getEventsForDay(day);
-                    const isToday = 
+                    const isToday =
                       day === new Date().getDate() &&
                       currentMonth.getMonth() === new Date().getMonth() &&
                       currentMonth.getFullYear() === new Date().getFullYear();
-                    
+                    const halfTerm = showHalfTerms
+                      ? getHalfTermForDate(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day))
+                      : null;
+
                     return (
                       <div
                         key={day}
                         className={`h-24 rounded border p-1 overflow-hidden ${
-                          isToday ? "border-copper bg-copper/5" : "border-bone bg-parchment"
+                          isToday
+                            ? "border-copper bg-copper/5"
+                            : halfTerm
+                            ? "border-amber-200 bg-amber-50/60"
+                            : "border-bone bg-parchment"
                         }`}
+                        title={halfTerm ? halfTerm.name : undefined}
                       >
-                        <div className={`text-xs font-medium mb-1 ${isToday ? "text-copper" : "text-stone"}`}>
+                        <div className={`text-xs font-medium mb-1 flex items-center gap-0.5 ${
+                          isToday ? "text-copper" : halfTerm ? "text-amber-700" : "text-stone"
+                        }`}>
                           {day}
+                          {halfTerm && <GraduationCap className="h-2.5 w-2.5 text-amber-500" />}
                         </div>
                         <div className="space-y-0.5">
                           {dayEvents.slice(0, 2).map((event) => (
                             <div
-                              key={event.id}
-                              className="text-xs truncate bg-granite text-parchment rounded px-1 cursor-pointer hover:bg-slate"
-                              title={event.title}
+                              key={`${event.id}-${event.instance_date || event.starts_at}`}
+                              className="text-xs truncate bg-granite text-parchment rounded px-1 cursor-pointer hover:bg-slate flex items-center gap-0.5"
+                              title={`${event.title}${event.is_recurring_instance ? ' (recurring)' : ''}`}
                               onClick={() => selectEvent(event)}
                             >
-                              {event.title}
+                              {event.is_recurring_instance && (
+                                <Repeat className="h-2 w-2 flex-shrink-0" />
+                              )}
+                              <span className="truncate">{event.title}</span>
                             </div>
                           ))}
                           {dayEvents.length > 2 && (
@@ -921,6 +1012,19 @@ export default function EventsPage() {
                   <p className="text-stone mb-4">{selectedEvent.description}</p>
                 )}
 
+                {/* Recurrence info */}
+                {selectedEvent.recurring && selectedEvent.recurrence_pattern && (
+                  <div className="flex items-center gap-2 text-sm text-stone mb-3">
+                    <Repeat className="h-4 w-4 text-blue-600" />
+                    <span>
+                      Repeats {selectedEvent.recurrence_pattern}
+                      {selectedEvent.recurrence_end_date && (
+                        <> until {new Date(selectedEvent.recurrence_end_date + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</>
+                      )}
+                    </span>
+                  </div>
+                )}
+
                 {/* Tags */}
                 <div className="flex flex-wrap gap-2 mb-4">
                   {selectedEvent.is_free && (
@@ -976,14 +1080,25 @@ export default function EventsPage() {
                       </a>
                     )}
                     {selectedEvent.website_url && (
-                      <a 
-                        href={selectedEvent.website_url} 
-                        target="_blank" 
+                      <a
+                        href={selectedEvent.website_url}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="text-sm text-atlantic hover:underline flex items-center gap-1"
                       >
                         <ExternalLink className="h-3 w-3" />
                         Visit website
+                      </a>
+                    )}
+                    {selectedEvent.source_url && (
+                      <a
+                        href={selectedEvent.source_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-atlantic hover:underline flex items-center gap-1"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        Original listing
                       </a>
                     )}
                   </div>

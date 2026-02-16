@@ -49,6 +49,7 @@ interface Event {
   contact_email: string | null;
   contact_phone: string | null;
   website_url: string | null;
+  source_url: string | null;
   price_info: string | null;
   is_free: boolean;
   is_accessible: boolean;
@@ -56,6 +57,14 @@ interface Event {
   is_child_friendly: boolean;
   is_vegan_friendly: boolean;
   is_featured: boolean;
+  category: string | null;
+  recurring: boolean;
+  recurrence_pattern: string | null;
+  recurrence_end_date: string | null;
+  excluded_dates: string[];
+  primary_image?: string | null;
+  instance_date?: string;
+  is_recurring_instance?: boolean;
 }
 
 interface EventsMapProps {

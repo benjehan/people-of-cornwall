@@ -26,6 +26,7 @@ import {
   Dog,
   Baby,
   Leaf,
+  Repeat,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/use-user";
@@ -60,6 +61,12 @@ interface Event {
   is_child_friendly: boolean;
   is_vegan_friendly: boolean;
   is_featured: boolean;
+  category: string | null;
+  source_url: string | null;
+  recurring: boolean;
+  recurrence_pattern: string | null;
+  recurrence_end_date: string | null;
+  excluded_dates: string[];
   like_count: number;
   comment_count: number;
 }
@@ -388,6 +395,24 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                     {event.all_day && (
                       <p className="text-sm mt-1">All day event</p>
                     )}
+                    {event.recurring && event.recurrence_pattern && (
+                      <div className="flex items-center gap-2 text-sm mt-2 pt-2 border-t border-bone">
+                        <Repeat className="h-4 w-4 text-blue-600" />
+                        <span>
+                          Repeats {event.recurrence_pattern}
+                          {event.recurrence_end_date && (
+                            <> until {new Date(event.recurrence_end_date + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</>
+                          )}
+                        </span>
+                      </div>
+                    )}
+                    {event.excluded_dates && event.excluded_dates.length > 0 && (
+                      <p className="text-xs text-stone mt-1">
+                        Skips: {event.excluded_dates.map(d =>
+                          new Date(d + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+                        ).join(', ')}
+                      </p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -409,7 +434,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               </Card>
 
               {/* Contact */}
-              {(event.contact_name || event.contact_email || event.contact_phone || event.website_url) && (
+              {(event.contact_name || event.contact_email || event.contact_phone || event.website_url || event.source_url) && (
                 <Card className="border-bone bg-cream">
                   <CardContent className="pt-6 space-y-4">
                     <h3 className="font-medium text-granite flex items-center gap-2">
@@ -447,6 +472,17 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                         >
                           <ExternalLink className="h-3 w-3" />
                           Visit website
+                        </a>
+                      )}
+                      {event.source_url && (
+                        <a
+                          href={event.source_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 text-sm text-atlantic hover:underline"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          Original listing
                         </a>
                       )}
                     </div>

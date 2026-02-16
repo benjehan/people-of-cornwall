@@ -48,10 +48,20 @@ import {
   X,
   Image as ImageIcon,
   Plus,
+  Repeat,
+  Tag,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/use-user";
 import { ImageCropDialog } from "@/components/story/image-crop-dialog";
+import { EVENT_CATEGORIES, type RecurrencePattern } from "@/lib/events/types";
 
 interface EventImage {
   id: string;
@@ -83,6 +93,12 @@ interface Event {
   contact_name: string | null;
   contact_email: string | null;
   contact_phone: string | null;
+  category: string | null;
+  source_url: string | null;
+  recurring: boolean;
+  recurrence_pattern: string | null;
+  recurrence_end_date: string | null;
+  excluded_dates: string[];
   created_at: string;
   created_by: string;
   creator?: {
@@ -109,6 +125,12 @@ interface EditForm {
   contact_name: string;
   contact_email: string;
   contact_phone: string;
+  category: string;
+  source_url: string;
+  recurring: boolean;
+  recurrence_pattern: string;
+  recurrence_end_date: string;
+  excluded_dates: string[];
 }
 
 export default function AdminEventsPage() {
@@ -138,7 +160,14 @@ export default function AdminEventsPage() {
     contact_name: "",
     contact_email: "",
     contact_phone: "",
+    category: "",
+    source_url: "",
+    recurring: false,
+    recurrence_pattern: "",
+    recurrence_end_date: "",
+    excluded_dates: [],
   });
+  const [excludeDateInput, setExcludeDateInput] = useState("");
   const [editError, setEditError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   
@@ -417,7 +446,14 @@ export default function AdminEventsPage() {
       contact_name: event.contact_name || "",
       contact_email: event.contact_email || "",
       contact_phone: event.contact_phone || "",
+      category: event.category || "",
+      source_url: event.source_url || "",
+      recurring: event.recurring ?? false,
+      recurrence_pattern: event.recurrence_pattern || "",
+      recurrence_end_date: event.recurrence_end_date || "",
+      excluded_dates: event.excluded_dates || [],
     });
+    setExcludeDateInput("");
     setEditError(null);
     setEventImages([]);
     setEditDialogOpen(true);
@@ -457,6 +493,12 @@ export default function AdminEventsPage() {
         contact_name: editForm.contact_name.trim() || null,
         contact_email: editForm.contact_email.trim() || null,
         contact_phone: editForm.contact_phone.trim() || null,
+        category: editForm.category || null,
+        source_url: editForm.source_url.trim() || null,
+        recurring: editForm.recurring,
+        recurrence_pattern: editForm.recurring ? editForm.recurrence_pattern || null : null,
+        recurrence_end_date: editForm.recurring && editForm.recurrence_end_date ? editForm.recurrence_end_date : null,
+        excluded_dates: editForm.recurring && editForm.excluded_dates.length > 0 ? editForm.excluded_dates : [],
       })
       .eq("id", editingEvent.id);
 
@@ -550,6 +592,17 @@ export default function AdminEventsPage() {
                   )}
                   {event.is_featured && (
                     <Badge className="bg-copper text-parchment text-xs">⭐ Featured</Badge>
+                  )}
+                  {event.recurring && (
+                    <Badge className="bg-blue-600 text-white text-xs flex items-center gap-1">
+                      <Repeat className="h-3 w-3" />
+                      {event.recurrence_pattern || 'Recurring'}
+                    </Badge>
+                  )}
+                  {event.category && (
+                    <Badge variant="outline" className="border-bone text-stone text-xs">
+                      {event.category}
+                    </Badge>
                   )}
                 </div>
                 <h3 className="font-serif font-bold text-granite">{event.title}</h3>
@@ -932,6 +985,134 @@ export default function AdminEventsPage() {
                     placeholder="https://..."
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-source-url" className="flex items-center gap-2">
+                    <Globe className="h-4 w-4" />
+                    Source URL
+                  </Label>
+                  <Input
+                    id="edit-source-url"
+                    value={editForm.source_url}
+                    onChange={(e) => setEditForm({ ...editForm, source_url: e.target.value })}
+                    className="border-bone"
+                    placeholder="https://... (original event listing)"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Category & Recurrence */}
+            <div className="space-y-3 pt-4 border-t border-bone">
+              <h4 className="text-sm font-medium text-granite flex items-center gap-2">
+                <Tag className="h-4 w-4" />
+                Category & Recurrence
+              </h4>
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label>Category</Label>
+                  <Select value={editForm.category} onValueChange={(v) => setEditForm({ ...editForm, category: v })}>
+                    <SelectTrigger className="border-bone">
+                      <SelectValue placeholder="Select a category..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {EVENT_CATEGORIES.map((cat) => (
+                        <SelectItem key={cat} value={cat}>
+                          {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-parchment border border-bone">
+                  <Checkbox
+                    id="edit-recurring"
+                    checked={editForm.recurring}
+                    onCheckedChange={(checked) => setEditForm({
+                      ...editForm,
+                      recurring: checked === true,
+                      ...(checked !== true ? { recurrence_pattern: "", recurrence_end_date: "", excluded_dates: [] } : {}),
+                    })}
+                  />
+                  <Label htmlFor="edit-recurring" className="cursor-pointer flex items-center gap-2">
+                    <Repeat className="h-4 w-4 text-copper" />
+                    Recurring Event
+                  </Label>
+                </div>
+
+                {editForm.recurring && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>How often?</Label>
+                      <Select value={editForm.recurrence_pattern} onValueChange={(v) => setEditForm({ ...editForm, recurrence_pattern: v })}>
+                        <SelectTrigger className="border-bone">
+                          <SelectValue placeholder="Select frequency..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="daily">Daily</SelectItem>
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="fortnightly">Fortnightly</SelectItem>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Repeats until (optional)</Label>
+                      <Input
+                        type="date"
+                        value={editForm.recurrence_end_date}
+                        onChange={(e) => setEditForm({ ...editForm, recurrence_end_date: e.target.value })}
+                        className="border-bone"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Skip specific dates</Label>
+                      <div className="flex gap-2 mb-2">
+                        <Input
+                          type="date"
+                          value={excludeDateInput}
+                          onChange={(e) => setExcludeDateInput(e.target.value)}
+                          className="border-bone flex-1"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="border-bone"
+                          onClick={() => {
+                            if (excludeDateInput && !editForm.excluded_dates.includes(excludeDateInput)) {
+                              setEditForm({
+                                ...editForm,
+                                excluded_dates: [...editForm.excluded_dates, excludeDateInput].sort(),
+                              });
+                              setExcludeDateInput("");
+                            }
+                          }}
+                        >
+                          Add
+                        </Button>
+                      </div>
+                      {editForm.excluded_dates.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {editForm.excluded_dates.map(date => (
+                            <Badge
+                              key={date}
+                              variant="outline"
+                              className="border-bone text-stone gap-1 cursor-pointer hover:border-red-300"
+                              onClick={() => setEditForm({
+                                ...editForm,
+                                excluded_dates: editForm.excluded_dates.filter(d => d !== date),
+                              })}
+                            >
+                              {new Date(date + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                              <X className="h-3 w-3" />
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 

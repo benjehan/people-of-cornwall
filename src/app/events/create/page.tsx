@@ -39,7 +39,11 @@ import {
   Upload,
   Link as LinkIcon,
   X,
+  Repeat,
+  Tag,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { EVENT_CATEGORIES, type RecurrencePattern } from "@/lib/events/types";
 import { createClient } from "@/lib/supabase/client";
 import { useUser } from "@/hooks/use-user";
 import Image from "next/image";
@@ -90,6 +94,13 @@ export default function CreateEventPage() {
   const [isDogFriendly, setIsDogFriendly] = useState(false);
   const [isChildFriendly, setIsChildFriendly] = useState(false);
   const [isVeganFriendly, setIsVeganFriendly] = useState(false);
+  const [category, setCategory] = useState("");
+  const [sourceUrl, setSourceUrl] = useState("");
+  const [recurring, setRecurring] = useState(false);
+  const [recurrencePattern, setRecurrencePattern] = useState<RecurrencePattern | "">("");
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState("");
+  const [excludedDates, setExcludedDates] = useState<string[]>([]);
+  const [excludeDateInput, setExcludeDateInput] = useState("");
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -236,6 +247,12 @@ export default function CreateEventPage() {
           is_dog_friendly: isDogFriendly,
           is_child_friendly: isChildFriendly,
           is_vegan_friendly: isVeganFriendly,
+          category: category || null,
+          source_url: sourceUrl.trim() || null,
+          recurring,
+          recurrence_pattern: recurring ? recurrencePattern || null : null,
+          recurrence_end_date: recurring && recurrenceEndDate ? recurrenceEndDate : null,
+          excluded_dates: recurring && excludedDates.length > 0 ? excludedDates : [],
           created_by: user.id,
           is_approved: false, // Needs admin approval
         })
@@ -346,10 +363,16 @@ export default function CreateEventPage() {
                     setIsSuccess(false);
                     setTitle("");
                     setDescription("");
+                    setCategory("");
                     setStartDate("");
                     setStartTime("");
                     setEndDate("");
                     setEndTime("");
+                    setRecurring(false);
+                    setRecurrencePattern("");
+                    setRecurrenceEndDate("");
+                    setExcludedDates([]);
+                    setSourceUrl("");
                     clearAllImages();
                   }}
                   className="bg-granite text-parchment hover:bg-slate"
@@ -428,6 +451,22 @@ export default function CreateEventPage() {
                       className="border-bone"
                       rows={4}
                     />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="category">Category</Label>
+                    <Select value={category} onValueChange={setCategory}>
+                      <SelectTrigger className="border-bone">
+                        <SelectValue placeholder="Select a category..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {EVENT_CATEGORIES.map((cat) => (
+                          <SelectItem key={cat} value={cat}>
+                            {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   {/* Image Upload - Multiple Images */}
@@ -596,6 +635,107 @@ export default function CreateEventPage() {
                   </div>
                 </div>
 
+                {/* Recurrence */}
+                <div className="space-y-4">
+                  <h3 className="font-medium text-granite flex items-center gap-2">
+                    <Repeat className="h-4 w-4" />
+                    Repeat (optional)
+                  </h3>
+
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="recurring"
+                      checked={recurring}
+                      onCheckedChange={(c) => {
+                        setRecurring(c === true);
+                        if (!c) {
+                          setRecurrencePattern("");
+                          setRecurrenceEndDate("");
+                          setExcludedDates([]);
+                        }
+                      }}
+                    />
+                    <Label htmlFor="recurring" className="cursor-pointer">This event repeats</Label>
+                  </div>
+
+                  {recurring && (
+                    <>
+                      <div>
+                        <Label htmlFor="recurrencePattern">How often?</Label>
+                        <Select value={recurrencePattern} onValueChange={(v) => setRecurrencePattern(v as RecurrencePattern)}>
+                          <SelectTrigger className="border-bone">
+                            <SelectValue placeholder="Select frequency..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="daily">Daily</SelectItem>
+                            <SelectItem value="weekly">Weekly</SelectItem>
+                            <SelectItem value="fortnightly">Fortnightly</SelectItem>
+                            <SelectItem value="monthly">Monthly</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="recurrenceEnd">Repeats until (optional)</Label>
+                        <Input
+                          id="recurrenceEnd"
+                          type="date"
+                          value={recurrenceEndDate}
+                          onChange={(e) => setRecurrenceEndDate(e.target.value)}
+                          min={startDate}
+                          className="border-bone"
+                        />
+                        <p className="text-xs text-stone mt-1">Leave blank to repeat indefinitely</p>
+                      </div>
+
+                      <div>
+                        <Label>Skip specific dates</Label>
+                        <p className="text-xs text-stone mb-2">
+                          Add dates when this event won&apos;t happen (e.g., school holidays)
+                        </p>
+                        <div className="flex gap-2 mb-2">
+                          <Input
+                            type="date"
+                            value={excludeDateInput}
+                            onChange={(e) => setExcludeDateInput(e.target.value)}
+                            min={startDate}
+                            className="border-bone flex-1"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="border-bone"
+                            onClick={() => {
+                              if (excludeDateInput && !excludedDates.includes(excludeDateInput)) {
+                                setExcludedDates(prev => [...prev, excludeDateInput].sort());
+                                setExcludeDateInput("");
+                              }
+                            }}
+                          >
+                            Add
+                          </Button>
+                        </div>
+                        {excludedDates.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {excludedDates.map(date => (
+                              <Badge
+                                key={date}
+                                variant="outline"
+                                className="border-bone text-stone gap-1 cursor-pointer hover:border-red-300"
+                                onClick={() => setExcludedDates(prev => prev.filter(d => d !== date))}
+                              >
+                                {new Date(date + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                                <X className="h-3 w-3" />
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+
                 {/* Contact */}
                 <div className="space-y-4">
                   <h3 className="font-medium text-granite flex items-center gap-2">
@@ -644,6 +784,18 @@ export default function CreateEventPage() {
                       placeholder="https://..."
                       className="border-bone"
                     />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="sourceUrl">Source URL (optional)</Label>
+                    <Input
+                      id="sourceUrl"
+                      value={sourceUrl}
+                      onChange={(e) => setSourceUrl(e.target.value)}
+                      placeholder="https://... (original event listing)"
+                      className="border-bone"
+                    />
+                    <p className="text-xs text-stone mt-1">Link to the original event page if applicable</p>
                   </div>
                 </div>
 
