@@ -108,7 +108,13 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
       .eq("event_id", id)
       .order("display_order", { ascending: true });
     
-    setEventImages(images || []);
+    // Fall back to event.image_url if no images in event_images table
+    const imageList = images && images.length > 0
+      ? images
+      : data.image_url
+        ? [{ id: "fallback", image_url: data.image_url, caption: null, is_primary: true }]
+        : [];
+    setEventImages(imageList);
 
     // Check if user has liked
     if (user) {

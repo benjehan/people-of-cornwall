@@ -398,7 +398,13 @@ export default function EventsPage() {
         .select("*")
         .eq("event_id", event.id)
         .order("display_order", { ascending: true });
-      setSelectedEventImages(images || []);
+      // Fall back to event.image_url if no images in event_images table
+      const imageList = images && images.length > 0
+        ? images
+        : (event.image_url || event.primary_image)
+          ? [{ id: "fallback", image_url: event.primary_image || event.image_url, caption: null, is_primary: true }]
+          : [];
+      setSelectedEventImages(imageList);
       setIsLoadingImages(false);
     } else {
       setSelectedEventImages([]);
