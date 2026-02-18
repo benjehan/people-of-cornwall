@@ -314,6 +314,15 @@ export default function EventsPage() {
     const rangeEnd = end || new Date(start.getFullYear() + 1, start.getMonth(), start.getDate());
     let expanded = expandAllEvents(processed, start, rangeEnd) as unknown as Event[];
 
+    // Deduplicate instances that share the same title + date (e.g. duplicate DB rows)
+    const instanceKeys = new Set<string>();
+    expanded = expanded.filter((e) => {
+      const key = `${e.title}|${e.starts_at}`;
+      if (instanceKeys.has(key)) return false;
+      instanceKeys.add(key);
+      return true;
+    });
+
     // Sort by starts_at
     expanded.sort((a, b) => {
       const diff = new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime();
