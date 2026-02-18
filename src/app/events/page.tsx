@@ -166,7 +166,8 @@ export default function EventsPage() {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [selectedEventImages, setSelectedEventImages] = useState<EventImage[]>([]);
   const [isLoadingImages, setIsLoadingImages] = useState(false);
-  
+  const [displayCount, setDisplayCount] = useState(20);
+
   // Filters
   const [locationFilter, setLocationFilter] = useState("All Cornwall");
   const [dateFilter, setDateFilter] = useState<DateFilter>("anytime");
@@ -329,6 +330,7 @@ export default function EventsPage() {
       );
     }
     setEvents(expanded);
+    setDisplayCount(20);
     setIsLoading(false);
   }, [locationFilter, showFreeOnly, showAccessible, showDogFriendly, showChildFriendly, showVeganFriendly, searchQuery, getDateRange]);
 
@@ -828,7 +830,22 @@ export default function EventsPage() {
                   </CardContent>
                 </Card>
               ) : (
-                events.map((event) => <EventCard key={`${event.id}-${event.instance_date || event.starts_at}`} event={event} />)
+                <>
+                  {events.slice(0, displayCount).map((event) => (
+                    <EventCard key={`${event.id}-${event.instance_date || event.starts_at}`} event={event} />
+                  ))}
+                  {displayCount < events.length && (
+                    <div className="text-center pt-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => setDisplayCount((c) => c + 20)}
+                        className="border-bone text-stone hover:bg-bone"
+                      >
+                        Show more ({events.length - displayCount} remaining)
+                      </Button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           ) : viewMode === "calendar" ? (
