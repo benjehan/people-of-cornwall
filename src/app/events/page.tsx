@@ -36,7 +36,6 @@ import {
   ChevronRight,
   Loader2,
   CalendarDays,
-  List,
   Map as MapIcon,
   X,
   Repeat,
@@ -161,7 +160,7 @@ export default function EventsPage() {
   const { user } = useUser();
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<"list" | "calendar" | "map">("calendar");
+  const [viewMode, setViewMode] = useState<"calendar" | "map">("calendar");
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [selectedEventImages, setSelectedEventImages] = useState<EventImage[]>([]);
@@ -198,7 +197,19 @@ export default function EventsPage() {
   const getDateRange = useCallback(() => {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
-    
+
+    // In calendar view, always load the full displayed month
+    if (viewMode === "calendar") {
+      const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+      const monthEnd = endOfMonth(currentMonth);
+      return { start: monthStart, end: monthEnd, isPast: false };
+    }
+
+    // In map view with default filter, load all upcoming events
+    if (viewMode === "map" && dateFilter === "anytime") {
+      return { start: now, end: null, isPast: false };
+    }
+
     switch (dateFilter) {
       case "today":
         return { start: now, end: addDays(now, 1), isPast: false };
@@ -226,7 +237,7 @@ export default function EventsPage() {
       default:
         return { start: now, end: null, isPast: false };
     }
-  }, [dateFilter, customDateFrom, customDateTo]);
+  }, [dateFilter, customDateFrom, customDateTo, viewMode, currentMonth]);
 
   const loadEvents = useCallback(async () => {
     setIsLoading(true);
@@ -439,7 +450,7 @@ export default function EventsPage() {
 
   const clearFilters = () => {
     setLocationFilter("All Cornwall");
-    setDateFilter(viewMode === "calendar" ? "this_month" : "anytime");
+    setDateFilter("anytime");
     setCustomDateFrom(undefined);
     setCustomDateTo(undefined);
     setShowFreeOnly(false);
@@ -451,7 +462,8 @@ export default function EventsPage() {
     setSelectedDay(null);
   };
 
-  const hasActiveFilters = locationFilter !== "All Cornwall" || (dateFilter !== "anytime" && dateFilter !== "this_month") ||
+  const hasActiveFilters = locationFilter !== "All Cornwall" ||
+    (viewMode !== "calendar" && dateFilter !== "anytime" && dateFilter !== "this_month") ||
     showFreeOnly || showAccessible || showDogFriendly || showChildFriendly || showVeganFriendly || searchQuery;
 
   // Check if event is in the past
@@ -627,30 +639,35 @@ export default function EventsPage() {
                   { value: "this_month" as DateFilter, label: "This Month", calendarOnly: true },
                   { value: "past" as DateFilter, label: "Past Events", calendarOnly: false },
                 ]
-                .filter((option) => viewMode !== "calendar" || (option.value !== "anytime" && option.value !== "past"))
-                .map((option) => (
-                  <Button
-                    key={option.value}
-                    variant={dateFilter === option.value ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => {
-                      setDateFilter(option.value);
-                      setCustomDateFrom(undefined);
-                      setCustomDateTo(undefined);
-                      if (option.calendarOnly) {
-                        setViewMode("calendar");
-                        setCurrentMonth(new Date());
-                        setSelectedDay(null);
+                .map((option) => {
+                  const isDisabledInCalendar = viewMode === "calendar" && (option.value === "anytime" || option.value === "past");
+                  return (
+                    <Button
+                      key={option.value}
+                      variant={dateFilter === option.value ? "default" : "outline"}
+                      size="sm"
+                      disabled={isDisabledInCalendar}
+                      onClick={() => {
+                        setDateFilter(option.value);
+                        setCustomDateFrom(undefined);
+                        setCustomDateTo(undefined);
+                        if (option.calendarOnly) {
+                          setViewMode("calendar");
+                          setCurrentMonth(new Date());
+                          setSelectedDay(null);
+                        }
+                      }}
+                      className={dateFilter === option.value
+                        ? "bg-granite text-parchment"
+                        : isDisabledInCalendar
+                        ? "border-bone text-stone/40"
+                        : "border-bone text-stone hover:bg-bone"
                       }
-                    }}
-                    className={dateFilter === option.value
-                      ? "bg-granite text-parchment"
-                      : "border-bone text-stone hover:bg-bone"
-                    }
-                  >
-                    {option.label}
-                  </Button>
-                ))}
+                    >
+                      {option.label}
+                    </Button>
+                  );
+                })}
                 
                 {/* Custom date range picker */}
                 <div className="flex items-center gap-2">
@@ -748,23 +765,10 @@ export default function EventsPage() {
                 {/* View Toggle */}
                 <div className="flex gap-1 rounded-lg border border-bone p-1 bg-parchment">
                   <Button
-                    variant={viewMode === "list" ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => setViewMode("list")}
-                    className={viewMode === "list" ? "bg-granite text-parchment" : ""}
-                    title="List View"
-                  >
-                    <List className="h-4 w-4" />
-                  </Button>
-                  <Button
                     variant={viewMode === "calendar" ? "default" : "ghost"}
                     size="sm"
                     onClick={() => {
                       setViewMode("calendar");
-                      if (dateFilter === "anytime" || dateFilter === "past") {
-                        setDateFilter("this_month");
-                        setCurrentMonth(new Date());
-                      }
                       setSelectedDay(null);
                     }}
                     className={viewMode === "calendar" ? "bg-granite text-parchment" : ""}
@@ -775,7 +779,12 @@ export default function EventsPage() {
                   <Button
                     variant={viewMode === "map" ? "default" : "ghost"}
                     size="sm"
-                    onClick={() => setViewMode("map")}
+                    onClick={() => {
+                      setViewMode("map");
+                      if (dateFilter !== "past" && dateFilter !== "custom") {
+                        setDateFilter("anytime");
+                      }
+                    }}
                     className={viewMode === "map" ? "bg-granite text-parchment" : ""}
                     title="Map View"
                   >
@@ -851,47 +860,6 @@ export default function EventsPage() {
             <div className="flex items-center justify-center py-16">
               <Loader2 className="h-8 w-8 animate-spin text-granite" />
             </div>
-          ) : viewMode === "list" ? (
-            /* List View */
-            <div className="space-y-4">
-              {events.length === 0 ? (
-                <Card className="border-bone bg-cream py-16 text-center">
-                  <CardContent>
-                    <Calendar className="mx-auto h-12 w-12 text-stone/30 mb-4" />
-                    <p className="text-stone mb-4">No events found matching your filters</p>
-                    {hasActiveFilters && (
-                      <Button onClick={clearFilters} variant="outline" className="mb-4">
-                        Clear filters
-                      </Button>
-                    )}
-                    {user && (
-                      <Link href="/events/create">
-                        <Button className="bg-granite text-parchment hover:bg-slate">
-                          Add an event
-                        </Button>
-                      </Link>
-                    )}
-                  </CardContent>
-                </Card>
-              ) : (
-                <>
-                  {events.slice(0, displayCount).map((event) => (
-                    <EventCard key={`${event.id}-${event.instance_date || event.starts_at}`} event={event} />
-                  ))}
-                  {displayCount < events.length && (
-                    <div className="text-center pt-4">
-                      <Button
-                        variant="outline"
-                        onClick={() => setDisplayCount((c) => c + 20)}
-                        className="border-bone text-stone hover:bg-bone"
-                      >
-                        Show more ({events.length - displayCount} remaining)
-                      </Button>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
           ) : viewMode === "calendar" ? (
             /* Calendar View */
             <>
@@ -947,14 +915,17 @@ export default function EventsPage() {
                     return (
                       <div
                         key={day}
-                        className={`h-24 rounded border p-1 overflow-hidden ${
-                          isToday
+                        className={`h-24 rounded border p-1 overflow-hidden cursor-pointer hover:ring-2 hover:ring-copper/50 transition-shadow ${
+                          selectedDay === day
+                            ? "ring-2 ring-copper border-copper"
+                            : isToday
                             ? "border-copper bg-copper/5"
                             : halfTerm
                             ? "border-amber-200 bg-amber-50/60"
                             : "border-bone bg-parchment"
                         }`}
                         title={halfTerm ? halfTerm.name : undefined}
+                        onClick={() => setSelectedDay(selectedDay === day ? null : day)}
                       >
                         <div className={`text-xs font-medium mb-1 flex items-center gap-0.5 ${
                           isToday ? "text-copper" : halfTerm ? "text-amber-700" : "text-stone"
@@ -968,7 +939,7 @@ export default function EventsPage() {
                               key={`${event.id}-${event.instance_date || event.starts_at}`}
                               className="text-xs truncate bg-granite text-parchment rounded px-1 cursor-pointer hover:bg-slate flex items-center gap-0.5"
                               title={`${event.title}${event.is_recurring_instance ? ' (recurring)' : ''}`}
-                              onClick={() => selectEvent(event)}
+                              onClick={(e) => { e.stopPropagation(); selectEvent(event); }}
                             >
                               {event.is_recurring_instance && (
                                 <Repeat className="h-2 w-2 flex-shrink-0" />
@@ -978,8 +949,7 @@ export default function EventsPage() {
                           ))}
                           {dayEvents.length > 2 && (
                             <div
-                              className="text-xs text-atlantic cursor-pointer hover:underline"
-                              onClick={() => setSelectedDay(selectedDay === day ? null : day)}
+                              className="text-xs text-atlantic"
                             >
                               +{dayEvents.length - 2} more
                             </div>
