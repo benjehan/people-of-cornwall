@@ -196,6 +196,12 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
     });
   };
 
+  // Check if time is unknown (00:00 from scraping with no time info)
+  const isTimeUnknown = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.getUTCHours() === 0 && date.getUTCMinutes() === 0;
+  };
+
   // Check if event is in the past
   const isEventPast = event ? (() => {
     const endDate = event.ends_at ? new Date(event.ends_at) : new Date(event.starts_at);
@@ -333,6 +339,18 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                 </div>
               )}
 
+              {/* View original listing link */}
+              {event.source_url && (
+                <a
+                  href={event.source_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-sm text-atlantic hover:underline"
+                >
+                  View original listing <span aria-hidden="true">&rarr;</span>
+                </a>
+              )}
+
               {/* Amenities */}
               <div className="flex flex-wrap gap-2">
                 {event.is_free && (
@@ -413,15 +431,25 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                   </h3>
                   <div className="text-stone">
                     <p className="font-medium">{formatDate(event.starts_at)}</p>
-                    {!event.all_day && (
+                    {event.all_day ? (
+                      <p className="text-sm mt-1">All day event</p>
+                    ) : isTimeUnknown(event.starts_at) ? (
+                      <p className="flex items-center gap-1 text-sm mt-1">
+                        <Clock className="h-3 w-3" />
+                        {event.source_url ? (
+                          <a href={event.source_url} target="_blank" rel="noopener noreferrer" className="text-atlantic hover:underline inline-flex items-center gap-1">
+                            See website for times <ExternalLink className="h-3 w-3" />
+                          </a>
+                        ) : (
+                          <span className="text-stone/70 italic">Time not specified</span>
+                        )}
+                      </p>
+                    ) : (
                       <p className="flex items-center gap-1 text-sm mt-1">
                         <Clock className="h-3 w-3" />
                         {formatTime(event.starts_at)}
-                        {event.ends_at && ` - ${formatTime(event.ends_at)}`}
+                        {event.ends_at && !isTimeUnknown(event.ends_at) && ` - ${formatTime(event.ends_at)}`}
                       </p>
-                    )}
-                    {event.all_day && (
-                      <p className="text-sm mt-1">All day event</p>
                     )}
                     {event.recurring && event.recurrence_pattern && (
                       <div className="flex items-center gap-2 text-sm mt-2 pt-2 border-t border-bone">

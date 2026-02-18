@@ -386,6 +386,12 @@ export default function EventsPage() {
     });
   };
 
+  // Check if time is unknown (00:00 from scraping with no time info)
+  const isTimeUnknown = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.getUTCHours() === 0 && date.getUTCMinutes() === 0;
+  };
+
   const shareEvent = (event: Event) => {
     const url = `${window.location.origin}/events/${event.id}`;
     const text = `${event.title} - ${formatDate(event.starts_at)} in ${event.location_name}`;
@@ -516,10 +522,20 @@ export default function EventsPage() {
                   <Badge className="bg-copper text-parchment text-xs">
                     {formatDate(event.starts_at)}
                   </Badge>
-                  {!event.all_day && (
+                  {!event.all_day && !isTimeUnknown(event.starts_at) && (
                     <span className="text-xs text-stone flex items-center gap-1">
                       <Clock className="h-3 w-3" />
                       {formatTime(event.starts_at)}
+                    </span>
+                  )}
+                  {!event.all_day && isTimeUnknown(event.starts_at) && (
+                    <span className="text-xs text-stone/70 italic flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {event.source_url ? (
+                        <a href={event.source_url} target="_blank" rel="noopener noreferrer" className="text-atlantic hover:underline" onClick={(e) => e.stopPropagation()}>
+                          See website for times
+                        </a>
+                      ) : "Time TBC"}
                     </span>
                   )}
                   {event.is_featured && (
@@ -1052,11 +1068,21 @@ export default function EventsPage() {
                   <Badge className="bg-copper text-parchment">
                     {formatDate(selectedEvent.starts_at)}
                   </Badge>
-                  {!selectedEvent.all_day && (
+                  {!selectedEvent.all_day && !isTimeUnknown(selectedEvent.starts_at) && (
                     <span className="text-sm text-stone flex items-center gap-1">
                       <Clock className="h-3 w-3" />
                       {formatTime(selectedEvent.starts_at)}
-                      {selectedEvent.ends_at && ` - ${formatTime(selectedEvent.ends_at)}`}
+                      {selectedEvent.ends_at && !isTimeUnknown(selectedEvent.ends_at) && ` - ${formatTime(selectedEvent.ends_at)}`}
+                    </span>
+                  )}
+                  {!selectedEvent.all_day && isTimeUnknown(selectedEvent.starts_at) && (
+                    <span className="text-sm text-stone/70 italic flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {selectedEvent.source_url ? (
+                        <a href={selectedEvent.source_url} target="_blank" rel="noopener noreferrer" className="text-atlantic hover:underline inline-flex items-center gap-1">
+                          See website for times <ExternalLink className="h-3 w-3" />
+                        </a>
+                      ) : "Time TBC"}
                     </span>
                   )}
                 </div>
