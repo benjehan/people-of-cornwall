@@ -2,18 +2,19 @@ import type { EventBase, EventInstance, RecurrencePattern } from './types';
 
 function getNextOccurrence(current: Date, pattern: RecurrencePattern): Date {
   const next = new Date(current);
-  switch (pattern) {
+  switch ((pattern as string).toLowerCase()) {
     case 'daily':
       next.setDate(next.getDate() + 1);
-      break;
-    case 'weekly':
-      next.setDate(next.getDate() + 7);
       break;
     case 'fortnightly':
       next.setDate(next.getDate() + 14);
       break;
     case 'monthly':
       next.setMonth(next.getMonth() + 1);
+      break;
+    default:
+      // weekly or any unrecognised pattern
+      next.setDate(next.getDate() + 7);
       break;
   }
   return next;
