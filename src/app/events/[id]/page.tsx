@@ -17,7 +17,6 @@ import {
   User,
   Mail,
   Phone,
-  Globe,
   ExternalLink,
   Share2,
   Heart,
@@ -366,6 +365,29 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                 )}
               </div>
 
+              {/* Source attribution */}
+              {event.source_url && (
+                <p className="text-xs text-stone/60 flex items-center gap-1">
+                  Originally listed on{" "}
+                  <a
+                    href={event.source_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-stone/60 underline hover:text-stone"
+                  >
+                    {(() => {
+                      try {
+                        const host = new URL(event.source_url).hostname;
+                        return host.replace(/^www\./, "");
+                      } catch {
+                        return "source";
+                      }
+                    })()}
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                </p>
+              )}
+
               {/* Comments */}
               <Card className="border-bone bg-cream">
                 <CardContent className="pt-6">
@@ -434,7 +456,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               </Card>
 
               {/* Contact */}
-              {(event.contact_name || event.contact_email || event.contact_phone || event.website_url || event.source_url) && (
+              {(event.contact_name || event.contact_email || event.contact_phone || event.website_url) && (
                 <Card className="border-bone bg-cream">
                   <CardContent className="pt-6 space-y-4">
                     <h3 className="font-medium text-granite flex items-center gap-2">
@@ -472,17 +494,6 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                         >
                           <ExternalLink className="h-3 w-3" />
                           Visit website
-                        </a>
-                      )}
-                      {event.source_url && (
-                        <a
-                          href={event.source_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-2 text-sm text-atlantic hover:underline"
-                        >
-                          <ExternalLink className="h-3 w-3" />
-                          Original listing
                         </a>
                       )}
                     </div>
