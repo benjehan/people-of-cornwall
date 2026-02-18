@@ -161,16 +161,18 @@ export default function EventsPage() {
   const { user } = useUser();
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<"list" | "calendar" | "map">("list");
+  const [viewMode, setViewMode] = useState<"list" | "calendar" | "map">("calendar");
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [selectedEventImages, setSelectedEventImages] = useState<EventImage[]>([]);
   const [isLoadingImages, setIsLoadingImages] = useState(false);
   const [displayCount, setDisplayCount] = useState(20);
+  const [baseEvents, setBaseEvents] = useState<Event[]>([]);
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
   // Filters
   const [locationFilter, setLocationFilter] = useState("All Cornwall");
-  const [dateFilter, setDateFilter] = useState<DateFilter>("anytime");
+  const [dateFilter, setDateFilter] = useState<DateFilter>("this_month");
   const [customDateFrom, setCustomDateFrom] = useState<Date | undefined>(undefined);
   const [customDateTo, setCustomDateTo] = useState<Date | undefined>(undefined);
   const [showFreeOnly, setShowFreeOnly] = useState(false);
@@ -337,6 +339,15 @@ export default function EventsPage() {
           e.description?.toLowerCase().includes(q) ||
           e.location_name.toLowerCase().includes(q)
       );
+      // Also filter base events for map view
+      setBaseEvents(processed.filter(
+        (e: any) =>
+          e.title.toLowerCase().includes(q) ||
+          e.description?.toLowerCase().includes(q) ||
+          e.location_name.toLowerCase().includes(q)
+      ));
+    } else {
+      setBaseEvents(processed);
     }
     setEvents(expanded);
     setDisplayCount(20);
@@ -422,7 +433,7 @@ export default function EventsPage() {
 
   const clearFilters = () => {
     setLocationFilter("All Cornwall");
-    setDateFilter("anytime");
+    setDateFilter(viewMode === "calendar" ? "this_month" : "anytime");
     setCustomDateFrom(undefined);
     setCustomDateTo(undefined);
     setShowFreeOnly(false);
@@ -431,9 +442,10 @@ export default function EventsPage() {
     setShowChildFriendly(false);
     setShowVeganFriendly(false);
     setSearchQuery("");
+    setSelectedDay(null);
   };
 
-  const hasActiveFilters = locationFilter !== "All Cornwall" || dateFilter !== "anytime" || 
+  const hasActiveFilters = locationFilter !== "All Cornwall" || (dateFilter !== "anytime" && dateFilter !== "this_month") ||
     showFreeOnly || showAccessible || showDogFriendly || showChildFriendly || showVeganFriendly || searchQuery;
 
   // Check if event is in the past
@@ -602,24 +614,31 @@ export default function EventsPage() {
               <div className="flex flex-wrap gap-2 mb-4">
                 <span className="text-sm font-medium text-granite flex items-center mr-2">When:</span>
                 {[
-                  { value: "anytime" as DateFilter, label: "Upcoming" },
-                  { value: "today" as DateFilter, label: "Today" },
-                  { value: "this_week" as DateFilter, label: "This Week" },
-                  { value: "next_weekend" as DateFilter, label: "Next Weekend" },
-                  { value: "this_month" as DateFilter, label: "This Month" },
-                  { value: "past" as DateFilter, label: "Past Events" },
-                ].map((option) => (
+                  { value: "anytime" as DateFilter, label: "Upcoming", calendarOnly: false },
+                  { value: "today" as DateFilter, label: "Today", calendarOnly: true },
+                  { value: "this_week" as DateFilter, label: "This Week", calendarOnly: true },
+                  { value: "next_weekend" as DateFilter, label: "Next Weekend", calendarOnly: true },
+                  { value: "this_month" as DateFilter, label: "This Month", calendarOnly: true },
+                  { value: "past" as DateFilter, label: "Past Events", calendarOnly: false },
+                ]
+                .filter((option) => viewMode !== "calendar" || (option.value !== "anytime" && option.value !== "past"))
+                .map((option) => (
                   <Button
                     key={option.value}
                     variant={dateFilter === option.value ? "default" : "outline"}
                     size="sm"
-                    onClick={() => { 
-                      setDateFilter(option.value); 
-                      setCustomDateFrom(undefined); 
-                      setCustomDateTo(undefined); 
+                    onClick={() => {
+                      setDateFilter(option.value);
+                      setCustomDateFrom(undefined);
+                      setCustomDateTo(undefined);
+                      if (option.calendarOnly) {
+                        setViewMode("calendar");
+                        setCurrentMonth(new Date());
+                        setSelectedDay(null);
+                      }
                     }}
-                    className={dateFilter === option.value 
-                      ? "bg-granite text-parchment" 
+                    className={dateFilter === option.value
+                      ? "bg-granite text-parchment"
                       : "border-bone text-stone hover:bg-bone"
                     }
                   >
@@ -734,7 +753,14 @@ export default function EventsPage() {
                   <Button
                     variant={viewMode === "calendar" ? "default" : "ghost"}
                     size="sm"
-                    onClick={() => setViewMode("calendar")}
+                    onClick={() => {
+                      setViewMode("calendar");
+                      if (dateFilter === "anytime" || dateFilter === "past") {
+                        setDateFilter("this_month");
+                        setCurrentMonth(new Date());
+                      }
+                      setSelectedDay(null);
+                    }}
                     className={viewMode === "calendar" ? "bg-granite text-parchment" : ""}
                     title="Calendar View"
                   >
@@ -808,7 +834,10 @@ export default function EventsPage() {
 
           {/* Results count */}
           <div className="mb-4 text-sm text-stone">
-            {isLoading ? "Loading..." : `${events.length} event${events.length !== 1 ? "s" : ""} found`}
+            {isLoading ? "Loading..." : viewMode === "map"
+              ? `${baseEvents.length} event${baseEvents.length !== 1 ? "s" : ""} found`
+              : `${events.length} event${events.length !== 1 ? "s" : ""} found`
+            }
           </div>
 
           {/* Content */}
@@ -859,12 +888,13 @@ export default function EventsPage() {
             </div>
           ) : viewMode === "calendar" ? (
             /* Calendar View */
+            <>
             <Card className="border-bone bg-cream">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
+                  onClick={() => { setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1)); setSelectedDay(null); }}
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </Button>
@@ -874,7 +904,7 @@ export default function EventsPage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
+                  onClick={() => { setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1)); setSelectedDay(null); }}
                 >
                   <ChevronRight className="h-5 w-5" />
                 </Button>
@@ -941,7 +971,12 @@ export default function EventsPage() {
                             </div>
                           ))}
                           {dayEvents.length > 2 && (
-                            <div className="text-xs text-stone">+{dayEvents.length - 2} more</div>
+                            <div
+                              className="text-xs text-atlantic cursor-pointer hover:underline"
+                              onClick={() => setSelectedDay(selectedDay === day ? null : day)}
+                            >
+                              +{dayEvents.length - 2} more
+                            </div>
                           )}
                         </div>
                       </div>
@@ -950,11 +985,37 @@ export default function EventsPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Day detail panel */}
+            {selectedDay && (() => {
+              const dayEvents = getEventsForDay(selectedDay);
+              if (dayEvents.length === 0) return null;
+              const dayDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), selectedDay);
+              return (
+                <Card className="mt-4 border-bone bg-cream">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="font-serif text-lg">
+                      {dayDate.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}
+                      <span className="text-sm font-normal text-stone ml-2">({dayEvents.length} event{dayEvents.length !== 1 ? "s" : ""})</span>
+                    </CardTitle>
+                    <Button variant="ghost" size="icon" onClick={() => setSelectedDay(null)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {dayEvents.map((event) => (
+                      <EventCard key={`day-${event.id}-${event.instance_date || event.starts_at}`} event={event} compact />
+                    ))}
+                  </CardContent>
+                </Card>
+              );
+            })()}
+            </>
           ) : (
             /* Map View */
             <div className="rounded-lg overflow-hidden border border-bone">
-              <EventsMap 
-                events={events} 
+              <EventsMap
+                events={baseEvents}
                 onEventSelect={selectEvent}
                 selectedEvent={selectedEvent}
                 fullPageMode={true}
